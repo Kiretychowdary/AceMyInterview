@@ -9,6 +9,8 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import MockInterviews from './pages/MockInterviews';
 // import // NMKRSPVLIDATA
+import Login from './pages/Login';
+// import RADHAKRISHNALOVEPERMANENT
 import InterviewRoom from './pages/InterviewRoom';
 import DeviceSetup from './pages/DeviceSetup';
 // import InterviewRoom from './pages/InterviewRoom';
@@ -24,6 +26,7 @@ export default function App() {
           <Route path="/mock-interviews" element={<MockInterviews />} />
           <Route path='/device-interview' element={<DeviceSetup/>} />
           <Route path='/interview-room' element={<InterviewRoom />}/>
+          <Route path='/Login' element={<Login/>}/>
         </Routes>
       </Router>
       {/* <Router>
