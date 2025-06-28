@@ -8,8 +8,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import MockInterviews from './pages/MockInterviews';
+// import // NMKRSPVLIDATA
+import InterviewRoom from './pages/InterviewRoom';
+import DeviceSetup from './pages/DeviceSetup';
 // import InterviewRoom from './pages/InterviewRoom';
-
+// import DeviceSetup from './pages/DeviceSetup';
 export default function App() {
   return (
     <>
@@ -19,9 +22,18 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/mock-interviews" element={<MockInterviews />} />
-          {/* <Route path="/interview-room" element={<InterviewRoom />} /> */}
+          <Route path='/device-interview' element={<DeviceSetup/>} />
+          <Route path='/interview-room' element={<InterviewRoom />}/>
         </Routes>
       </Router>
+      {/* <Router>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />}/>
+          <Route path='/mock-interviews' elements={<MockInterviews />}/>
+          <Route path='/interview-room' element={<InterviewRoom />}/>
+          </Routes>
+      </Router> */}
     </>
   );
 }
