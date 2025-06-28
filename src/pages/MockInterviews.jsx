@@ -2,6 +2,7 @@
 // AMMALOVEBLESSINGSONRECURSION
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import image from '../assets/image.png';
 
 const mockData = [
@@ -53,6 +54,7 @@ const categories = ['All', 'Tech', 'Management', 'General'];
 
 const MockInterviews = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const navigate = useNavigate();
 
   const filteredData =
     selectedCategory === 'All'
@@ -116,7 +118,10 @@ const MockInterviews = () => {
 
               <div className="mt-4 text-right">
                 {/* Glowing Button */}
-                <button className="group relative bg-neutral-900 border border-pink-400 rounded-full p-[2px] overflow-hidden hover:scale-105 transition-transform">
+                <button
+                  className="group relative bg-neutral-900 border border-pink-400 rounded-full p-[2px] overflow-hidden hover:scale-105 transition-transform"
+                  onClick={() => navigate('/device-interview', { state: { mock } })}
+                >
                   <span className="flex items-center gap-2 px-5 py-2 bg-black rounded-full text-white relative z-10">
                     <svg
                       width="20"
