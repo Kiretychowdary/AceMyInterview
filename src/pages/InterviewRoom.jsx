@@ -2,6 +2,7 @@
 // AMMALOVEBLESSINGSONRECURSION
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // <-- Add this import
 import { motion } from 'framer-motion';
 import Webcam from 'react-webcam';
 import image from '../assets/image.png';
@@ -10,6 +11,9 @@ const InterviewRoom = () => {
   const [time, setTime] = useState(1800); // 30 minutes in seconds
   const [camera, setCamera] = useState('');
   const [cameras, setCameras] = useState([]);
+  const [showTranscript, setShowTranscript] = useState(true); // visibility state
+  const [tabSwitchCount, setTabSwitchCount] = useState(0); // <-- Track tab switches
+  const navigate = useNavigate(); // <-- For navigation
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -29,10 +33,37 @@ const InterviewRoom = () => {
     getDevices();
   }, []);
 
+  // Tab switch alert and redirect after 3 times
+  useEffect(() => {
+    const handleTabSwitch = () => {
+      if (document.hidden) {
+        setTabSwitchCount((prev) => {
+          const next = prev + 1;
+          alert('You switched tabs or minimized the window. Please stay on the interview page!');
+          if (next >= 3) {
+            navigate('/mock-interviews');
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleTabSwitch);
+    return () => document.removeEventListener('visibilitychange', handleTabSwitch);
+  }, [navigate]);
+
   const formatTime = (seconds) => {
     const min = String(Math.floor(seconds / 60)).padStart(2, '0');
     const sec = String(seconds % 60).padStart(2, '0');
     return `${min}:${sec}`;
+  };
+
+  // Visibility change function
+  const handleVisibilityChange = () => {
+    setShowTranscript((prev) => {
+      const next = !prev;
+      alert(next ? "Transcript is now visible." : "Transcript is now hidden.");
+      return next;
+    });
   };
 
   return (
@@ -52,6 +83,16 @@ const InterviewRoom = () => {
             <span className="material-icons">person</span>
           </div>
         </div>
+      </div>
+
+      {/* Toggle Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleVisibilityChange}
+          className="bg-yellow-600 hover:bg-yellow-700 px-4 py-1 rounded-full mb-2"
+        >
+          {showTranscript ? 'Hide Transcript' : 'Show Transcript'}
+        </button>
       </div>
 
       {/* Main Area */}
@@ -100,17 +141,20 @@ const InterviewRoom = () => {
           </div>
         </div>
 
-        <div className="w-full lg:w-1/3 bg-gray-900 rounded-md p-4">
-          <h3 className="text-lg font-semibold mb-2">Interview Transcript</h3>
-          <div className="h-60 overflow-y-auto text-sm space-y-2">
-            <p className="bg-purple-800 p-2 rounded-md">
-              <strong>AI:</strong> <span>AI is asking...</span>
-            </p>
-            <p className="bg-purple-800 p-2 rounded-md">
-              <strong>You:</strong> Good question, I am a post graduate in information systems and interned at software wing in Google.
-            </p>
+        {/* Interview Transcript - visibility controlled */}
+        {showTranscript && (
+          <div className="w-full lg:w-1/3 bg-gray-900 rounded-md p-4">
+            <h3 className="text-lg font-semibold mb-2">Interview Transcript</h3>
+            <div className="h-60 overflow-y-auto text-sm space-y-2">
+              <p className="bg-purple-800 p-2 rounded-md">
+                <strong>AI:</strong> <span>AI is asking...</span>
+              </p>
+              <p className="bg-purple-800 p-2 rounded-md">
+                <strong>You:</strong> Good question, I am a post graduate in information systems and interned at software wing in Google.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Footer Buttons */}
@@ -169,7 +213,7 @@ const InterviewRoom = () => {
         .loader .box:nth-child(5) {
           inset: 0%;
           z-index: 95;
-          border-color: rgba(100, 100, 100, 0.2);
+          border-color: rgba(100,  100, 100, 0.2);
           animation-delay: 0.8s;
         }
         .loader .logo {
