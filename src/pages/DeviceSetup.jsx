@@ -26,8 +26,23 @@ const DeviceSetup = ({ onContinue }) => {
   }, []);
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center min-h-[60vh] gap-10">
+    
+    <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
+      <div className="flex justify-between items-center bg-gray-900 p-4 rounded-md">
+        <h2 className="text-xl font-semibold">Software Developer</h2>
+        
+        <div className="flex items-center gap-2">
+          <div className="text-right">
+            <p className="font-semibold">Vara prasad</p>
+            <p className="text-sm text-gray-300">Chinnikirety123@gmail.com</p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center">
+            <span className="material-icons">person</span>
+          </div>
+        </div>
+      </div>
       {/* Camera View */}
+      <div className="flex flex-col items-center justify-center lg:flex-row gap-4">
       <div className="bg-gray-300 rounded-lg w-64 h-64 flex items-center justify-center text-black text-lg font-semibold shadow overflow-hidden">
         {camera ? (
           <Webcam
@@ -85,6 +100,7 @@ const DeviceSetup = ({ onContinue }) => {
         >
           continue
         </button>
+      </div>
       </div>
     </div>
   );
