@@ -1,15 +1,22 @@
 {
   "name": "ai-interview",
+  "description": "AI Interview App - Practice interviews with AI",
+  "author": "nmkrspvlidata",
+  "license": "MIT",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "homepage": "https://Kiretychowdary.github.io/AceMyInterview",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "framer-motion": "^12.19.2",
+    "gh-pages": "^6.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
