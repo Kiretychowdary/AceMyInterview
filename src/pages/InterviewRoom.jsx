@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Webcam from 'react-webcam';
 import image from '../assets/image.png';
-
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 // Gemini API endpoint and key (replace with your actual API key)
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 const GEMINI_API_KEY = "AIzaSyAPPmXjX3_uY40381jTjoHvYkJR6uLnf9U"; // <-- Replace with your Gemini API key
@@ -22,11 +23,75 @@ const InterviewRoom = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-const [isRecording, setIsRecording] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const navigate = useNavigate();
   const transcriptRef = useRef(null);
-const recognitionRef = useRef(null);
-
+  const recognitionRef = useRef(null);
+  useEffect(() => {
+    const handleTabSwitch = () => {
+      if (document.hidden) {
+        setTabSwitchCount((prev) => {
+          const next = prev + 1;
+          toast.warn(
+            'You switched tabs or minimized the window. Please stay on the interview page!',
+            {
+              toastId: 'tab-switch-warning',
+              position: "top-center",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              theme: "colored",
+            }
+          );
+          if (next >= 3) {
+            toast.error('You have switched tabs too many times. Redirecting...', {
+              position: "top-center",
+              autoClose: 2000,
+              theme: "colored",
+            });
+            setTimeout(() => navigate('/mock-interviews'), 2000);
+          }
+          
+          return next;
+        });
+      }
+       else {
+        // When user comes back and tab switches are less than 3, force fullscreen again
+        setTabSwitchCount((prev) => {
+          if (prev < 3) {
+            setTimeout(() => {
+              if (window.screenfull && window.screenfull.isEnabled) {
+                window.screenfull.request();
+              } else if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+              }
+            }, 300);
+          }
+          return prev;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleTabSwitch);
+    return () => document.removeEventListener('visibilitychange', handleTabSwitch);
+  }, [navigate]);
+  // On mount: If redirected with state, start AI interview automatically
+  useEffect(() => {
+    if (window.screenfull && window.screenfull.isEnabled) {
+      window.screenfull.request();
+    } else if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+    // Get topic/subtopic from location.state and start interview
+    if (window.history.state && window.history.state.usr) {
+      const { category, topic, subtopic } = window.history.state.usr;
+      if (topic && subtopic) {
+        const introPrompt = `You are an AI interviewer. Start a professional interview for the position of ${topic} focusing on ${subtopic}. Ask your first question.`;
+        setMessages([{ role: 'ai', text: introPrompt }]);
+      }
+    }
+  }, []);
   // Timer
   useEffect(() => {
     const timer = setInterval(() => {
@@ -46,18 +111,50 @@ const recognitionRef = useRef(null);
     getDevices();
   }, []);
 
-  // Tab switch alert and redirect after 3 times
   useEffect(() => {
     const handleTabSwitch = () => {
       if (document.hidden) {
         setTabSwitchCount((prev) => {
           const next = prev + 1;
-          alert('You switched tabs or minimized the window. Please stay on the interview page!');
+          toast.warn('You switched tabs or minimized the window. Please stay on the interview page!', {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "colored",
+          });
           if (next >= 3) {
-            navigate('/mock-interviews');
+            toast.error('You have switched tabs too many times. Redirecting...', {
+              position: "top-center",
+              autoClose: 2000,
+              theme: "colored",
+            });
+            setTimeout(() => navigate('/mock-interviews'), 2000);
           }
+          else {
+        // When user comes back, force fullscreen again
+        setTimeout(() => {
+          if (window.screenfull && window.screenfull.isEnabled) {
+            window.screenfull.request();
+          } else if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+          }
+        }, 300);
+      }
           return next;
         });
+      }
+       else {
+        // When user comes back, force fullscreen again
+        setTimeout(() => {
+          if (window.screenfull && window.screenfull.isEnabled) {
+            window.screenfull.request();
+          } else if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+          }
+        }, 300);
       }
     };
     document.addEventListener('visibilitychange', handleTabSwitch);
@@ -82,7 +179,7 @@ const recognitionRef = useRef(null);
   const handleVisibilityChange = () => {
     setShowTranscript((prev) => {
       const next = !prev;
-      alert(next ? "Transcript is now visible." : "Transcript is now hidden.");
+       toast.error(next ? "Transcript is now visible." : "Transcript is now hidden.");
       return next;
     });
   };
@@ -132,7 +229,7 @@ const recognitionRef = useRef(null);
   // Speech Recognition setup
   const startRecording = () => {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      alert('Speech recognition is not supported in this browser.');
+       toast.error('Speech recognition is not supported in this browser.');
       return;
     }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -148,11 +245,10 @@ const recognitionRef = useRef(null);
       // Optionally, auto-send after recording:
       // handleSend();
     };
-
-    recognition.onerror = () => {
-      setIsRecording(false);
-      alert('Speech recognition error.');
-    };
+recognition.onerror = () => {
+  setIsRecording(false);
+  toast.error('Speech recognition error.');
+};
 
     recognition.onend = () => setIsRecording(false);
 
@@ -182,6 +278,7 @@ const recognitionRef = useRef(null);
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#2c5364] to-[#232526] text-white p-4 flex flex-col gap-8">
       {/* Header */}
+      {/* <ToastContainer /> */}
       <motion.div
         className="flex justify-between items-center bg-[#10131a] p-6 rounded-xl shadow-lg"
         initial={{ y: -50, opacity: 0 }}
@@ -293,11 +390,10 @@ const recognitionRef = useRef(null);
                 {messages.map((msg, idx) => (
                   <motion.div
                     key={idx}
-                    className={`p-3 rounded-lg ${
-                      msg.role === 'ai'
-                        ? 'bg-gradient-to-r from-[#7b2ff2] to-[#f357a8] font-semibold'
-                        : 'bg-gradient-to-r from-[#232526] to-[#2c5364] text-white'
-                    }`}
+                    className={`p-3 rounded-lg ${msg.role === 'ai'
+                      ? 'bg-gradient-to-r from-[#7b2ff2] to-[#f357a8] font-semibold'
+                      : 'bg-gradient-to-r from-[#232526] to-[#2c5364] text-white'
+                      }`}
                     initial={{ opacity: 0, x: 30 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 * idx }}
@@ -333,13 +429,12 @@ const recognitionRef = useRef(null);
                 >
                   Send
                 </button>
-<button
+                <button
                   onClick={isRecording ? stopRecording : startRecording}
-                  className={`px-4 py-2 rounded-full font-semibold shadow-lg transition-all duration-300 ${
-                    isRecording
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gradient-to-r from-green-400 to-green-600 text-white'
-                  }`}
+                  className={`px-4 py-2 rounded-full font-semibold shadow-lg transition-all duration-300 ${isRecording
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gradient-to-r from-green-400 to-green-600 text-white'
+                    }`}
                   disabled={loading}
                 >
                   {isRecording ? 'Stop' : 'Record'}
