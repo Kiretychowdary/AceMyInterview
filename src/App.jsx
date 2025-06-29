@@ -7,7 +7,7 @@ import MockInterviews from './pages/MockInterviews';
 import Login from './pages/Login';
 import InterviewRoom from './pages/InterviewRoom';
 import DeviceSetup from './pages/DeviceSetup';
-
+// import InterviewCategoryFlow from './pages/InterviewCategoryFlow'; // adjust path if needed
 function AppContent() {
   const location = useLocation();
   // Hide Navbar on /interview-room
@@ -19,9 +19,10 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/mock-interviews" element={<MockInterviews />} />
-        <Route path="/device-interview" element={<DeviceSetup />} />
+        <Route path="/device-setup" element={<DeviceSetup />} />
         <Route path="/interview-room" element={<InterviewRoom />} />
         <Route path="/Login" element={<Login />} />
+        {/* <Route path='/inteview-category-flow' element={<InterviewCategoryFlow />} /> */}
       </Routes>
     </>
   );
