@@ -177,12 +177,12 @@ const InterviewRoom = () => {
 
   // Toggle transcript visibility
   const handleVisibilityChange = () => {
-    setShowTranscript((prev) => {
-      const next = !prev;
-       toast.error(next ? "Transcript is now visible." : "Transcript is now hidden.");
-      return next;
-    });
-  };
+  setShowTranscript((prev) => {
+    const next = !prev;
+    toast.info(next ? "Transcript is now visible." : "Transcript is now hidden.");
+    return next;
+  });
+};
 
   // Handle user input and send to Gemini API
   const handleSend = async () => {
