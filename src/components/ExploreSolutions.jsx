@@ -45,11 +45,11 @@ const ExploreSolutions = () => (
     <h2 className="text-4xl font-bold text-center text-white mb-12">
       Resources to Learn & Ace Interviews
     </h2>
-    <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4">
+    <div className="max-w-6xl h-screen mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4">
       {solutions.map((sol, idx) => (
         <div
           key={idx}
-          className="rounded-xl p-8 flex flex-col items-center shadow-lg hover:scale-105 transition bg-[#18191A]"
+          className="rounded-xl p-8  flex flex-col items-center shadow-lg hover:scale-105 transition bg-[#18191A]"
         >
           <div className="w-20 h-20 flex items-center justify-center rounded-lg mb-6 bg-gray-700">
             <img src={sol.img} alt={sol.title} className="w-12 h-12 object-contain" />

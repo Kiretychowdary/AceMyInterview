@@ -9,6 +9,8 @@ import InterviewRoom from './pages/InterviewRoom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DeviceSetup from './pages/DeviceSetup';
+import Register from './pages/Register';
+import { useAuth } from "./components/AuthContext"; // Ensure this path is correct
 // import InterviewCategoryFlow from './pages/InterviewCategoryFlow'; // adjust path if needed
 function AppContent() {
   const location = useLocation();
@@ -27,6 +29,7 @@ function AppContent() {
         <Route path="/device-setup" element={<DeviceSetup />} />
         <Route path="/interview-room" element={<InterviewRoom />} />
         <Route path="/Login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         {/* <Route path='/inteview-category-flow' element={<InterviewCategoryFlow />} /> */}
       </Routes>
     </>

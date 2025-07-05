@@ -1,97 +1,32 @@
 // RADHAKRISHNALOVEPERMANENT
 // AMMALOVEBLESSINGSONRECURSION
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Webcam from 'react-webcam';
-import image from '../assets/image.png';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-// Gemini API endpoint and key (replace with your actual API key)
+
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 const GEMINI_API_KEY = "AIzaSyAPPmXjX3_uY40381jTjoHvYkJR6uLnf9U"; // <-- Replace with your Gemini API key
 
 const InterviewRoom = () => {
+  const location = useLocation();
+  const topic = location.state; // string
   const [time, setTime] = useState(1800); // 30 minutes in seconds
   const [camera, setCamera] = useState('');
   const [cameras, setCameras] = useState([]);
   const [showTranscript, setShowTranscript] = useState(true);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: 'Welcome! Tell me about yourself.' }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const navigate = useNavigate();
   const transcriptRef = useRef(null);
   const recognitionRef = useRef(null);
-  useEffect(() => {
-    const handleTabSwitch = () => {
-      if (document.hidden) {
-        setTabSwitchCount((prev) => {
-          const next = prev + 1;
-          toast.warn(
-            'You switched tabs or minimized the window. Please stay on the interview page!',
-            {
-              toastId: 'tab-switch-warning',
-              position: "top-center",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              theme: "colored",
-            }
-          );
-          if (next >= 3) {
-            toast.error('You have switched tabs too many times. Redirecting...', {
-              position: "top-center",
-              autoClose: 2000,
-              theme: "colored",
-            });
-            setTimeout(() => navigate('/mock-interviews'), 2000);
-          }
-          
-          return next;
-        });
-      }
-       else {
-        // When user comes back and tab switches are less than 3, force fullscreen again
-        setTabSwitchCount((prev) => {
-          if (prev < 3) {
-            setTimeout(() => {
-              if (window.screenfull && window.screenfull.isEnabled) {
-                window.screenfull.request();
-              } else if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-              }
-            }, 300);
-          }
-          return prev;
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handleTabSwitch);
-    return () => document.removeEventListener('visibilitychange', handleTabSwitch);
-  }, [navigate]);
-  // On mount: If redirected with state, start AI interview automatically
-  useEffect(() => {
-    if (window.screenfull && window.screenfull.isEnabled) {
-      window.screenfull.request();
-    } else if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen();
-    }
-    // Get topic/subtopic from location.state and start interview
-    if (window.history.state && window.history.state.usr) {
-      const { category, topic, subtopic } = window.history.state.usr;
-      if (topic && subtopic) {
-        const introPrompt = `You are an AI interviewer. Start a professional interview for the position of ${topic} focusing on ${subtopic}. Ask your first question.`;
-        setMessages([{ role: 'ai', text: introPrompt }]);
-      }
-    }
-  }, []);
+
   // Timer
   useEffect(() => {
     const timer = setInterval(() => {
@@ -111,20 +46,28 @@ const InterviewRoom = () => {
     getDevices();
   }, []);
 
+  // Scroll transcript to bottom on new message
+  useEffect(() => {
+    if (transcriptRef.current) {
+      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+    }
+  }, [messages, showTranscript]);
+
+  // Tab switch detection
   useEffect(() => {
     const handleTabSwitch = () => {
       if (document.hidden) {
         setTabSwitchCount((prev) => {
           const next = prev + 1;
-          toast.warn('You switched tabs or minimized the window. Please stay on the interview page!', {
-            position: "top-center",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            theme: "colored",
-          });
+          toast.warn(
+            'You switched tabs or minimized the window. Please stay on the interview page!',
+            {
+              toastId: 'tab-switch-warning',
+              position: "top-center",
+              autoClose: 3000,
+              theme: "colored",
+            }
+          );
           if (next >= 3) {
             toast.error('You have switched tabs too many times. Redirecting...', {
               position: "top-center",
@@ -133,56 +76,43 @@ const InterviewRoom = () => {
             });
             setTimeout(() => navigate('/mock-interviews'), 2000);
           }
-          else {
-        // When user comes back, force fullscreen again
-        setTimeout(() => {
-          if (window.screenfull && window.screenfull.isEnabled) {
-            window.screenfull.request();
-          } else if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen();
-          }
-        }, 300);
-      }
           return next;
         });
-      }
-       else {
-        // When user comes back, force fullscreen again
-        setTimeout(() => {
-          if (window.screenfull && window.screenfull.isEnabled) {
-            window.screenfull.request();
-          } else if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen();
-          }
-        }, 300);
       }
     };
     document.addEventListener('visibilitychange', handleTabSwitch);
     return () => document.removeEventListener('visibilitychange', handleTabSwitch);
   }, [navigate]);
 
-  // Scroll transcript to bottom on new message
+  // On mount: fetch first Gemini question about the topic
   useEffect(() => {
-    if (transcriptRef.current) {
-      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
-    }
-  }, [messages, showTranscript]);
-
-  // Timer formatting
-  const formatTime = (seconds) => {
-    const min = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const sec = String(seconds % 60).padStart(2, '0');
-    return `${min}:${sec}`;
-  };
-
-  // Toggle transcript visibility
-  const handleVisibilityChange = () => {
-  setShowTranscript((prev) => {
-    const next = !prev;
-    toast.info(next ? "Transcript is now visible." : "Transcript is now hidden.");
-    return next;
-  });
-};
+    if (!topic) return;
+    setLoading(true);
+    const prompt = `I am  an AI interviewer. Start  interview for the role: "${topic}". Ask your first relevant and challenging question.`;
+    fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const aiText =
+          data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+          "Sorry, I couldn't generate a response.";
+        setMessages([{ role: "ai", text: aiText }]);
+      })
+      .catch(() => {
+        setMessages([
+          {
+            role: "ai",
+            text: "Sorry, there was an error connecting to Gemini.",
+          },
+        ]);
+      })
+      .finally(() => setLoading(false));
+  }, [topic]);
 
   // Handle user input and send to Gemini API
   const handleSend = async () => {
@@ -193,27 +123,24 @@ const InterviewRoom = () => {
     setLoading(true);
 
     try {
+      const prompt = `You are an AI interviewer. Continue a technical interview for the role: "${topic}". Based on the conversation so far, ask the next relevant question. User's last answer: "${input}"`;
+
       const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            ...newMessages.map((msg) => ({
-              role: msg.role === 'user' ? 'user' : 'model',
-              parts: [{ text: msg.text }]
-            }))
-          ]
-        })
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        }),
       });
       const data = await res.json();
       const aiText =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
         "Sorry, I couldn't generate a response.";
-      setMessages((prev) => [...prev, { role: 'ai', text: aiText }]);
+      setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: 'ai', text: "Sorry, there was an error connecting to Gemini." }
+        { role: "ai", text: "Sorry, there was an error connecting to Gemini." },
       ]);
     }
     setLoading(false);
@@ -226,10 +153,26 @@ const InterviewRoom = () => {
     }
   };
 
+  // Timer formatting
+  const formatTime = (seconds) => {
+    const min = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const sec = String(seconds % 60).padStart(2, '0');
+    return `${min}:${sec}`;
+  };
+
+  // Toggle transcript visibility
+  const handleVisibilityChange = () => {
+    setShowTranscript((prev) => {
+      const next = !prev;
+      toast.info(next ? "Transcript is now visible." : "Transcript is now hidden.");
+      return next;
+    });
+  };
+
   // Speech Recognition setup
   const startRecording = () => {
     if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-       toast.error('Speech recognition is not supported in this browser.');
+      toast.error('Speech recognition is not supported in this browser.');
       return;
     }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -242,14 +185,11 @@ const InterviewRoom = () => {
       const transcript = event.results[0][0].transcript;
       setInput(transcript);
       setIsRecording(false);
-      // Optionally, auto-send after recording:
-      // handleSend();
     };
-recognition.onerror = () => {
-  setIsRecording(false);
-  toast.error('Speech recognition error.');
-};
-
+    recognition.onerror = () => {
+      setIsRecording(false);
+      toast.error('Speech recognition error.');
+    };
     recognition.onend = () => setIsRecording(false);
 
     recognitionRef.current = recognition;
@@ -266,7 +206,6 @@ recognition.onerror = () => {
 
   // Speak AI message
   useEffect(() => {
-    // Find the last AI message
     const lastMsg = messages[messages.length - 1];
     if (lastMsg && lastMsg.role === 'ai') {
       const utterance = new window.SpeechSynthesisUtterance(lastMsg.text);
@@ -277,22 +216,22 @@ recognition.onerror = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#2c5364] to-[#232526] text-white p-4 flex flex-col gap-8">
+      <ToastContainer />
       {/* Header */}
-      {/* <ToastContainer /> */}
       <motion.div
         className="flex justify-between items-center bg-[#10131a] p-6 rounded-xl shadow-lg"
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.7, type: "spring" }}
       >
-        <h2 className="text-2xl font-bold tracking-wide">Software Developer</h2>
+        <h2 className="text-2xl font-bold tracking-wide">{topic || "Interview Room"}</h2>
         <motion.div
           className="bg-green-500 px-6 py-2 rounded-full text-black font-bold text-lg shadow"
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          00:{formatTime(time)}
+          {formatTime(time)}
         </motion.div>
         <div className="flex items-center gap-3">
           <div className="text-right">
@@ -444,21 +383,6 @@ recognition.onerror = () => {
           )}
         </AnimatePresence>
       </div>
-
-      {/* Footer Buttons */}
-      <motion.div
-        className="flex justify-center gap-8"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.4, type: "spring" }}
-      >
-        <button className="bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 px-8 py-3 rounded-full text-lg font-semibold shadow-lg transition-all duration-300">
-          Click to answer
-        </button>
-        <button className="bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 px-8 py-3 rounded-full text-lg font-semibold shadow-lg transition-all duration-300">
-          End Interview
-        </button>
-      </motion.div>
 
       {/* Loader CSS */}
       <style>{`

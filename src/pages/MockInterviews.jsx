@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import image from '../assets/image.png';
-import InterviewCategoryFlow from '../components/InterviewCategoryFlow';
 
 const mockData = [
     {
@@ -12,6 +11,22 @@ const mockData = [
         desc: 'Land top dev jobs with AI-powered software mock interview',
         category: 'Tech',
         img: image,
+        subTopics: [
+            { name: 'DSA', desc: 'Data Structures & Algorithms' },
+            { name: 'OOPS', desc: 'Object Oriented Programming' },
+            { name: 'System Design', desc: 'System Design Concepts' },
+        ],
+    },
+    {
+        title: 'Cybersecurity',
+        desc: 'Ace cybersecurity interviews with AI-powered practice',
+        category: 'Tech',
+        img: image,
+        subTopics: [
+            { name: 'Network Security', desc: 'Network Security Fundamentals' },
+            { name: 'Ethical Hacking', desc: 'Ethical Hacking Concepts' },
+            { name: 'Cryptography', desc: 'Cryptography Basics' },
+        ],
     },
     {
         title: 'Data Analyst',
@@ -67,8 +82,9 @@ const categories = ['All', 'Tech', 'Management', 'General'];
 
 const MockInterviews = () => {
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [showCategoryFlow, setShowCategoryFlow] = useState(false);
+    const [showSubTopics, setShowSubTopics] = useState(false);
     const [selectedMock, setSelectedMock] = useState(null);
+    const [selectedSubTopic, setSelectedSubTopic] = useState(null);
     const navigate = useNavigate();
 
     const limitedData =
@@ -122,7 +138,7 @@ const MockInterviews = () => {
                             exit="exit"
                             transition={{ duration: 0.4, delay: idx * 0.05 }}
                             className="bg-white text-black p-4 rounded-xl shadow hover:shadow-2xl transition min-h-[300px] flex flex-col justify-between"
-						>
+                        >
                             <img
                                 src={mock.img}
                                 alt={mock.title}
@@ -139,7 +155,7 @@ const MockInterviews = () => {
                                     className="group relative bg-neutral-900 border border-pink-400 rounded-full p-[2px] overflow-hidden hover:scale-105 transition-transform"
                                     onClick={() => {
                                         setSelectedMock(mock);
-                                        setShowCategoryFlow(true);
+                                        setShowSubTopics(true);
                                     }}
                                 >
                                     <span className="flex items-center gap-2 px-5 py-2 bg-black rounded-full text-white relative z-10">
@@ -152,8 +168,8 @@ const MockInterviews = () => {
                 </AnimatePresence>
             </div>
 
-            {/* CATEGORY FLOW MODAL */}
-            {showCategoryFlow && (
+            {/* SUB-TOPIC MODAL */}
+            {showSubTopics && selectedMock && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
                     style={{ backdropFilter: 'blur(2px)' }}
@@ -173,24 +189,39 @@ const MockInterviews = () => {
                     >
                         <button
                             className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-red-500 transition"
-                            onClick={() => setShowCategoryFlow(false)}
+                            onClick={() => setShowSubTopics(false)}
                             aria-label="Close"
                             style={{ fontWeight: 700, lineHeight: 1 }}
                         >
                             &times;
                         </button>
                         <div className="mb-4">
-                            <h2 className="text-3xl font-extrabold text-center text-purple-700 mb-2">
-                                Select Interview Category
+                            <h2 className="text-2xl font-extrabold text-center text-purple-700 mb-2">
+                                Select Sub-Topic for {selectedMock.title}
                             </h2>
                             <p className="text-center text-gray-500 text-base">
-                                Choose your path to start a personalized AI interview.
+                                Choose a sub-topic to start your personalized AI interview.
                             </p>
                         </div>
-                        <InterviewCategoryFlow
-                            mock={selectedMock}
-                            onClose={() => setShowCategoryFlow(false)}
-                        />
+                        <div className="flex flex-col gap-3">
+                            {selectedMock.subTopics ? (
+                                selectedMock.subTopics.map((sub) => (
+                                    <button
+                                        key={sub.name}
+                                        className="w-full px-4 py-2 rounded-lg bg-purple-100 text-purple-800 font-semibold hover:bg-purple-200 transition"
+                                        onClick={() => {
+                                            setShowSubTopics(false);
+                                            // Pass the topic as a string in state
+                                            navigate('/device-setup', { state: selectedMock.title });
+                                        }}
+                                    >
+                                        {sub.name} <span className="text-xs text-gray-500">({sub.desc})</span>
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="text-center text-gray-500">No sub-topics available.</p>
+                            )}
+                        </div>
                     </motion.div>
                 </div>
             )}

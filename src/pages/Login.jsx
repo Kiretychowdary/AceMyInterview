@@ -1,22 +1,89 @@
-// NMKRSPVLIDATAPERMANENT
-import React from 'react';
+// RADHAKRISHNALOVEPERMANENT
+// AMMALOVEBLESSINGSONRECURSION
+
+import React, { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { auth } from "../components/firebase.config";
+import { toast } from "react-toastify";
+import { useNavigate } from 'react-router-dom';
+import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
+  const [registerEmail, setRegisterEmail] = useState("");
+  const [registerPassword, setRegisterPassword] = useState("");
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  const login = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        registerEmail,
+        registerPassword
+      );
+      console.log("User logged in:", userCredential.user);
+      toast.success("Login successful!");
+      setUser(userCredential.user);
+      navigate('/'); // Redirect to mock interviews page after login
+    } catch (error) {
+      console.error("Login error:", error.message);
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("User is signed in:", user);
+        setUser(user);
+      } else {
+        console.log("No user is signed in.");
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [])
+ 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-blue-900">
       <div className="form-container">
         <p className="title">Welcome back</p>
-        <form className="form">
-          <input type="email" className="input" placeholder="Email" />
-          <input type="password" className="input" placeholder="Password" />
+        <form
+          className="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            login();
+          }}
+        >
+          <input
+            type="email"
+            className="input"
+            placeholder="Email"
+            value={registerEmail}
+            onChange={(e) => setRegisterEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            className="input"
+            placeholder="Password"
+            value={registerPassword}
+            onChange={(e) => setRegisterPassword(e.target.value)}
+          />
           <p className="page-link">
             <span className="page-link-label cursor-pointer">Forgot Password?</span>
           </p>
-          <button type="submit" className="form-btn">Log in</button>
+          <button type="submit" className="form-btn">
+            Log in
+          </button>
         </form>
         <p className="sign-up-label">
           Don't have an account?
-          <span className="sign-up-link cursor-pointer">Sign up</span>
+          <span
+            className="sign-up-link cursor-pointer"
+            onClick={() => navigate('/register')}
+          >
+            Sign up
+          </span>
         </p>
         <div className="buttons-container">
           <div className="apple-login-button">
@@ -41,124 +108,94 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {/* Inline Styles */}
       <style>{`
         .form-container {
           width: 350px;
-          height: 500px;
           background-color: #fff;
-          box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
           border-radius: 10px;
-          box-sizing: border-box;
+          box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
           padding: 20px 30px;
         }
         .title {
           text-align: center;
-          font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-            "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
-          margin: 10px 0 30px 0;
           font-size: 28px;
           font-weight: 800;
+          margin-bottom: 30px;
+          font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
         }
         .form {
-          width: 100%;
           display: flex;
           flex-direction: column;
           gap: 18px;
-          margin-bottom: 15px;
         }
         .input {
+          padding: 12px 15px;
           border-radius: 20px;
           border: 1px solid #c0c0c0;
-          outline: 0 !important;
-          box-sizing: border-box;
-          padding: 12px 15px;
-        }
-        .page-link {
-          text-decoration: underline;
-          margin: 0;
-          text-align: end;
-          color: #747474;
-          text-decoration-color: #747474;
-        }
-        .page-link-label {
-          cursor: pointer;
-          font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-            "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
-          font-size: 9px;
-          font-weight: 700;
-        }
-        .page-link-label:hover {
-          color: #000;
+          outline: none;
         }
         .form-btn {
-          padding: 10px 15px;
-          font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-            "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
-          border-radius: 20px;
-          border: 0 !important;
-          outline: 0 !important;
-          background: teal;
+          background-color: teal;
           color: white;
+          padding: 10px;
+          border-radius: 20px;
+          border: none;
           cursor: pointer;
+          font-weight: 600;
           box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
         }
         .form-btn:active {
           box-shadow: none;
         }
-        .sign-up-label {
-          margin: 0;
-          font-size: 10px;
+        .page-link {
+          text-align: right;
+          font-size: 12px;
+        }
+        .page-link-label {
+          text-decoration: underline;
+          cursor: pointer;
           color: #747474;
-          font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-            "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+        }
+        .sign-up-label {
+          margin-top: 10px;
+          font-size: 12px;
+          color: #747474;
         }
         .sign-up-link {
-          margin-left: 1px;
-          font-size: 11px;
-          text-decoration: underline;
-          text-decoration-color: teal;
           color: teal;
+          font-weight: bold;
           cursor: pointer;
-          font-weight: 800;
-          font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-            "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+          text-decoration: underline;
         }
         .buttons-container {
-          width: 100%;
+          margin-top: 20px;
           display: flex;
           flex-direction: column;
-          justify-content: flex-start;
-          margin-top: 20px;
-          gap: 15px;
+          gap: 12px;
         }
         .apple-login-button,
         .google-login-button {
-          border-radius: 20px;
-          box-sizing: border-box;
-          padding: 10px 15px;
-          box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
-            rgba(0, 0, 0, 0.06) 0px 0px 0px 1px;
-          cursor: pointer;
           display: flex;
-          justify-content: center;
           align-items: center;
-          font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
-            "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
-          font-size: 11px;
-          gap: 5px;
+          justify-content: center;
+          gap: 8px;
+          padding: 10px;
+          border-radius: 20px;
+          font-size: 14px;
+          cursor: pointer;
         }
         .apple-login-button {
-          background-color: #000;
-          color: #fff;
-          border: 2px solid #000;
+          background: black;
+          color: white;
         }
         .google-login-button {
-          border: 2px solid #747474;
+          border: 1px solid #747474;
+          background: white;
         }
-        .apple-icon,
-        .google-icon {
+        .apple-icon, .google-icon {
           font-size: 18px;
-          margin-bottom: 1px;
         }
       `}</style>
     </div>

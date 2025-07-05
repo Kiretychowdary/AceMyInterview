@@ -4,10 +4,12 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import Logo from '../assets/Logo.jpg';
 import image from '../assets/image.png';
 import ExploreSolutions from '../components/ExploreSolutions';
 import PageFeatures from '../components/PageFeatures';
+  import { useAuth } from "../components/AuthContext";
 const navLinks = [
   { name: 'Questions', href: '#' },
   { name: 'Practice', href: '#' },
@@ -16,12 +18,12 @@ const navLinks = [
 
 const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white font-sans">
       {/* NMKRSPVLIDATA */}
       {/* HERO SECTION */}
-      <div className="flex flex-col md:flex-row items-center justify-between px-6 md:px-16 py-20 max-w-7xl mx-auto">
+      <div className="flex flex-col h-screen md:flex-row items-center justify-between px-6 md:px-16 py-20 max-w-7xl mx-auto">
         {/* TEXT */}
         <motion.div
           className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left"
@@ -59,9 +61,14 @@ const Home = () => {
               >
                 <path d="M10,21.236,6.755,14.745.264,11.5,6.755,8.255,10,1.764l3.245,6.491L19.736,11.5l-6.491,3.245ZM18,21l1.5,3L21,21l3-1.5L21,18l-1.5-3L18,18l-3,1.5ZM19.333,4.667,20.5,7l1.167-2.333L24,3.5,21.667,2.333,20.5,0,19.333,2.333,17,3.5Z"></path>
               </svg>
-              <span className="font-semibold text-[#AAAAAA] text-base group-hover:text-white transition-colors duration-300">
-                Start Demo
-              </span>
+              <Link
+                to={user ? '/mock-interviews' : '/login'}
+                className="font-semibold text-[#AAAAAA] text-base group-hover:text-white transition-colors duration-300"
+              >
+                <span className="font-semibold text-[#AAAAAA] text-base group-hover:text-white transition-colors duration-300">
+                  Explore
+                </span>
+              </Link>
             </button>
           </motion.div>
         </motion.div>
