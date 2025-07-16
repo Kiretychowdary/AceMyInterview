@@ -70,7 +70,7 @@ const InterviewCategoryFlow = ({ mock, onClose }) => {
 						onClick={() => {
 							setSelectedCategory('Tech');
 							setStep(2);
-							navigate('/desktop-setup');
+							navigate('/device-setup');
 						}}
 					>
 						Tech
