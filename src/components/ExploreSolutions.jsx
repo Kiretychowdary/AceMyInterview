@@ -65,6 +65,7 @@ const ExploreSolutions = () => (
             <Link
               to="/mock-interviews"
               className="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-300 text-base"
+              aria-label={`Explore ${sol.title}`}
             >
               <svg
                 height="22"

@@ -15,7 +15,7 @@ import { useAuth } from "./components/AuthContext"; // Ensure this path is corre
 function AppContent() {
   const location = useLocation();
   // Hide Navbar on /interview-room
-  const hideNavbar = (location.pathname === '/interview-room') || (location.pathname === '/device-interview');
+  const hideNavbar = (location.pathname === '/interview-room') || (location.pathname === '/device-interview') || (location.pathname === '/device-setup');
 
   return (
     <>

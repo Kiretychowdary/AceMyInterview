@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import { toast } from "react-toastify";
+import { useAuth } from '../components/AuthContext';
 
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -23,6 +24,10 @@ const InterviewRoom = () => {
   const recognitionRef = useRef(null);
   const chatEndRef = useRef(null);
   const tabSwitchCount = useRef(0);
+  const [lastSpokenIdx, setLastSpokenIdx] = useState(-1);
+  const [showInput, setShowInput] = useState(false);
+  const [timer, setTimer] = useState(30 * 60); // 30 min in seconds
+  const { user } = useAuth();
 
   useEffect(() => {
     async function getDevices() {
@@ -87,6 +92,25 @@ const InterviewRoom = () => {
       .finally(() => setLoading(false));
   }, [topic]);
 
+  // Timer logic
+  useEffect(() => {
+    if (timer <= 0) return;
+    const interval = setInterval(() => setTimer((t) => t - 1), 1000);
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  // Speak only once per new AI message
+  useEffect(() => {
+    if (!messages.length) return;
+    const lastIdx = messages.length - 1;
+    const lastMsg = messages[lastIdx];
+    if (lastMsg.role === 'ai' && lastSpokenIdx !== lastIdx) {
+      window.speechSynthesis.cancel();
+      speak(lastMsg.text);
+      setLastSpokenIdx(lastIdx);
+    }
+  }, [messages, lastSpokenIdx]);
+
   const startRecording = () => {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
       alert("Speech recognition is not supported in this browser. Please use Chrome.");
@@ -124,33 +148,32 @@ const InterviewRoom = () => {
 
   const handleSend = async (userText) => {
     if (!userText.trim()) return;
-    setMessages((prev) => [...prev, { role: "user", text: userText }]);
+    setMessages((prev) => [...prev, { role: 'user', text: userText }]);
     setLoading(true);
-
+    setShowInput(false);
     try {
       const prompt = `You are an AI interviewer. First, ask the user for their name and a brief introduction. Then, conduct a technical interview on the topic "${topic}", starting from basic to advanced concepts. For each sub-topic, ask no more than 2 questions at a time, and wait for the user's answers before proceeding. After the user answers, ask the next question related to the topic, moving step by step through the interview.\nThe user answered: "${userText}"\nNow ask the next question related to the topic.`;
-
       const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
         }),
       });
       const data = await res.json();
       const aiText =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
         "Sorry, I couldn't generate a response.";
-      setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
-      speak(aiText);
+      setMessages((prev) => [...prev, { role: 'ai', text: aiText }]);
+      setCanAnswer(true);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { role: "ai", text: "Sorry, there was an error connecting to Gemini." },
+        { role: 'ai', text: 'Sorry, there was an error connecting to Gemini.' },
       ]);
     }
     setLoading(false);
-    setInput("");
+    setInput('');
   };
 
   const speak = (text) => {
@@ -168,71 +191,80 @@ const InterviewRoom = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#232526] via-[#414345] to-[#232526] flex flex-col items-center py-8 px-2">
-      <div className="w-full max-w-4xl bg-white/90 rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
-        {/* Left: Webcam & Info */}
-        <div className="md:w-1/3 bg-gradient-to-br from-blue-700 to-purple-700 flex flex-col items-center justify-center p-8">
-          <div className="w-40 h-40 bg-black rounded-2xl overflow-hidden mb-6 border-4 border-white shadow-lg">
-            {camera ? (
-              <Webcam
-                key={camera}
-                audio={false}
-                videoConstraints={{ deviceId: { exact: camera } }}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white flex items-center justify-center h-full">Camera</span>
-            )}
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-1 py-2 md:py-6 md:px-4">
+      {/* Top Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-4 py-2 md:py-4 bg-black border-b border-gray-700" style={{maxWidth:'100vw'}}>
+        <div className="flex items-center gap-3">
+          <img src="/src/assets/Logo.jpg" alt="Logo" className="w-8 h-8 rounded" />
+          <span className="text-lg md:text-xl font-bold text-white">{topic || 'Interview'}</span>
+        </div>
+        <div className="flex-1 flex justify-center">
+          <span className="bg-green-600 text-white font-bold px-4 py-1 rounded-full text-sm md:text-base">
+            {`${String(Math.floor(timer / 60)).padStart(2, '0')}:${String(timer % 60).padStart(2, '0')}`}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="font-semibold text-white">{user?.displayName || 'User'}</p>
+            <p className="text-xs text-gray-300">{user?.email || ''}</p>
           </div>
-          <select
-            value={camera}
-            onChange={(e) => setCamera(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg bg-white text-gray-800 font-semibold shadow focus:outline-none"
-          >
-            {cameras.length === 0 && <option>No camera found</option>}
-            {cameras.map((c) => (
-              <option key={c.deviceId} value={c.deviceId}>
-                {c.label || `Camera ${c.deviceId.slice(-4)}`}
-              </option>
-            ))}
-          </select>
-          <div className="mt-8 text-center">
-            <h2 className="text-xl font-bold text-white mb-1">{topic}</h2>
-            <p className="text-white/80 text-sm">AI Interview Mode</p>
+          <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center">
+            <img src="https://cdn-icons-png.flaticon.com/512/9203/9203764.png" alt="User" className="w-8 h-8 rounded" />
           </div>
         </div>
-
-        {/* Right: Chat */}
-        <div className="flex-1 flex flex-col bg-white/80 p-8">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">
-            Interview Chat
-          </h1>
-          <div
-            className="flex-1 overflow-y-auto space-y-4 pb-2"
-            style={{ minHeight: 300, maxHeight: 400 }}
-          >
+      </div>
+      {/* Main Area */}
+      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4 bg-black rounded-b-3xl pb-4 md:pb-8 px-2 md:px-8 mt-20">
+        {/* Center: AI & User Video */}
+        <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 py-4">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-32 h-32 md:w-40 md:h-40 bg-[#2d2233] rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+              <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="AI" className="w-24 h-24 md:w-32 md:h-32" />
+            </div>
+            <span className="text-white font-semibold mt-2">AI Interviewer</span>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-lg">
+              {camera ? (
+                <Webcam
+                  key={camera}
+                  audio={false}
+                  videoConstraints={{ deviceId: { exact: camera } }}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-black">User live video</span>
+              )}
+            </div>
+            <select
+              value={camera}
+              onChange={(e) => setCamera(e.target.value)}
+              className="w-32 px-2 py-1 rounded-lg bg-white text-gray-800 font-semibold shadow focus:outline-none text-xs md:text-base mt-1"
+            >
+              {cameras.length === 0 && <option>No camera found</option>}
+              {cameras.map((c) => (
+                <option key={c.deviceId} value={c.deviceId}>
+                  {c.label || `Camera ${c.deviceId.slice(-4)}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {/* Right: Transcript/Chat */}
+        <div className="w-full md:w-1/3 bg-[#231f24] rounded-2xl p-3 md:p-5 flex flex-col min-h-[300px] max-h-[420px] overflow-y-auto border border-gray-700">
+          <h2 className="text-white text-lg font-bold mb-2">Interview Transcript</h2>
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-1">
             {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${msg.role === "ai" ? "justify-start" : "justify-end"}`}
-              >
-                <div
-                  className={`px-5 py-3 rounded-2xl shadow-md max-w-[75%] ${
-                    msg.role === "ai"
-                      ? "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-900"
-                      : "bg-gradient-to-r from-purple-500 to-blue-500 text-white"
-                  }`}
-                >
-                  <span className="block font-semibold mb-1">
-                    {msg.role === "ai" ? "AI" : "You"}
-                  </span>
+              <div key={idx} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
+                <div className={`px-3 py-2 rounded-xl max-w-[90%] text-xs md:text-sm shadow ${msg.role === 'ai' ? 'bg-[#3a2c4d] text-green-300' : 'bg-[#e9d5ff] text-black'}`}>
+                  <span className="block font-semibold mb-1">{msg.role === 'ai' ? 'AI' : 'You'}</span>
                   <span>{msg.text}</span>
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="px-5 py-3 rounded-2xl shadow-md bg-gradient-to-r from-blue-100 to-purple-100 text-blue-900 max-w-[75%]">
+                <div className="px-3 py-2 rounded-xl bg-[#3a2c4d] text-green-300 max-w-[90%] text-xs md:text-sm shadow">
                   <span className="block font-semibold mb-1">AI</span>
                   <span>Typing...</span>
                 </div>
@@ -240,41 +272,61 @@ const InterviewRoom = () => {
             )}
             <div ref={chatEndRef} />
           </div>
-          {/* Text Input & Record/Stop/Send Button */}
-          <div className="mt-6 flex gap-2">
-            <input
-              type="text"
-              className="flex-1 px-4 py-3 rounded-full border-2 border-purple-300 focus:border-blue-400 focus:outline-none text-gray-800 font-semibold bg-white shadow"
-              placeholder="Type your answer or use Record..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleInputSend()}
-              disabled={!canAnswer || loading || isRecording}
-            />
-            <button
-              onClick={handleInputSend}
-              disabled={loading || !input.trim() || isRecording}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-purple-600 hover:to-blue-500 text-white px-8 py-3 rounded-full font-bold shadow-lg transition-all duration-300 disabled:opacity-60"
-            >
-              Send
-            </button>
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!canAnswer || loading}
-              className={`px-6 py-3 rounded-full font-bold shadow-lg transition-all duration-300 ${
-                isRecording
-                  ? "bg-red-500 text-white"
-                  : "bg-gradient-to-r from-green-400 to-green-600 text-white"
-              }`}
-            >
-              {isRecording ? "Stop" : "Record"}
-            </button>
-          </div>
-          <div className="text-center text-gray-500 text-xs mt-2">
-            🎤 Click "Record", then "Send" to answer by voice, or type your answer.
-          </div>
         </div>
       </div>
+      {/* Bottom Bar */}
+      <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-4 mt-4 px-2">
+        <button
+          className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow transition"
+          onClick={() => setShowInput(true)}
+          disabled={loading || !canAnswer}
+        >
+          Click to answer
+        </button>
+        <button
+          className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow transition"
+          onClick={() => navigate('/mock-interviews')}
+        >
+          End Interview
+        </button>
+      </div>
+      {/* Answer Input Modal */}
+      {showInput && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" style={{ backdropFilter: 'blur(2px)' }}>
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-4">
+            <h3 className="text-xl font-bold text-center text-gray-800 mb-2">Your Answer</h3>
+            <textarea
+              className="w-full min-h-[80px] rounded-lg border border-gray-300 p-3 text-gray-800 focus:outline-none focus:border-blue-400"
+              placeholder="Type your answer or use Record..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { handleSend(input); setShowInput(false); }}
+                disabled={loading || !input.trim()}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg shadow transition disabled:opacity-60"
+              >
+                Send
+              </button>
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={loading}
+                className={`flex-1 ${isRecording ? 'bg-red-500' : 'bg-green-500'} text-white font-bold py-2 rounded-lg shadow transition`}
+              >
+                {isRecording ? 'Stop' : 'Record'}
+              </button>
+              <button
+                onClick={() => setShowInput(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded-lg shadow transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

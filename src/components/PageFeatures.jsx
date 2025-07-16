@@ -213,7 +213,7 @@ const PageFeatures = () => {
                 <div>
                   <h3 className="text-white text-xl font-bold mb-1">{f.title}</h3>
                   <p className="text-gray-300 mb-2">{f.desc}</p>
-                  <a href={f.link} className="text-emerald-400 font-semibold hover:underline flex items-center gap-1">
+                  <a href={f.link} className="text-emerald-400 font-semibold hover:underline flex items-center gap-1" aria-label={`Get Started with ${f.title}`}>
                     Get Started <span aria-hidden>→</span>
                   </a>
                 </div>

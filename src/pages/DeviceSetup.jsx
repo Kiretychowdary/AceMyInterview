@@ -1,59 +1,84 @@
 // NMKRSPVLIDATA
 
 import React, { useState, useEffect } from 'react';
-import Webcam from 'react-webcam';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext';
+import Webcam from 'react-webcam';
 
 const DeviceSetup = () => {
   const [camera, setCamera] = useState('');
   const [mic, setMic] = useState('');
   const [cameras, setCameras] = useState([]);
   const [mics, setMics] = useState([]);
+  const [cameraError, setCameraError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Get the topic string from navigation state
   const topic = location.state; // Data type: string
 
   useEffect(() => {
     async function getDevices() {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((d) => d.kind === 'videoinput');
-      const audioInputs = devices.filter((d) => d.kind === 'audioinput');
-      setCameras(videoInputs);
-      setMics(audioInputs);
-      if (videoInputs[0]) setCamera(videoInputs[0].deviceId);
-      if (audioInputs[0]) setMic(audioInputs[0].deviceId);
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoInputs = devices.filter((d) => d.kind === 'videoinput');
+        const audioInputs = devices.filter((d) => d.kind === 'audioinput');
+        setCameras(videoInputs);
+        setMics(audioInputs);
+        if (videoInputs[0]) setCamera(videoInputs[0].deviceId);
+        if (audioInputs[0]) setMic(audioInputs[0].deviceId);
+        console.log('Video Inputs:', videoInputs);
+        console.log('Audio Inputs:', audioInputs);
+      } catch (err) {
+        setCameraError('Could not access media devices. Please check browser permissions.');
+        console.error('Error enumerating devices:', err);
+      }
     }
     getDevices();
   }, []);
 
+  // Webcam error handler
+  const handleWebcamError = (err) => {
+    setCameraError('Could not access camera. Please check browser permissions and device connection.');
+    console.error('Webcam error:', err);
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white p-4 flex flex-col gap-4">
-      <div className="flex justify-between items-center bg-gray-900 p-4 rounded-md">
-        <h2 className="text-xl font-semibold">{topic || "Device Setup"}</h2>
-        <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      {/* Header Bar */}
+      <div className="flex justify-between items-center px-8 py-4">
+        <div className="flex items-center gap-3">
+          <img src="\src\assets\Logo.jpg" alt="Logo" className="w-8 h-8 rounded" />
+          <span className="text-lg font-bold">{topic || 'Device Setup'}</span>
+        </div>
+        <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="font-semibold">Vara prasad</p>
-            <p className="text-sm text-gray-300">Chinnikirety123@gmail.com</p>
+            <p className="font-semibold">{user?.displayName || 'User'}</p>
+            <p className="text-sm text-gray-300">{user?.email || ''}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center">
-            <span className="material-icons">person</span>
+          
+          <img src="https://cdn-icons-png.flaticon.com/512/9203/9203764.png" alt="Logo" className="w-8 h-8 rounded" />
           </div>
         </div>
       </div>
-      {/* Camera View */}
-      <div className="flex flex-col items-center justify-center lg:flex-row gap-4">
+      {/* Main Content */}
+      <div className="flex flex-1 flex-col items-center justify-center md:flex-row gap-8">
+        {/* Camera View */}
         <div className="bg-gray-300 rounded-lg w-64 h-64 flex items-center justify-center text-black text-lg font-semibold shadow overflow-hidden">
-          {camera ? (
+          {cameraError ? (
+            <span className="text-red-600 text-center p-2">{cameraError}</span>
+          ) : camera ? (
             <Webcam
               key={camera}
               audio={false}
               videoConstraints={{ deviceId: { exact: camera } }}
               className="w-full h-full object-cover rounded-lg"
+              onUserMediaError={handleWebcamError}
             />
           ) : (
-            <span>user camera view</span>
+            <span>No camera found or not selected</span>
           )}
         </div>
         {/* Device Setup Form */}
