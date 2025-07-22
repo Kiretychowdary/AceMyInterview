@@ -11,27 +11,27 @@ const solutions = [
   {
     title: "Tech Interviews",
     desc: "Land top dev jobs with AI-powered software mock interviews.",
-    img: image,
+    img: "https://www.simplilearn.com/ice9/free_resources_article_thumb/What_is_System_Software.jpg",
   },
   {
     title: "Management Interviews",
     desc: "Sharpen your management skills with realistic interview scenarios.",
-    img: image,
+    img: "https://www.thebalancemoney.com/thmb/L1afcW7tPZ63D1xMRKfTTWPBUBQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/manager-interview-questions-and-best-answers-2061211-edit-088ce7c034524e5cbdc0ad763a46f5b4.jpg",
   },
   {
     title: "General Interviews",
     desc: "Prepare for HR and general interviews with expert guidance.",
-    img: image,
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcd0Y8zVHxjvcUqPP6ZD828gPy8ykh_0urOxeA25jBkau-g5d4OiVez7x7aijzEFCSPFs&usqp=CAU",
   },
   {
     title: "System Design",
     desc: "Design better systems with a simplified approach.",
-    img: image,
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThyjZhmghu7ywaP2RLS1OJWqkN-OwG2hKW8A&s",
   },
   {
     title: "CS Subjects",
     desc: "Ace interviews with expert insights on core CS topics.",
-    img: image,
+    img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgOfaiWs_QsM-VLpEe6l8XtaAVAS4JZ7KYlA&s",
   },
   {
     title: "Interview Experience",
