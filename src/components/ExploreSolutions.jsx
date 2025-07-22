@@ -41,21 +41,21 @@ const solutions = [
 ];
 
 const ExploreSolutions = () => (
-  <section className="min-h-screen bg-black py-12">
-    <h2 className="text-4xl font-bold text-center text-white mb-12">
+  <section className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg py-12">
+    <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">
       Resources to Learn & Ace Interviews
     </h2>
     <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4 pb-8">
       {solutions.map((sol, idx) => (
         <div
           key={idx}
-          className="rounded-xl p-8  flex flex-col items-center shadow-lg hover:scale-105 transition bg-[#18191A]"
+          className="rounded-xl p-8 flex flex-col items-center shadow-lg hover:scale-105 transition bg-white border border-gray-200"
         >
-          <div className="w-20 h-20 flex items-center justify-center rounded-lg mb-6 bg-gray-700">
+          <div className="w-20 h-20 flex items-center justify-center rounded-lg mb-6 bg-blue-100 border border-blue-200">
             <img src={sol.img} alt={sol.title} className="w-12 h-12 object-contain" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-2 text-center">{sol.title}</h3>
-          <p className="text-gray-200 text-center mb-4">{sol.desc}</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-2 text-center">{sol.title}</h3>
+          <p className="text-gray-600 text-center mb-4">{sol.desc}</p>
           <motion.div
             className="mt-6 w-full flex justify-center"
             initial={{ opacity: 0, y: 30 }}
@@ -64,7 +64,7 @@ const ExploreSolutions = () => (
           >
             <Link
               to="/mock-interviews"
-              className="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-300 text-base"
+              className="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-full bg-blue-700 text-white font-semibold shadow-lg hover:bg-blue-800 transition-all duration-300 text-base"
               aria-label={`Explore ${sol.title}`}
             >
               <svg

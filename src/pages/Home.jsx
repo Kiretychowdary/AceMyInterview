@@ -20,8 +20,7 @@ const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuth();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white font-sans">
-      {/* NMKRSPVLIDATA */}
+    <div className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg text-gray-900 font-sans">
       {/* HERO SECTION */}
       <div className="flex flex-col h-screen md:flex-row items-center justify-between px-6 md:px-16 py-20 max-w-7xl mx-auto">
         {/* TEXT */}
@@ -32,13 +31,13 @@ const Home = () => {
           transition={{ duration: 1, ease: 'easeOut' }}
         >
           <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
-            <span className="text-emerald-400">Level Up</span> Your Career
+            <span className="text-blue-700">Level Up</span> Your Career
             <br className="hidden md:block" />
-            with <span className="text-purple-400">AI-Powered</span>
+            with <span className="text-blue-700">AI-Powered</span>
             <br className="hidden md:block" />
             Interview Mocks
           </h1>
-          <p className="text-lg text-gray-300 mt-4 max-w-lg">
+          <p className="text-lg text-gray-700 mt-4 max-w-lg">
             Practice real interview questions, get instant feedback, and ace your next interview with confidence.
           </p>
 
@@ -51,21 +50,21 @@ const Home = () => {
           >
             <button
               type="button"
-              className="group border-none w-[15em] h-[5em] rounded-[3em] flex justify-center items-center gap-3 bg-[#1C1A1C] cursor-pointer transition-all duration-[450ms] ease-in-out hover:bg-gradient-to-t hover:from-[#A47CF3] hover:to-[#683FEA] hover:shadow-[0_0_180px_0px_#9917FF] hover:-translate-y-0.5"
+              className="group border-none w-[15em] h-[5em] rounded-[3em] flex justify-center items-center gap-3 bg-blue-700 cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-800 hover:shadow-lg hover:-translate-y-0.5"
             >
               <svg
                 height="24"
                 width="24"
                 viewBox="0 0 24 24"
-                className="fill-[#AAAAAA] transition-all duration-[800ms] ease group-hover:fill-white group-hover:scale-125"
+                className="fill-white transition-all duration-300 ease group-hover:scale-110"
               >
                 <path d="M10,21.236,6.755,14.745.264,11.5,6.755,8.255,10,1.764l3.245,6.491L19.736,11.5l-6.491,3.245ZM18,21l1.5,3L21,21l3-1.5L21,18l-1.5-3L18,18l-3,1.5ZM19.333,4.667,20.5,7l1.167-2.333L24,3.5,21.667,2.333,20.5,0,19.333,2.333,17,3.5Z"></path>
               </svg>
               <Link
                 to={user ? '/mock-interviews' : '/login'}
-                className="font-semibold text-[#AAAAAA] text-base group-hover:text-white transition-colors duration-300"
+                className="font-semibold text-white text-base group-hover:text-white transition-colors duration-300"
               >
-                <span className="font-semibold text-[#AAAAAA] text-base group-hover:text-white transition-colors duration-300">
+                <span className="font-semibold text-white text-base group-hover:text-white transition-colors duration-300">
                   Explore
                 </span>
               </Link>
@@ -83,12 +82,11 @@ const Home = () => {
           <motion.img
             src={image}
             alt="AI Interview"
-            className="rounded-xl w-[300px] sm:w-[400px] md:w-[500px] shadow-lg border-4 border-emerald-500/20"
+            className="rounded-xl w-[300px] sm:w-[400px] md:w-[500px] shadow-lg border-4 border-blue-600/20"
             whileHover={{ scale: 1.03 }}
           />
         </motion.div>
       </div>
-      {/* NMKRSPVLIDATA */}
       <ExploreSolutions />
       <PageFeatures/>
     </div>

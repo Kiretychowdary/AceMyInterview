@@ -54,6 +54,7 @@ const InterviewRoom = () => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         tabSwitchCount.current++;
+        if (window.speechSynthesis) window.speechSynthesis.cancel(); // Stop AI voice immediately on tab switch away
       } else if (document.visibilityState === "visible") {
         toast.warn("Tab switch detected! Stay focused on the interview.");
         const el = document.documentElement;
@@ -110,6 +111,19 @@ const InterviewRoom = () => {
       setLastSpokenIdx(lastIdx);
     }
   }, [messages, lastSpokenIdx]);
+
+  // Stop AI speech when navigating away from the interview room
+  useEffect(() => {
+    const stopSpeech = () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+    // Listen for route change (unmount)
+    return () => {
+      stopSpeech();
+    };
+  }, []);
 
   const startRecording = () => {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
@@ -285,7 +299,10 @@ const InterviewRoom = () => {
         </button>
         <button
           className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow transition"
-          onClick={() => navigate('/mock-interviews')}
+          onClick={() => {
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            navigate('/mock-interviews');
+          }}
         >
           End Interview
         </button>

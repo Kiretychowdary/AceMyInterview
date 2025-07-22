@@ -1,5 +1,9 @@
 // NMKRSPVLIDATA
 
+// NMKRSPVLIDATA
+
+// NMKRSPVLIDATA
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
@@ -17,6 +21,19 @@ const DeviceSetup = () => {
 
   // Get the topic string from navigation state
   const topic = location.state; // Data type: string
+
+  // Automatically request camera and mic permissions on mount
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        // Stop all tracks after permission is granted
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch((err) => {
+        setCameraError('Could not access camera or microphone. Please check browser permissions.');
+        console.error('Permission denied or error:', err);
+      });
+  }, []);
 
   useEffect(() => {
     async function getDevices() {
@@ -58,8 +75,7 @@ const DeviceSetup = () => {
             <p className="text-sm text-gray-300">{user?.email || ''}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center">
-          
-          <img src="https://cdn-icons-png.flaticon.com/512/9203/9203764.png" alt="Logo" className="w-8 h-8 rounded" />
+            <img src="https://cdn-icons-png.flaticon.com/512/9203/9203764.png" alt="Logo" className="w-8 h-8 rounded" />
           </div>
         </div>
       </div>

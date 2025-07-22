@@ -93,32 +93,31 @@ const MockInterviews = () => {
             : mockData.filter((mock) => mock.category === selectedCategory);
 
     return (
-        <div className="min-h-screen bg-black text-white px-4 sm:px-10 md:px-16 py-10">
+        <div className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg text-gray-900 px-4 sm:px-10 md:px-16 py-10">
             {/* HEADER */}
             <motion.div
-                className="text-white max-w-3xl mb-6"
+                className="max-w-3xl mb-10 mx-auto text-center"
                 initial={{ opacity: 0, y: -30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
             >
-                <h2 className="text-3xl font-bold">AI-Powered Mock Interview</h2>
-                <p className="mt-2 text-gray-300">
+                <h2 className="text-4xl font-extrabold mb-2 tracking-tight text-blue-700">AI-Powered Mock Interview</h2>
+                <p className="mt-2 text-gray-700 text-lg">
                     Master your concepts with AI-Powered full-length mock tests for 360
                     <sup>o</sup> preparation!
                 </p>
             </motion.div>
 
             {/* TAG FILTERS */}
-            <div className="flex flex-wrap gap-3 mb-8">
+            <div className="flex flex-wrap gap-3 mb-10 justify-center">
                 {categories.map((tag) => (
                     <button
                         key={tag}
                         onClick={() => setSelectedCategory(tag)}
-                        className={`px-4 py-1 rounded-full font-medium transition-all duration-200 ${
-                            selectedCategory === tag
-                                ? 'bg-purple-500 text-white'
-                                : 'bg-white text-black hover:bg-gray-300'
-                        }`}
+                        className={`px-5 py-2 rounded-full font-semibold transition-all duration-200 shadow 
+                            ${selectedCategory === tag
+                                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                                : 'bg-white text-gray-800 hover:bg-gray-200'}`}
                     >
                         {tag}
                     </button>
@@ -126,41 +125,36 @@ const MockInterviews = () => {
             </div>
 
             {/* MOCK CARD GRID */}
-            <div className="flex flex-col gap-6 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 <AnimatePresence>
                     {limitedData.map((mock, idx) => (
                         <motion.div
                             key={mock.title + idx}
                             layout
-                            variants={cardVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit="exit"
-                            transition={{ duration: 0.4, delay: idx * 0.05 }}
-                            className="bg-white text-black p-4 rounded-xl shadow hover:shadow-2xl transition min-h-[300px] flex flex-col justify-between"
+                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                            className="bg-white border border-gray-200 text-gray-900 p-7 rounded-2xl shadow-lg hover:scale-105 transition min-h-[320px] flex flex-col justify-between"
                         >
                             <img
                                 src={mock.img}
                                 alt={mock.title}
-                                className="rounded-md h-32 w-full object-cover mb-3"
+                                className="rounded-lg h-32 w-full object-cover mb-4 border border-blue-100 bg-blue-50"
                             />
-                            <div className="flex-1">
-                                <h3 className="text-base font-bold mb-1">{mock.title}</h3>
-                                <p className="text-sm text-gray-700">{mock.desc}</p>
+                            <div className="flex-1 flex flex-col items-center justify-center">
+                                <h3 className="text-xl font-bold mb-2 text-center text-blue-700">{mock.title}</h3>
+                                <p className="text-base text-gray-700 text-center">{mock.desc}</p>
                             </div>
-
-                            <div className="mt-4 text-right">
-                                {/* Glowing Button */}
+                            <div className="mt-6 text-center">
                                 <button
-                                    className="group relative bg-neutral-900 border border-pink-400 rounded-full p-[2px] overflow-hidden hover:scale-105 transition-transform"
+                                    className="group relative bg-blue-700 border-none rounded-full px-6 py-2 text-white font-semibold shadow-lg hover:bg-blue-800 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
                                     onClick={() => {
                                         setSelectedMock(mock);
                                         setShowSubTopics(true);
                                     }}
                                 >
-                                    <span className="flex items-center gap-2 px-5 py-2 bg-black rounded-full text-white relative z-10">
-                                        <span className="text-sm font-semibold">Start Interview</span>
-                                    </span>
+                                    Start Interview
                                 </button>
                             </div>
                         </motion.div>
@@ -171,7 +165,7 @@ const MockInterviews = () => {
             {/* SUB-TOPIC MODAL */}
             {showSubTopics && selectedMock && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
                     style={{ backdropFilter: 'blur(2px)' }}
                 >
                     <motion.div
@@ -179,12 +173,9 @@ const MockInterviews = () => {
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.8, opacity: 0, y: 40 }}
                         transition={{ duration: 0.35, type: 'spring' }}
-                        className="relative rounded-2xl shadow-2xl p-8 w-full max-w-lg mx-4"
+                        className="relative rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 bg-gradient-to-br from-white to-purple-100 border border-purple-200"
                         style={{
                             minHeight: '340px',
-                            background: 'linear-gradient(135deg, #fff 60%, #e9d5ff 100%)',
-                            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-                            border: '1px solid rgba(255,255,255,0.18)',
                         }}
                     >
                         <button
@@ -199,19 +190,19 @@ const MockInterviews = () => {
                             <h2 className="text-2xl font-extrabold text-center text-purple-700 mb-2">
                                 Select Sub-Topic for {selectedMock.title}
                             </h2>
-                            <p className="text-center text-gray-500 text-base">
+                            <p className="text-center text-gray-600 text-base">
                                 Choose a sub-topic to start your personalized AI interview.
                             </p>
                         </div>
+                        {/* SUB-TOPIC MODAL BUTTONS */}
                         <div className="flex flex-col gap-3">
                             {selectedMock.subTopics ? (
                                 selectedMock.subTopics.map((sub) => (
                                     <button
                                         key={sub.name}
-                                        className="w-full px-4 py-2 rounded-lg bg-purple-100 text-purple-800 font-semibold hover:bg-purple-200 transition"
+                                        className="w-full px-4 py-2 rounded-lg bg-blue-100 text-blue-900 font-semibold shadow hover:bg-blue-200 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
                                         onClick={() => {
                                             setShowSubTopics(false);
-                                            // Pass the topic as a string in state
                                             navigate('/device-setup', { state: selectedMock.title });
                                         }}
                                     >

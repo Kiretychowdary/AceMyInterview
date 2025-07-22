@@ -16,7 +16,7 @@ const Navbar = () => {
 
   return (
     <motion.header
-      className="sticky top-0 z-50 bg-gradient-to-r from-black via-gray-900 to-gray-800/90 backdrop-blur-md shadow-lg"
+      className="sticky top-0 z-50 bg-white/95 border-b border-gray-200 shadow-lg"
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -25,10 +25,10 @@ const Navbar = () => {
         {/* Logo and Brand */}
         <div className="flex items-center space-x-3">
           <Link to="/">
-            <img src={Logo} alt="Logo" className="w-11 h-11 rounded-full object-cover border-2 border-emerald-400 shadow" />
+            <img src={Logo} alt="Logo" className="w-11 h-11 rounded-full object-cover border-2 border-gray-400 shadow" />
           </Link>
           <Link to="/">
-            <span className="font-extrabold text-2xl tracking-wide bg-gradient-to-r from-emerald-400 via-purple-400 to-blue-400 bg-clip-text text-transparent select-none">
+            <span className="font-serif text-2xl font-bold text-gray-900 tracking-wide select-none">
               AceMyInterview
             </span>
           </Link>
@@ -40,7 +40,7 @@ const Navbar = () => {
             <Link
               key={link.name}
               to={link.href}
-              className="transition-colors duration-200 text-gray-200 hover:text-indigo-400 px-2 py-1 rounded"
+              className="transition-colors duration-200 text-gray-700 hover:text-blue-700 px-2 py-1 rounded"
             >
               {link.name}
             </Link>
@@ -48,25 +48,10 @@ const Navbar = () => {
         </div>
 
         {/* Desktop Buttons */}
-        <div className="hidden md:flex space-x-3 flex-shrink-0">
-          <motion.button
-            whileHover={{ scale: 1.07 }}
-            className="bg-white text-gray-900 font-semibold py-1.5 px-5 rounded-full border border-gray-300 shadow transition hover:bg-gray-100 hover:text-indigo-600"
-          >
-            Contact Us
-          </motion.button>
-          {user ? (
-            <button onClick={logout} className="user-profile" tabIndex={0} aria-label="User Logout Button">
-              <div className="user-profile-inner">
-                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <g data-name="Layer 2" id="Layer_2">
-                    <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
-                  </g>
-                </svg>
-                <p>Log Out</p>
-              </div>
-            </button>
-          ) : (
+        {user ? (
+          <div className="hidden md:flex space-x-3 flex-shrink-0"></div>
+        ) : (
+          <div className="hidden md:flex space-x-3 flex-shrink-0">
             <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile">
               <div className="user-profile-inner">
                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -77,66 +62,101 @@ const Navbar = () => {
                 <p>Log In</p>
               </div>
             </Link>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Mobile Hamburger */}
-        <button
-          className="md:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-800 transition"
-          aria-label="Open menu"
-          onClick={() => setMenuOpen((v) => !v)}
-        >
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 8h16M4 16h16"} />
-          </svg>
-        </button>
+        {/* Toggle Button: Only show if user is logged in */}
+        {user && (
+          <button
+            className={`flex items-center justify-center w-10 h-10 rounded-full border transition
+              ${menuOpen ? "bg-blue-600 border-blue-700 shadow-lg" : "bg-white border-gray-300 hover:bg-gray-100"}`}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <svg
+              className={`w-7 h-7 transition-transform duration-300 ${menuOpen ? "rotate-90 text-white" : "text-gray-700"}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 8h16M4 16h16"}
+              />
+            </svg>
+          </button>
+        )}
       </nav>
 
       {/* Mobile Menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden bg-black/95 px-6 pb-4"
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed top-0 right-0 h-full w-full max-w-xs bg-white/95 px-6 py-8 border-l border-gray-200 shadow-2xl z-50 flex flex-col"
+            style={{ minHeight: "100vh" }}
           >
-            <div className="flex flex-col space-y-4 mt-2">
+            <div className="flex flex-col space-y-4 mt-10">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="text-lg font-semibold text-gray-200 hover:text-indigo-400 transition px-2 py-1 rounded"
+                  className="text-lg font-semibold text-gray-700 hover:text-blue-700 transition px-2 py-1 rounded"
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.name}
                 </Link>
               ))}
-              <button className="bg-white text-gray-900 font-semibold py-2 px-5 rounded-full border border-gray-300 shadow transition hover:bg-gray-100 hover:text-indigo-600" aria-label="Contact Us (no action)">
-                Contact Us
-              </button>
               {user ? (
-                <button onClick={logout} className="user-profile-inner" tabIndex={0} aria-label="User Logout Button">
-                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <g data-name="Layer 2" id="Layer_2">
-                      <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
-                    </g>
-                  </svg>
-                  <p>Log Out</p>
-                </button>
-              ) : (
-                <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile">
-                  <div className="user-profile-inner">
+                <>
+                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)">
+                    Contact Us
+                  </button>
+                  <button className="bg-green-600 text-white font-semibold py-2 px-5 rounded-full border border-green-700 shadow transition hover:bg-green-700" aria-label="Feedback (no action)">
+                    Feedback
+                  </button>
+                  <button onClick={logout} className="user-profile-inner" tabIndex={0} aria-label="User Logout Button">
                     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                       <g data-name="Layer 2" id="Layer_2">
                         <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
                       </g>
                     </svg>
-                    <p>Log In</p>
-                  </div>
-                </Link>
+                    <p>Log Out</p>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)">
+                    Contact Us
+                  </button>
+                  <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile">
+                    <div className="user-profile-inner">
+                      <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <g data-name="Layer 2" id="Layer_2">
+                          <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
+                        </g>
+                      </svg>
+                      <p>Log In</p>
+                    </div>
+                  </Link>
+                </>
               )}
             </div>
+            {/* Close button inside the drawer */}
+            <button
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow hover:bg-blue-700 transition"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+            >
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -150,36 +170,36 @@ const Navbar = () => {
           transition: 0.3s ease;
           background: linear-gradient(
             to bottom right,
-            #2e8eff 0%,
+            #e0e7ef 0%,
             rgba(46, 142, 255, 0) 30%
           );
-          background-color: rgba(46, 142, 255, 0.2);
+          background-color: #f5f7fa;
           display: flex;
           align-items: center;
           justify-content: center;
         }
         .user-profile:hover,
         .user-profile:focus {
-          background-color: rgba(46, 142, 255, 0.7);
-          box-shadow: 0 0 10px rgba(46, 142, 255, 0.5);
+          background-color: #e0e7ef;
+          box-shadow: 0 0 10px #b6c2d1;
           outline: none;
         }
         .user-profile-inner {
           width: 127px;
           height: 47px;
           border-radius: 13px;
-          background-color: #1a1a1a;
+          background-color: #f5f7fa;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 15px;
-          color: #fff;
+          color: #222;
           font-weight: 600;
         }
         .user-profile-inner svg {
           width: 27px;
           height: 27px;
-          fill: #fff;
+          fill: #222;
         }
       `}</style>
     </motion.header>
