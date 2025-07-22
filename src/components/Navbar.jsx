@@ -101,7 +101,14 @@ const Navbar = () => {
             className="fixed top-0 right-0 h-full w-full max-w-xs bg-white/95 px-6 py-8 border-l border-gray-200 shadow-2xl z-50 flex flex-col"
             style={{ minHeight: "100vh" }}
           >
-            <div className="flex flex-col space-y-4 mt-10">
+            {/* Overlay to close sidebar when clicking outside */}
+            <div
+              className="fixed inset-0 z-40"
+              style={{ background: "transparent" }}
+              onClick={() => setMenuOpen(false)}
+              aria-label="Close sidebar when clicking outside"
+            />
+            <div className="relative z-50 flex flex-col space-y-4 mt-10">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -114,13 +121,13 @@ const Navbar = () => {
               ))}
               {user ? (
                 <>
-                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)">
+                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)" onClick={() => setMenuOpen(false)}>
                     Contact Us
                   </button>
-                  <button className="bg-green-600 text-white font-semibold py-2 px-5 rounded-full border border-green-700 shadow transition hover:bg-green-700" aria-label="Feedback (no action)">
+                  <button className="bg-green-600 text-white font-semibold py-2 px-5 rounded-full border border-green-700 shadow transition hover:bg-green-700" aria-label="Feedback (no action)" onClick={() => setMenuOpen(false)}>
                     Feedback
                   </button>
-                  <button onClick={logout} className="user-profile-inner" tabIndex={0} aria-label="User Logout Button">
+                  <button onClick={() => { logout(); setMenuOpen(false); }} className="user-profile-inner" tabIndex={0} aria-label="User Logout Button">
                     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                       <g data-name="Layer 2" id="Layer_2">
                         <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
@@ -131,10 +138,10 @@ const Navbar = () => {
                 </>
               ) : (
                 <>
-                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)">
+                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)" onClick={() => setMenuOpen(false)}>
                     Contact Us
                   </button>
-                  <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile">
+                  <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile" onClick={() => setMenuOpen(false)}>
                     <div className="user-profile-inner">
                       <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <g data-name="Layer 2" id="Layer_2">
