@@ -28,13 +28,13 @@ const InterviewModeSelect = () => {
           </button>
           <button
             className="w-full px-6 py-3 rounded-full bg-blue-700 text-white font-bold shadow-lg hover:bg-blue-800 transition-all duration-200 text-lg"
-            onClick={() => navigate("/coding-interview", { state: { subject } })}
+            onClick={() => navigate("/compiler", { state: { subject } })}
           >
             Coding Interview
           </button>
           <button
             className="w-full px-6 py-3 rounded-full bg-blue-700 text-white font-bold shadow-lg hover:bg-blue-800 transition-all duration-200 text-lg"
-            onClick={() => navigate("/compiler", { state: { subject, prompt: "Face to Face Interview" } })}
+            onClick={() => navigate("/device-setup", { state: { subject, prompt: "Face to Face Interview" } })}
           >
             Face to Face Interview
           </button>
