@@ -203,7 +203,8 @@ const MockInterviews = () => {
                                         className="w-full px-4 py-2 rounded-lg bg-blue-100 text-blue-900 font-semibold shadow hover:bg-blue-200 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
                                         onClick={() => {
                                             setShowSubTopics(false);
-                                            navigate('/device-setup', { state: selectedMock.title });
+                                            // Navigate to InterviewModeSelect page, passing subject/sub-topic
+                                            navigate('/interview-mode', { state: { subject: sub.name } });
                                         }}
                                     >
                                         {sub.name} <span className="text-xs text-gray-500">({sub.desc})</span>

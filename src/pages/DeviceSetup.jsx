@@ -1,7 +1,5 @@
 // NMKRSPVLIDATA
-
 // NMKRSPVLIDATA
-
 // NMKRSPVLIDATA
 
 import React, { useState, useEffect } from 'react';
@@ -19,8 +17,8 @@ const DeviceSetup = () => {
   const location = useLocation();
   const { user } = useAuth();
 
-  // Get the topic string from navigation state
-  const topic = location.state; // Data type: string
+  // Get the topic and prompt from navigation state
+  const { subject, prompt } = location.state || {};
 
   // Automatically request camera and mic permissions on mount
   useEffect(() => {
@@ -67,7 +65,9 @@ const DeviceSetup = () => {
       <div className="flex justify-between items-center px-8 py-4">
         <div className="flex items-center gap-3">
           <img src="\src\assets\Logo.jpg" alt="Logo" className="w-8 h-8 rounded" />
-          <span className="text-lg font-bold">{topic || 'Device Setup'}</span>
+          <span className="text-lg font-bold">
+            {prompt ? prompt : subject || 'Device Setup'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
@@ -138,7 +138,7 @@ const DeviceSetup = () => {
           </div>
           <button
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition"
-            onClick={() => navigate('/interview-room', { state: topic })}
+            onClick={() => navigate('/interview-room', { state: { subject, prompt } })}
           >
             continue
           </button>

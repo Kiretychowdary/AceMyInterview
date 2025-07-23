@@ -235,79 +235,79 @@ const PageFeatures = () => {
 	const currentTab = tabData[activeTab];
 
 	return (
-		<section className="w-full bg-white/95 border border-gray-200 rounded-3xl p-8 md:p-12 mt-10 max-w-7xl mx-auto shadow-lg">
-			{/* Tabs */}
-			<div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10 gap-4">
-				<div className="flex flex-wrap gap-8 md:gap-16 w-full md:w-auto justify-center md:justify-start">
-					{tabData.map((tab, idx) => (
-						<button
-							key={tab.name}
-							onClick={() => setActiveTab(idx)}
-							className={`text-lg font-semibold px-7 py-2 rounded border transition
+        <section className="w-full bg-white/95 border border-gray-200 rounded-3xl p-4 sm:p-6 md:p-12 mt-6 sm:mt-10 max-w-7xl mx-auto shadow-lg">
+            {/* Tabs */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 sm:mb-10 gap-4">
+                <div className="flex flex-wrap gap-4 sm:gap-8 md:gap-16 w-full md:w-auto justify-center md:justify-start">
+                    {tabData.map((tab, idx) => (
+                        <button
+                            key={tab.name}
+                            onClick={() => setActiveTab(idx)}
+                            className={`text-base sm:text-lg font-semibold px-4 sm:px-7 py-2 rounded border transition
                 ${
 									idx === activeTab
 										? 'border-blue-600 text-blue-700 bg-blue-50 shadow-[0_0_0_2px_rgba(37,99,235,0.15)]'
 										: 'border-transparent text-gray-700 hover:text-blue-700 hover:bg-blue-50'
 								}`}
-						>
-							{tab.name}
-						</button>
-					))}
-				</div>
-			</div>
-			{/* Content */}
-			<AnimatePresence mode="wait">
-				<motion.div
-					key={activeTab}
-					variants={tabContentVariants}
-					initial="initial"
-					animate="animate"
-					exit="exit"
-					transition={{ duration: 0.4, ease: 'easeInOut' }}
-					className="flex flex-col md:flex-row gap-10"
-				>
-					{/* Left: Features */}
-					<div className="flex-1 flex flex-col gap-8 justify-center">
-						{currentTab.features.map((f, i) => (
-							<motion.div
-								key={i}
-								initial={{ opacity: 0, x: -30 }}
-								animate={{ opacity: 1, x: 0 }}
-								transition={{ delay: 0.1 * i }}
-								className="flex items-start gap-5"
-							>
-								{f.icon}
-								<div>
-									<h3 className="text-gray-900 text-xl font-bold mb-1">{f.title}</h3>
-									<p className="text-gray-600 mb-2">{f.desc}</p>
-									<a
-										href={f.link}
-										className="text-blue-600 font-semibold hover:underline flex items-center gap-1"
-										aria-label={`Get Started with ${f.title}`}
-									>
-										Get Started <span aria-hidden>→</span>
-									</a>
-								</div>
-							</motion.div>
-						))}
-					</div>
-					{/* Right: Image */}
-					<motion.div
-						className="flex-1 flex items-center justify-center"
-						initial={{ opacity: 0, scale: 0.95 }}
-						animate={{ opacity: 1, scale: 1 }}
-						transition={{ delay: 0.2 }}
-					>
-						<img
-							src={currentTab.image}
-							alt="Feature Preview"
-							className="rounded-2xl shadow-lg w-full max-w-xl border border-gray-200 bg-gray-100 object-contain"
-						/>
-					</motion.div>
-				</motion.div>
-			</AnimatePresence>
-		</section>
-	);
+                        >
+                            {tab.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            {/* Content */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeTab}
+                    variants={tabContentVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                    className="flex flex-col md:flex-row gap-6 md:gap-10"
+                >
+                    {/* Left: Features */}
+                    <div className="flex-1 flex flex-col gap-6 md:gap-8 justify-center">
+                        {currentTab.features.map((f, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, x: -30 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 * i }}
+                                className="flex items-start gap-4 sm:gap-5"
+                            >
+                                {f.icon}
+                                <div>
+                                    <h3 className="text-gray-900 text-base sm:text-xl font-bold mb-1">{f.title}</h3>
+                                    <p className="text-gray-600 mb-2 text-sm sm:text-base">{f.desc}</p>
+                                    <a
+                                        href={f.link}
+                                        className="text-blue-600 font-semibold hover:underline flex items-center gap-1 text-sm sm:text-base"
+                                        aria-label={`Get Started with ${f.title}`}
+                                    >
+                                        Get Started <span aria-hidden>→</span>
+                                    </a>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                    {/* Right: Image */}
+                    <motion.div
+                        className="flex-1 flex items-center justify-center mt-4 md:mt-0"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <img
+                            src={currentTab.image}
+                            alt="Feature Preview"
+                            className="rounded-2xl shadow-lg w-full max-w-xs sm:max-w-md md:max-w-xl border border-gray-200 bg-gray-100 object-contain"
+                        />
+                    </motion.div>
+                </motion.div>
+            </AnimatePresence>
+        </section>
+    );
 };
 
 export default PageFeatures;

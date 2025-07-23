@@ -13,7 +13,9 @@ const GEMINI_API_KEY = "AIzaSyAPPmXjX3_uY40381jTjoHvYkJR6uLnf9U";
 const InterviewRoom = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const topic = location.state;
+  // Fix: Extract subject and prompt from location.state
+  const { subject, prompt } = location.state || {};
+  const topic = prompt ? prompt : subject || "Interview";
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
@@ -43,22 +45,14 @@ const InterviewRoom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Request fullscreen on load
-  useEffect(() => {
-    const el = document.documentElement;
-    if (el.requestFullscreen) el.requestFullscreen();
-  }, []);
-
   // Tab switch detection and toast
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         tabSwitchCount.current++;
-        if (window.speechSynthesis) window.speechSynthesis.cancel(); // Stop AI voice immediately on tab switch away
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
       } else if (document.visibilityState === "visible") {
         toast.warn("Tab switch detected! Stay focused on the interview.");
-        const el = document.documentElement;
-        if (el.requestFullscreen) el.requestFullscreen();
         if (tabSwitchCount.current >= 2) {
           toast.error("Too many tab switches. Redirecting...");
           navigate("/mock-interviews");
@@ -73,12 +67,12 @@ const InterviewRoom = () => {
     if (!topic) return;
     setLoading(true);
     setCanAnswer(false);
-    const prompt = `You are an AI interviewer. Start a classic interview by first asking the user for their name and a brief introduction. Then, conduct a technical interview on the topic "${topic}", moving from basic to advanced concepts, topic by topic. For each sub-topic, ask only 1 or 2 short questions at a time, and wait for the user's answer before proceeding. Keep your questions concise.`;
+    const promptText = `You are an AI interviewer. Start a classic interview by first asking the user for their name and a brief introduction. Then, conduct a technical interview on the topic "${topic}", moving from basic to advanced concepts, topic by topic. For each sub-topic, ask only 1 or 2 short questions at a time, and wait for the user's answer before proceeding. Keep your questions concise.`;
     fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        contents: [{ role: "user", parts: [{ text: promptText }] }],
       }),
     })
       .then((res) => res.json())
@@ -119,7 +113,6 @@ const InterviewRoom = () => {
         window.speechSynthesis.cancel();
       }
     };
-    // Listen for route change (unmount)
     return () => {
       stopSpeech();
     };
@@ -166,12 +159,12 @@ const InterviewRoom = () => {
     setLoading(true);
     setShowInput(false);
     try {
-      const prompt = `You are an AI interviewer. First, ask the user for their name and a brief introduction. Then, conduct a technical interview on the topic "${topic}", starting from basic to advanced concepts. For each sub-topic, ask no more than 2 questions at a time, and wait for the user's answers before proceeding. After the user answers, ask the next question related to the topic, moving step by step through the interview.\nThe user answered: "${userText}"\nNow ask the next question related to the topic.`;
+      const promptText = `You are an AI interviewer. First, ask the user for their name and a brief introduction. Then, conduct a technical interview on the topic "${topic}", starting from basic to advanced concepts. For each sub-topic, ask no more than 2 questions at a time, and wait for the user's answers before proceeding. After the user answers, ask the next question related to the topic, moving step by step through the interview.\nThe user answered: "${userText}"\nNow ask the next question related to the topic.`;
       const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          contents: [{ role: 'user', parts: [{ text: promptText }] }],
         }),
       });
       const data = await res.json();
@@ -210,7 +203,8 @@ const InterviewRoom = () => {
       <div className="fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-4 py-2 md:py-4 bg-black border-b border-gray-700" style={{maxWidth:'100vw'}}>
         <div className="flex items-center gap-3">
           <img src="/src/assets/Logo.jpg" alt="Logo" className="w-8 h-8 rounded" />
-          <span className="text-lg md:text-xl font-bold text-white">{topic || 'Interview'}</span>
+          {/* Fix: topic is always a string */}
+          <span className="text-lg md:text-xl font-bold text-white">{topic}</span>
         </div>
         <div className="flex-1 flex justify-center">
           <span className="bg-green-600 text-white font-bold px-4 py-1 rounded-full text-sm md:text-base">

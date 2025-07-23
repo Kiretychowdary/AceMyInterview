@@ -22,7 +22,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg text-gray-900 font-sans">
       {/* HERO SECTION */}
-      <div className="flex flex-col h-screen md:flex-row items-center justify-between px-6 md:px-16 py-20 max-w-7xl mx-auto">
+      <div className="flex flex-col h-auto md:h-screen md:flex-row items-center justify-between px-2 sm:px-6 md:px-16 py-10 sm:py-20 max-w-7xl mx-auto">
         {/* TEXT */}
         <motion.div
           className="w-full md:w-1/2 flex flex-col items-center md:items-start text-center md:text-left"
@@ -30,27 +30,27 @@ const Home = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1, ease: 'easeOut' }}
         >
-          <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
+          <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight mb-4">
             <span className="text-blue-700">Level Up</span> Your Career
             <br className="hidden md:block" />
             with <span className="text-blue-700">AI-Powered</span>
             <br className="hidden md:block" />
             Interview Mocks
           </h1>
-          <p className="text-lg text-gray-700 mt-4 max-w-lg">
+          <p className="text-base xs:text-lg text-gray-700 mt-4 max-w-xs xs:max-w-sm sm:max-w-lg">
             Practice real interview questions, get instant feedback, and ace your next interview with confidence.
           </p>
 
           {/* EXPLORE BUTTON */}
           <motion.div
-            className="mt-10"
+            className="mt-8 xs:mt-10"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
             <button
               type="button"
-              className="group border-none w-[15em] h-[5em] rounded-[3em] flex justify-center items-center gap-3 bg-blue-700 cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-800 hover:shadow-lg hover:-translate-y-0.5"
+              className="group border-none w-full xs:w-[12em] sm:w-[15em] h-[3.5em] xs:h-[4em] sm:h-[5em] rounded-[2em] xs:rounded-[2.5em] sm:rounded-[3em] flex justify-center items-center gap-3 bg-blue-700 cursor-pointer transition-all duration-300 ease-in-out hover:bg-blue-800 hover:shadow-lg hover:-translate-y-0.5"
             >
               <svg
                 height="24"
@@ -74,7 +74,7 @@ const Home = () => {
 
         {/* IMAGE */}
         <motion.div
-          className="mt-10 md:mt-0 md:ml-10 w-full md:w-1/2 flex justify-center md:justify-end"
+          className="mt-8 xs:mt-10 md:mt-0 md:ml-10 w-full md:w-1/2 flex justify-center md:justify-end"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: 'easeOut', delay: 0.4 }}
@@ -82,7 +82,7 @@ const Home = () => {
           <motion.img
             src={image}
             alt="AI Interview"
-            className="rounded-xl w-[300px] sm:w-[400px] md:w-[500px] shadow-lg border-4 border-blue-600/20"
+            className="rounded-xl w-[180px] xs:w-[250px] sm:w-[300px] md:w-[400px] lg:w-[500px] shadow-lg border-4 border-blue-600/20"
             whileHover={{ scale: 1.03 }}
           />
         </motion.div>
