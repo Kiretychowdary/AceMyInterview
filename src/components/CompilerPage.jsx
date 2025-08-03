@@ -1,170 +1,136 @@
 // nmrkspvlidatapermaenent
 // ammanannapermanenet
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Editor } from "@monaco-editor/react"; // Monaco Editor
 import axios from "axios";
-
-const testCases = [
-  { input: "2\n3", expected: "5", description: "Sum of 2 and 3" },
-  { input: "10\n20", expected: "30", description: "Sum of 10 and 20" },
-];
+import fetchProblemDetails from "../utils/fetchProblem"; // Import the fetchProblemDetails function
+import { Oval } from "react-loader-spinner";
 
 const languages = [
-  { id: 50, name: "C" },
-  { id: 54, name: "C++" },
-  { id: 62, name: "Java" },
-  { id: 71, name: "Python" },
+  { id: 50, name: "c", template: `#include <stdio.h>
+
+int main() {
+    // Your code here
+    return 0;
+}` },
+  { id: 54, name: "cpp", template: `#include <iostream>
+using namespace std;
+
+int main() {
+    // Your code here
+    return 0;
+}` },
+  { id: 62, name: "java", template: `import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        // Your code here
+    }
+}` },
+  { id: 71, name: "python", template: `# Your code here
+` },
 ];
 
 function CompilerPage() {
-  const [code, setCode] = useState(`#include <stdio.h>
-
-int main() {
-    int a, b;
-    scanf("%d%d", &a, &b);
-    printf("%d", a + b);
-    return 0;
-}`);
-  const [result, setResult] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [code, setCode] = useState(languages[0].template); // Default to C template
   const [language, setLanguage] = useState(languages[0].id);
+  const [problemDetails, setProblemDetails] = useState(null); // Store fetched problem details
+  const [loadingProblem, setLoadingProblem] = useState(true);
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    let results = [];
-    for (const test of testCases) {
+  // Fetch problem details from Codeforces
+  useEffect(() => {
+    const fetchProblem = async () => {
+      const contestId = "1833"; // Example contest ID
+      const index = "A"; // Example problem index
       try {
-        const res = await axios.post("http://localhost:5000/submit", {
-          code,
-          language_id: language,
-          stdin: test.input,
-        });
-        results.push({
-          description: test.description,
-          input: test.input,
-          score: res.data.score,
-          total: res.data.total,
-          output: res.data.output,
-        });
-      } catch (err) {
-        results.push({
-          description: test.description,
-          input: test.input,
-          score: 0,
-          total: 1,
-          output: err?.response?.data?.error || err.message || "Error running code.",
-        });
+        const details = await fetchProblemDetails(contestId, index);
+        if (!details) {
+          throw new Error("Failed to fetch problem details.");
+        }
+        console.log("Fetched Problem Details:", details); // Debug fetched details
+        setProblemDetails(details);
+      } catch (error) {
+        console.error("Failed to fetch problem details:", error);
+        setProblemDetails({ error: "Unable to fetch problem details. Please try again later." });
+      } finally {
+        setLoadingProblem(false);
       }
-    }
-    setResult(results);
-    setLoading(false);
+    };
+
+    fetchProblem();
+  }, []);
+
+  const handleLanguageChange = (e) => {
+    const selectedLanguage = languages.find((lang) => lang.id === Number(e.target.value));
+    setLanguage(selectedLanguage.id);
+    setCode(selectedLanguage.template); // Update code template based on selected language
   };
 
   return (
-    <div style={{
-      padding: 32,
-      maxWidth: 700,
-      margin: "40px auto",
-      background: "#f8fafc",
-      borderRadius: 16,
-      boxShadow: "0 4px 24px rgba(0,0,0,0.08)"
-    }}>
-      <h2 style={{
-        textAlign: "center",
-        marginBottom: 24,
-        fontWeight: 700,
-        color: "#2d3748"
-      }}>
-        Online Compiler <span style={{color:"#3182ce"}}>(Judge0)</span>
-      </h2>
-      <div style={{ marginBottom: 16 }}>
-        <label htmlFor="language" style={{ fontWeight: 600, marginRight: 8 }}>Language:</label>
-        <select
-          id="language"
-          value={language}
-          onChange={e => setLanguage(Number(e.target.value))}
-          style={{
-            padding: "8px 16px",
-            borderRadius: 8,
-            border: "1px solid #cbd5e1",
-            fontSize: "1rem",
-            fontFamily: "inherit"
-          }}
-        >
-          {languages.map(lang => (
-            <option key={lang.id} value={lang.id}>{lang.name}</option>
-          ))}
-        </select>
-      </div>
-      <textarea
-        rows="12"
-        cols="70"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        style={{
-          width: "100%",
-          fontSize: "1rem",
-          fontFamily: "Fira Mono, monospace",
-          border: "1px solid #cbd5e1",
-          borderRadius: 8,
-          padding: 12,
-          background: "#fff",
-          marginBottom: 16,
-          resize: "vertical"
-        }}
-        placeholder="Write your code here..."
-      ></textarea>
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          style={{
-            background: loading ? "#a0aec0" : "#3182ce",
-            color: "#fff",
-            border: "none",
-            borderRadius: 8,
-            padding: "10px 32px",
-            fontWeight: 600,
-            fontSize: "1rem",
-            cursor: loading ? "not-allowed" : "pointer",
-            boxShadow: "0 2px 8px rgba(49,130,206,0.08)"
-          }}
-        >
-          {loading ? (
-            <span>
-              <span role="status" aria-label="Loading">⏳</span> Running...
-            </span>
-          ) : "Run & Check"}
-        </button>
-      </div>
-      {loading && (
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <span role="status" aria-label="Loading" style={{fontSize:"1.2rem"}}>⏳ Loading...</span>
-        </div>
-      )}
-      <div style={{
-        background: "#e2e8f0",
-        borderRadius: 8,
-        padding: "12px 16px",
-        minHeight: 40,
-        color: "#2d3748",
-        fontWeight: 500,
-        marginTop: 8,
-        textAlign: "center"
-      }}>
-        {result.length > 0 ? (
+    <div style={{ display: "flex", gap: "16px", padding: "32px", maxWidth: "1200px", margin: "40px auto" }}>
+      {/* Left Half: Problem Details */}
+      <div style={{ flex: "1", background: "#f8fafc", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", overflowY: "auto", maxHeight: "600px" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "24px", fontWeight: "700", color: "#2d3748" }}>
+          Problem Details
+        </h2>
+        {loadingProblem ? (
+          <p>Loading problem details...</p>
+        ) : problemDetails?.error ? (
+          <p style={{ color: "red" }}>{problemDetails.error}</p>
+        ) : problemDetails ? (
           <div>
-            {result.map((r, idx) => (
-              <div key={idx} style={{ marginBottom: 12 }}>
-                <strong>{r.description}:</strong> <br />
-                <span>Input: {r.input}</span> <br />
-                <span>Score: {r.score}/{r.total}</span> <br />
-                <span>Output: {r.output}</span>
-              </div>
-            ))}
+            <h3 style={{ fontWeight: "600", color: "#2d3748" }}>{problemDetails.name}</h3>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.description }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Input Format:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.inputFormat }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Output Format:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.outputFormat }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Constraints:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.constraints }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Examples:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.examples }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
           </div>
         ) : (
-          <span>Output will appear here.</span>
+          <p>Problem details not available.</p>
         )}
+      </div>
+
+      {/* Right Half: Code Compiler */}
+      <div style={{ flex: "1", background: "#f8fafc", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "24px", fontWeight: "700", color: "#2d3748" }}>
+          Code Compiler
+        </h2>
+        <div style={{ marginBottom: "16px" }}>
+          <label htmlFor="language" style={{ fontWeight: "600", marginRight: "8px" }}>Language:</label>
+          <select
+            id="language"
+            value={language}
+            onChange={handleLanguageChange}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "1px solid #cbd5e1",
+              fontSize: "1rem",
+              fontFamily: "inherit",
+            }}
+          >
+            {languages.map((lang) => (
+              <option key={lang.id} value={lang.id}>{lang.name}</option>
+            ))}
+          </select>
+        </div>
+        <Editor
+          height="400px"
+          language={languages.find((lang) => lang.id === language)?.name.toLowerCase()} // Dynamically set the language
+          theme="vs-dark"
+          value={code}
+          onChange={(value) => setCode(value)}
+          options={{
+            fontSize: 14,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+          }}
+        />
       </div>
     </div>
   );

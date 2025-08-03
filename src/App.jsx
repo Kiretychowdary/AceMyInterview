@@ -5,18 +5,18 @@
 import React from 'react';
 import 'tailwindcss/tailwind.css';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import MockInterviews from './pages/MockInterviews';
-import Login from './pages/Login';
-import InterviewRoom from './pages/InterviewRoom';
+import Navbar from './components/Navbar.jsx';
+import Home from './pages/Home.jsx';
+import MockInterviews from './pages/MockInterviews.jsx';
+import Login from './pages/Login.jsx';
+import InterviewRoom from './pages/InterviewRoom.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import DeviceSetup from './pages/DeviceSetup';
-import Register from './pages/Register';
-import { useAuth } from "./components/AuthContext"; // Ensure this path is correct
-import InterviewModeSelect from './pages/InterviewModeSelect';
-import MCQInterview from './pages/MCQInterview'; // Ensure this path is correct
+import DeviceSetup from './pages/DeviceSetup.jsx';
+import Register from './pages/Register.jsx';
+import { useAuth } from "./components/AuthContext.jsx"; // Ensure this path is correct
+import InterviewModeSelect from './pages/InterviewModeSelect.jsx';
+import MCQInterview from './pages/MCQInterview.jsx'; // Ensure this path is correct
 import Compiler from './pages/Compiler.jsx';
 // import InterviewCategoryFlow from './pages/InterviewCategoryFlow'; // adjust path if needed
 function AppContent() {

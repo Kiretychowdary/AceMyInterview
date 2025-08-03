@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Logo from '../assets/Logo.jpg';
-import { useAuth } from "../components/AuthContext";
+import { useAuth } from "./AuthContext";
 const navLinks = [
   { name: 'Practice', href: '/mock-interviews' },
 ];
