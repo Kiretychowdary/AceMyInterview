@@ -16,7 +16,7 @@ const Navbar = () => {
 
   return (
     <motion.header
-      className="sticky top-0 z-50 bg-white/95 border-b border-gray-200 shadow-lg"
+      className="sticky top-0 z-50 bg-white/95 border-b border-blue-700 shadow-lg"
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -25,10 +25,10 @@ const Navbar = () => {
         {/* Logo and Brand */}
         <div className="flex items-center space-x-3">
           <Link to="/">
-            <img src={Logo} alt="Logo" className="w-11 h-11 rounded-full object-cover border-2 border-gray-400 shadow" />
+            <img src={Logo} alt="Logo" className="w-11 h-11 rounded-full object-cover border-2 border-blue-700 shadow" />
           </Link>
           <Link to="/">
-            <span className="font-serif text-2xl font-bold text-gray-900 tracking-wide select-none">
+            <span className="font-serif text-2xl font-bold text-blue-700 tracking-wide select-none">
               AceMyInterview
             </span>
           </Link>
@@ -40,7 +40,7 @@ const Navbar = () => {
             <Link
               key={link.name}
               to={link.href}
-              className="transition-colors duration-200 text-gray-700 hover:text-blue-700 px-2 py-1 rounded"
+              className="transition-colors duration-200 text-black hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50"
             >
               {link.name}
             </Link>
@@ -69,12 +69,12 @@ const Navbar = () => {
         {user && (
           <button
             className={`flex items-center justify-center w-10 h-10 rounded-full border transition
-              ${menuOpen ? "bg-blue-600 border-blue-700 shadow-lg" : "bg-white border-gray-300 hover:bg-gray-100"}`}
+              ${menuOpen ? "bg-blue-700 border-blue-700 shadow-lg" : "bg-white border-blue-700 hover:bg-blue-50"}`}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((v) => !v)}
           >
             <svg
-              className={`w-7 h-7 transition-transform duration-300 ${menuOpen ? "rotate-90 text-white" : "text-gray-700"}`}
+              className={`w-7 h-7 transition-transform duration-300 ${menuOpen ? "rotate-90 text-white" : "text-blue-700"}`}
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -98,7 +98,7 @@ const Navbar = () => {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full max-w-xs bg-white/95 px-6 py-8 border-l border-gray-200 shadow-2xl z-50 flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-xs bg-white/95 px-6 py-8 border-l border-blue-700 shadow-2xl z-50 flex flex-col"
             style={{ minHeight: "100vh" }}
           >
             {/* Overlay to close sidebar when clicking outside */}
@@ -113,7 +113,7 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="text-lg font-semibold text-gray-700 hover:text-blue-700 transition px-2 py-1 rounded"
+                  className="text-lg font-semibold text-black hover:text-blue-700 transition px-2 py-1 rounded hover:bg-blue-50"
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.name}
@@ -121,10 +121,10 @@ const Navbar = () => {
               ))}
               {user ? (
                 <>
-                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)" onClick={() => setMenuOpen(false)}>
+                  <button className="bg-blue-700 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-800" aria-label="Contact Us (no action)" onClick={() => setMenuOpen(false)}>
                     Contact Us
                   </button>
-                  <button className="bg-green-600 text-white font-semibold py-2 px-5 rounded-full border border-green-700 shadow transition hover:bg-green-700" aria-label="Feedback (no action)" onClick={() => setMenuOpen(false)}>
+                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Feedback (no action)" onClick={() => setMenuOpen(false)}>
                     Feedback
                   </button>
                   <button onClick={() => { logout(); setMenuOpen(false); }} className="user-profile-inner" tabIndex={0} aria-label="User Logout Button">
@@ -138,7 +138,7 @@ const Navbar = () => {
                 </>
               ) : (
                 <>
-                  <button className="bg-blue-600 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-700" aria-label="Contact Us (no action)" onClick={() => setMenuOpen(false)}>
+                  <button className="bg-blue-700 text-white font-semibold py-2 px-5 rounded-full border border-blue-700 shadow transition hover:bg-blue-800" aria-label="Contact Us (no action)" onClick={() => setMenuOpen(false)}>
                     Contact Us
                   </button>
                   <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile" onClick={() => setMenuOpen(false)}>

@@ -278,7 +278,7 @@ const PageFeatures = () => {
                             >
                                 {f.icon}
                                 <div>
-                                    <h3 className="text-gray-900 text-base sm:text-xl font-bold mb-1">{f.title}</h3>
+                                    <h3 className="text-blue-700 text-base sm:text-xl font-bold mb-1">{f.title}</h3>
                                     <p className="text-gray-600 mb-2 text-sm sm:text-base">{f.desc}</p>
                                     <a
                                         href={f.link}

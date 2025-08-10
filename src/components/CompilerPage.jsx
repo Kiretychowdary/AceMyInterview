@@ -67,10 +67,10 @@ function CompilerPage() {
   };
 
   return (
-    <div style={{ display: "flex", gap: "16px", padding: "32px", maxWidth: "1200px", margin: "40px auto" }}>
+    <div style={{ display: "flex", gap: "16px", padding: "32px", maxWidth: "1200px", margin: "40px auto", background: "white" }}>
       {/* Left Half: Problem Details */}
-      <div style={{ flex: "1", background: "#f8fafc", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)", overflowY: "auto", maxHeight: "600px" }}>
-        <h2 style={{ textAlign: "center", marginBottom: "24px", fontWeight: "700", color: "#2d3748" }}>
+      <div style={{ flex: "1", background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 24px rgba(29, 78, 216, 0.1)", overflowY: "auto", maxHeight: "600px", border: "1px solid #1d4ed8" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "24px", fontWeight: "700", color: "#1d4ed8" }}>
           Problem Details
         </h2>
         {loadingProblem ? (
@@ -79,16 +79,16 @@ function CompilerPage() {
           <p style={{ color: "red" }}>{problemDetails.error}</p>
         ) : problemDetails ? (
           <div>
-            <h3 style={{ fontWeight: "600", color: "#2d3748" }}>{problemDetails.name}</h3>
-            <div dangerouslySetInnerHTML={{ __html: problemDetails.description }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
-            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Input Format:</h4>
-            <div dangerouslySetInnerHTML={{ __html: problemDetails.inputFormat }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
-            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Output Format:</h4>
-            <div dangerouslySetInnerHTML={{ __html: problemDetails.outputFormat }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
-            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Constraints:</h4>
-            <div dangerouslySetInnerHTML={{ __html: problemDetails.constraints }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
-            <h4 style={{ fontWeight: "600", color: "#2d3748" }}>Examples:</h4>
-            <div dangerouslySetInnerHTML={{ __html: problemDetails.examples }} style={{ marginBottom: "16px", color: "#4a5568" }}></div>
+            <h3 style={{ fontWeight: "600", color: "#1d4ed8" }}>{problemDetails.name}</h3>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.description }} style={{ marginBottom: "16px", color: "#000000" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#1d4ed8" }}>Input Format:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.inputFormat }} style={{ marginBottom: "16px", color: "#000000" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#1d4ed8" }}>Output Format:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.outputFormat }} style={{ marginBottom: "16px", color: "#000000" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#1d4ed8" }}>Constraints:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.constraints }} style={{ marginBottom: "16px", color: "#000000" }}></div>
+            <h4 style={{ fontWeight: "600", color: "#1d4ed8" }}>Examples:</h4>
+            <div dangerouslySetInnerHTML={{ __html: problemDetails.examples }} style={{ marginBottom: "16px", color: "#000000" }}></div>
           </div>
         ) : (
           <p>Problem details not available.</p>
@@ -96,12 +96,12 @@ function CompilerPage() {
       </div>
 
       {/* Right Half: Code Compiler */}
-      <div style={{ flex: "1", background: "#f8fafc", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-        <h2 style={{ textAlign: "center", marginBottom: "24px", fontWeight: "700", color: "#2d3748" }}>
+      <div style={{ flex: "1", background: "white", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 24px rgba(29, 78, 216, 0.1)", border: "1px solid #1d4ed8" }}>
+        <h2 style={{ textAlign: "center", marginBottom: "24px", fontWeight: "700", color: "#1d4ed8" }}>
           Code Compiler
         </h2>
         <div style={{ marginBottom: "16px" }}>
-          <label htmlFor="language" style={{ fontWeight: "600", marginRight: "8px" }}>Language:</label>
+          <label htmlFor="language" style={{ fontWeight: "600", marginRight: "8px", color: "#000000" }}>Language:</label>
           <select
             id="language"
             value={language}
@@ -109,9 +109,10 @@ function CompilerPage() {
             style={{
               padding: "8px 16px",
               borderRadius: "8px",
-              border: "1px solid #cbd5e1",
+              border: "1px solid #1d4ed8",
               fontSize: "1rem",
               fontFamily: "inherit",
+              color: "#000000",
             }}
           >
             {languages.map((lang) => (

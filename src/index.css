@@ -1,3 +1,92 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Global theme colors */
+:root {
+  --primary-blue: #1d4ed8;
+  --primary-blue-hover: #1e40af;
+  --primary-blue-light: rgba(29, 78, 216, 0.1);
+  --text-blue: #1d4ed8;
+  --text-black: #000000;
+  --bg-white: #ffffff;
+}
+
+/* Apply global styles */
+body {
+  background-color: var(--bg-white);
+  color: var(--text-black);
+}
+
+/* Headings use blue-700 */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-blue);
+}
+
+/* Custom button styles */
+.btn-primary {
+  background-color: var(--primary-blue);
+  color: white;
+  border: 1px solid var(--primary-blue);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-blue-hover);
+}
+
+.btn-secondary {
+  background-color: white;
+  color: var(--text-black);
+  border: 1px solid var(--primary-blue);
+  transition: all 0.3s ease;
+}
+
+/* Custom slider styles for voice settings */
+.voice-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #e5e7eb;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.voice-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.voice-slider::-webkit-slider-thumb:hover {
+  background: var(--primary-blue-hover);
+  transform: scale(1.1);
+}
+
+.voice-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.voice-slider::-moz-range-thumb:hover {
+  background: var(--primary-blue-hover);
+  transform: scale(1.1);
+}
+
+.voice-slider:focus {
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
+}

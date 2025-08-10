@@ -93,7 +93,7 @@ const MockInterviews = () => {
             : mockData.filter((mock) => mock.category === selectedCategory);
 
     return (
-        <div className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg text-gray-900 px-4 sm:px-10 md:px-16 py-10">
+        <div className="min-h-screen bg-white text-black px-4 sm:px-10 md:px-16 py-10">
             {/* HEADER */}
             <motion.div
                 className="max-w-3xl mb-10 mx-auto text-center"
@@ -116,8 +116,8 @@ const MockInterviews = () => {
                         onClick={() => setSelectedCategory(tag)}
                         className={`px-5 py-2 rounded-full font-semibold transition-all duration-200 shadow 
                             ${selectedCategory === tag
-                                ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
-                                : 'bg-white text-gray-800 hover:bg-gray-200'}`}
+                                ? 'bg-blue-700 text-white'
+                                : 'bg-white text-black hover:bg-blue-50 border border-blue-700'}`}
                     >
                         {tag}
                     </button>
@@ -135,7 +135,7 @@ const MockInterviews = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 30 }}
                             transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="bg-white border border-gray-200 text-gray-900 p-7 rounded-2xl shadow-lg hover:scale-105 transition min-h-[320px] flex flex-col justify-between"
+                            className="bg-white border border-blue-700 text-black p-7 rounded-2xl shadow-lg hover:scale-105 transition min-h-[320px] flex flex-col justify-between hover:shadow-blue-200"
                         >
                             <img
                                 src={mock.img}
@@ -173,7 +173,7 @@ const MockInterviews = () => {
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.8, opacity: 0, y: 40 }}
                         transition={{ duration: 0.35, type: 'spring' }}
-                        className="relative rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 bg-gradient-to-br from-white to-purple-100 border border-purple-200"
+                        className="relative rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 bg-white border border-blue-700"
                         style={{
                             minHeight: '340px',
                         }}
@@ -200,7 +200,7 @@ const MockInterviews = () => {
                                 selectedMock.subTopics.map((sub) => (
                                     <button
                                         key={sub.name}
-                                        className="w-full px-4 py-2 rounded-lg bg-blue-100 text-blue-900 font-semibold shadow hover:bg-blue-200 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        className="w-full px-4 py-2 rounded-lg bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
                                         onClick={() => {
                                             setShowSubTopics(false);
                                             // Navigate to InterviewModeSelect page, passing subject/sub-topic

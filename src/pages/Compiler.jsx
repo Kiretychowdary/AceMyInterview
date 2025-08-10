@@ -1,15 +1,10 @@
-// NMKRSPVLIFDATAPERMAENENT
+// NMKRSPVLIDATAPERMAENENT
 // AMMANANNAPERMANENENT
 import React from 'react';
-import CompilerPage from '../components/CompilerPage';
+import CompilerPage from '../components/CompilerPage.jsx';
 
 const Compiler = () => {
-  return (
-    <div>
-      <CompilerPage />
-    </div>
-  );
+  return <CompilerPage />;
 };
 
 export default Compiler;
-

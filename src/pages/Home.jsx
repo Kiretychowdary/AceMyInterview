@@ -20,7 +20,7 @@ const Home = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user } = useAuth();
   return (
-    <div className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg text-gray-900 font-sans">
+    <div className="min-h-screen bg-white text-black font-sans">
       {/* HERO SECTION */}
       <div className="flex flex-col h-auto md:h-screen md:flex-row items-center justify-between px-2 sm:px-6 md:px-16 py-10 sm:py-20 max-w-7xl mx-auto">
         {/* TEXT */}
@@ -37,7 +37,7 @@ const Home = () => {
             <br className="hidden md:block" />
             Interview Mocks
           </h1>
-          <p className="text-base xs:text-lg text-gray-700 mt-4 max-w-xs xs:max-w-sm sm:max-w-lg">
+          <p className="text-base xs:text-lg text-black mt-4 max-w-xs xs:max-w-sm sm:max-w-lg">
             Practice real interview questions, get instant feedback, and ace your next interview with confidence.
           </p>
 

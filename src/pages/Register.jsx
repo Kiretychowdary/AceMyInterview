@@ -30,7 +30,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-blue-900">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="form-container">
         <p className="title">Welcome back</p>
         <form
@@ -108,6 +108,7 @@ const Register = () => {
           font-weight: 800;
           margin-bottom: 30px;
           font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
+          color: #1d4ed8;
         }
         .form {
           display: flex;
@@ -117,11 +118,15 @@ const Register = () => {
         .input {
           padding: 12px 15px;
           border-radius: 20px;
-          border: 1px solid #c0c0c0;
+          border: 1px solid #1d4ed8;
           outline: none;
         }
+        .input:focus {
+          border-color: #1d4ed8;
+          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
+        }
         .form-btn {
-          background-color: teal;
+          background-color: #1d4ed8;
           color: white;
           padding: 10px;
           border-radius: 20px;
@@ -129,6 +134,10 @@ const Register = () => {
           cursor: pointer;
           font-weight: 600;
           box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+          transition: background-color 0.3s ease;
+        }
+        .form-btn:hover {
+          background-color: #1e40af;
         }
         .form-btn:active {
           box-shadow: none;
@@ -140,15 +149,15 @@ const Register = () => {
         .page-link-label {
           text-decoration: underline;
           cursor: pointer;
-          color: #747474;
+          color: #000000;
         }
         .sign-up-label {
           margin-top: 10px;
           font-size: 12px;
-          color: #747474;
+          color: #000000;
         }
         .sign-up-link {
-          color: teal;
+          color: #1d4ed8;
           font-weight: bold;
           cursor: pointer;
           text-decoration: underline;
@@ -171,12 +180,13 @@ const Register = () => {
           cursor: pointer;
         }
         .apple-login-button {
-          background: black;
+          background: #1d4ed8;
           color: white;
         }
         .google-login-button {
-          border: 1px solid #747474;
+          border: 1px solid #1d4ed8;
           background: white;
+          color: #000000;
         }
         .apple-icon, .google-icon {
           font-size: 18px;

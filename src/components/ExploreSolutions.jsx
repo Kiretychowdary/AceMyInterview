@@ -42,7 +42,7 @@ const solutions = [
 
 const ExploreSolutions = () => (
   <section className="min-h-screen bg-white/95 border-b border-gray-200 shadow-lg py-8 sm:py-12">
-    <h2 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-8 sm:mb-12 px-2">
+    <h2 className="text-3xl sm:text-4xl font-bold text-center text-blue-700 mb-8 sm:mb-12 px-2">
       Resources to Learn & Ace Interviews
     </h2>
     <div className="max-w-6xl mx-auto grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-2 sm:px-4 pb-8">
@@ -54,7 +54,7 @@ const ExploreSolutions = () => (
           <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center rounded-lg mb-3 sm:mb-4 md:mb-6 bg-blue-100 border border-blue-200">
             <img src={sol.img} alt={sol.title} className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain" />
           </div>
-          <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 mb-1 sm:mb-2 text-center">{sol.title}</h3>
+          <h3 className="text-sm sm:text-base md:text-lg font-bold text-blue-700 mb-1 sm:mb-2 text-center">{sol.title}</h3>
           <p className="text-gray-600 text-center mb-2 sm:mb-4 text-xs sm:text-sm md:text-base">{sol.desc}</p>
           <motion.div
             className="mt-2 sm:mt-4 md:mt-6 w-full flex justify-center"

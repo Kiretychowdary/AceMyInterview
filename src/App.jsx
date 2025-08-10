@@ -2,9 +2,9 @@
 // AMMARADHAKRISHNANANNA
 // KSVIDPERMANENT
 // KIRETY
-import React from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
 import 'tailwindcss/tailwind.css';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import MockInterviews from './pages/MockInterviews.jsx';
@@ -14,13 +14,33 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DeviceSetup from './pages/DeviceSetup.jsx';
 import Register from './pages/Register.jsx';
-import { useAuth } from "./components/AuthContext.jsx"; // Ensure this path is correct
 import InterviewModeSelect from './pages/InterviewModeSelect.jsx';
-import MCQInterview from './pages/MCQInterview.jsx'; // Ensure this path is correct
+import MCQInterview from './pages/MCQInterview.jsx';
 import Compiler from './pages/Compiler.jsx';
-// import InterviewCategoryFlow from './pages/InterviewCategoryFlow'; // adjust path if needed
+import { AuthProvider, useAuth } from './components/AuthContext.jsx';
+
+// ProtectedRoute component to check authentication
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  
+  // Show loading while authentication state is being determined
+  if (loading) {
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-lg">Loading...</div>
+    </div>;
+  }
+  
+  if (!user) {
+    // Redirect to login if user is not authenticated
+    return <Navigate to="/Login" replace />;
+  }
+  
+  return children;
+}
+
 function AppContent() {
   const location = useLocation();
+  
   // Hide Navbar on /interview-room
   const hideNavbar =
     location.pathname === "/interview-room" ||
@@ -31,18 +51,56 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-white">
       <ToastContainer />
       {!hideNavbar && <Navbar />}
-      <main className="flex-1 w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-16 xl:px-32 max-w-screen-2xl">
+      <main className="flex-1 w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-16 xl:px-32 max-w-screen-2xl bg-white">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/mock-interviews" element={<MockInterviews />} />
-          <Route path="/compiler" element={<Compiler />} />
-          <Route path="/device-setup" element={<DeviceSetup />} />
-          <Route path="/interview-room" element={<InterviewRoom />} />
+          
+          {/* Protected Routes - Require Authentication */}
+          <Route 
+            path="/compiler" 
+            element={
+              <ProtectedRoute>
+                <Compiler />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/device-setup" 
+            element={
+              <ProtectedRoute>
+                <DeviceSetup />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/interview-room" 
+            element={
+              <ProtectedRoute>
+                <InterviewRoom />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/interview-mode" 
+            element={
+              <ProtectedRoute>
+                <InterviewModeSelect />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/mcq-interview" 
+            element={
+              <ProtectedRoute>
+                <MCQInterview />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Public Routes */}
           <Route path="/Login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/interview-mode" element={<InterviewModeSelect />} />
-          <Route path="/mcq-interview" element={<MCQInterview />} />
-          {/* <Route path='/inteview-category-flow' element={<InterviewCategoryFlow />} /> */}
         </Routes>
       </main>
     </div>
@@ -51,8 +109,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
