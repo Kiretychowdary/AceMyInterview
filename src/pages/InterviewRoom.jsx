@@ -37,6 +37,8 @@ const InterviewRoom = () => {
     selectedVoiceName: ''
   });
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [speechFailures, setSpeechFailures] = useState(0);
   const { user } = useAuth();
 
   // Initialize voices when component loads
@@ -65,6 +67,30 @@ const InterviewRoom = () => {
       window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
     };
   }, []);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('Internet connection restored! Voice recognition is now available.');
+    };
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.warn('Internet connection lost. Voice recognition unavailable.');
+      if (isRecording) {
+        setIsRecording(false);
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [isRecording]);
 
   useEffect(() => {
     async function getDevices() {
@@ -158,78 +184,137 @@ const InterviewRoom = () => {
       toast.error("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
       return;
     }
-    
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    
-    // Enhanced speech recognition settings for better accuracy
-    recognition.lang = "en-US";
-    recognition.continuous = false; // Stop after one phrase
-    recognition.interimResults = false; // Only return final results
-    recognition.maxAlternatives = 1; // We only want the best result
-    
-    // Additional settings for better quality
-    if (recognition.serviceURI) {
-      recognition.serviceURI = 'wss://www.google.com/speech-api/full-duplex/v1/up'; // Use Google's service if available
+
+    // Check internet connectivity
+    if (!isOnline) {
+      toast.error('No internet connection detected. Speech recognition requires internet access.');
+      setShowInput(true); // Show text input as fallback
+      return;
     }
 
-    recognition.onstart = () => {
-      console.log('Voice recognition started');
-      setIsRecording(true);
-    };
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      // Enhanced speech recognition settings for better accuracy
+      recognition.lang = "en-US";
+      recognition.continuous = false; // Stop after one phrase
+      recognition.interimResults = false; // Only return final results
+      recognition.maxAlternatives = 1; // We only want the best result
+      
+      // Add timeout for better error handling
+      const timeoutId = setTimeout(() => {
+        if (recognition && setIsRecording) {
+          recognition.stop();
+          setIsRecording(false);
+          toast.warn('Speech recognition timed out. Please try typing your answer.');
+          setTimeout(() => setShowInput(true), 500);
+        }
+      }, 10000); // 10 second timeout
+      
+      // Additional settings for better quality
+      if (recognition.serviceURI) {
+        recognition.serviceURI = 'wss://www.google.com/speech-api/full-duplex/v1/up'; // Use Google's service if available
+      }
 
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      const confidence = event.results[0][0].confidence;
-      
-      console.log('Speech recognition result:', { transcript, confidence });
-      
-      // Only accept results with reasonable confidence
-      if (confidence > 0.6) {
-        setInput(transcript);
-        toast.success(`Recognized: "${transcript}"`);
-      } else {
-        toast.warn('Speech not clear enough. Please try again.');
-        setInput('');
-      }
-      
-      setIsRecording(false);
-    };
-    
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
-      
-      // Provide specific error messages
-      switch (event.error) {
-        case 'network':
-          toast.error('Network error. Please check your internet connection.');
-          break;
-        case 'not-allowed':
-          toast.error('Microphone access denied. Please allow microphone access.');
-          break;
-        case 'no-speech':
-          toast.warn('No speech detected. Please try again.');
-          break;
-        case 'audio-capture':
-          toast.error('Microphone not found. Please check your microphone.');
-          break;
-        default:
-          toast.error(`Speech recognition error: ${event.error}`);
-      }
-      
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-    
-    recognition.onend = () => {
-      console.log('Voice recognition ended');
-      setIsRecording(false);
-    };
+      recognition.onstart = () => {
+        console.log('Voice recognition started');
+        setIsRecording(true);
+        toast.info('Listening... Speak clearly!', { duration: 2000 });
+      };
 
-    recognitionRef.current = recognition;
-    recognition.start();
+      recognition.onresult = (event) => {
+        clearTimeout(timeoutId); // Clear timeout on successful result
+        const transcript = event.results[0][0].transcript;
+        const confidence = event.results[0][0].confidence;
+        
+        console.log('Speech recognition result:', { transcript, confidence });
+        
+        // Only accept results with reasonable confidence
+        if (confidence > 0.6) {
+          setInput(transcript);
+          toast.success(`Recognized: "${transcript}"`);
+          setSpeechFailures(0); // Reset failures on success
+        } else {
+          toast.warn('Speech not clear enough. Please try again or type your answer.');
+          setInput('');
+          // Show text input as fallback for unclear speech
+          setTimeout(() => setShowInput(true), 1500);
+        }
+        
+        setIsRecording(false);
+      };
+      
+      recognition.onerror = (event) => {
+        clearTimeout(timeoutId); // Clear timeout on error
+        console.error('Speech recognition error:', event.error, event);
+        setIsRecording(false);
+        
+        // Provide specific error messages and solutions
+        switch (event.error) {
+          case 'network':
+            setSpeechFailures(prev => prev + 1);
+            if (speechFailures >= 2) {
+              toast.error(
+                'Speech recognition is having persistent issues. We recommend using the text input option for the rest of this interview.', 
+                { duration: 6000 }
+              );
+            } else {
+              toast.error(
+                'Speech service temporarily unavailable. Please type your answer instead.', 
+                { duration: 4000 }
+              );
+            }
+            // Automatically show text input as the primary fallback
+            setTimeout(() => setShowInput(true), 1000);
+            break;
+          case 'not-allowed':
+            toast.error('Microphone access denied. Please allow microphone access in browser settings.');
+            break;
+          case 'no-speech':
+            toast.warn('No speech detected. Please try speaking louder or closer to the microphone.');
+            break;
+          case 'audio-capture':
+            toast.error('Microphone not found. Please check your microphone connection.');
+            break;
+          case 'service-not-allowed':
+            toast.error('Speech service blocked. Please enable speech recognition in browser.');
+            break;
+          case 'aborted':
+            toast.info('Speech recognition cancelled.');
+            break;
+          case 'language-not-supported':
+            toast.error('English language not supported by your browser.');
+            break;
+          default:
+            toast.error(`Speech error: ${event.error}. Please type your answer instead.`);
+        }
+        
+        // Always show text input as fallback after any error
+        setTimeout(() => {
+          setShowInput(true);
+        }, 2000);
+
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      };
+      
+      recognition.onend = () => {
+        clearTimeout(timeoutId); // Clear timeout when recognition ends
+        console.log('Voice recognition ended');
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+
+    } catch (error) {
+      console.error('Failed to initialize speech recognition:', error);
+      toast.error('Speech recognition failed to start. Please type your answer.');
+      setShowInput(true);
+      setIsRecording(false);
+    }
   };
 
   const stopRecording = () => {
@@ -387,6 +472,16 @@ const InterviewRoom = () => {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {/* Network Status Indicator */}
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+            isOnline 
+              ? 'bg-green-600 text-white' 
+              : 'bg-red-600 text-white animate-pulse'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-300' : 'bg-red-300'}`}></div>
+            {isOnline ? 'Online' : 'Offline'}
+          </div>
+          
           <button
             onClick={() => setShowVoiceSettings(!showVoiceSettings)}
             className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
@@ -473,8 +568,45 @@ const InterviewRoom = () => {
           onClick={() => setShowInput(true)}
           disabled={loading || !canAnswer}
         >
-          Click to answer
+          {isOnline ? 'Click to answer' : 'Type answer (Offline)'}
         </button>
+        
+        {/* Voice Recording Button with status indicator */}
+        <div className="flex flex-col items-center gap-2">
+          <button
+            className={`w-full md:w-auto font-bold py-3 px-8 rounded-full text-lg shadow transition ${
+              !isOnline 
+                ? 'bg-gray-500 text-white cursor-not-allowed' 
+                : speechFailures >= 3
+                  ? 'bg-yellow-600 text-white cursor-not-allowed'
+                : isRecording 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
+            onClick={!isOnline || speechFailures >= 3 ? null : (isRecording ? stopRecording : startRecording)}
+            disabled={loading || !canAnswer || !isOnline || speechFailures >= 3}
+          >
+            {!isOnline ? 'Voice Unavailable (Offline)' : 
+             speechFailures >= 3 ? '⚠️ Voice Service Issues' :
+             isRecording ? '🔴 Stop Recording' : '🎤 Record Voice'}
+          </button>
+          
+          {/* Connection/Service status indicator */}
+          {!isOnline ? (
+            <span className="text-xs text-red-400 text-center">
+              Internet required for voice recognition
+            </span>
+          ) : speechFailures >= 3 ? (
+            <span className="text-xs text-yellow-400 text-center">
+              Multiple speech errors detected. Use text input.
+            </span>
+          ) : speechFailures > 0 ? (
+            <span className="text-xs text-orange-400 text-center">
+              Speech service having issues. Try text input.
+            </span>
+          ) : null}
+        </div>
+        
         <button
           className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow transition"
           onClick={() => {

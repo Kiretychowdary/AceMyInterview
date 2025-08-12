@@ -1,5 +1,5 @@
-// PROFESSIONAL CODING INTERVIEW - OPTIMIZED UI DESIGN
-// NMKRSPVLIDATAPERMANENT - Clean, Professional Coding Interface
+// PROFESSIONAL CODING INTERVIEW - MODERN UI DESIGN
+// NMKRSPVLIDATAPERMANENT - Beautiful, Professional Coding Interface
 import React, { useState, useEffect, useRef } from "react";
 import { Editor } from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -75,11 +75,11 @@ if __name__ == "__main__":
 ];
 
 const topics = [
-  { value: 'algorithms', label: 'Algorithms', icon: '🧠', color: 'blue' },
+  { value: 'algorithms', label: 'Algorithms', icon: '🧠', color: 'purple' },
   { value: 'data-structures', label: 'Data Structures', icon: '📊', color: 'blue' },
-  { value: 'dynamic-programming', label: 'Dynamic Programming', icon: '🔄', color: 'blue' },
-  { value: 'strings', label: 'String Manipulation', icon: '📝', color: 'blue' },
-  { value: 'arrays', label: 'Arrays & Lists', icon: '📋', color: 'blue' },
+  { value: 'dynamic-programming', label: 'Dynamic Programming', icon: '🔄', color: 'green' },
+  { value: 'strings', label: 'String Manipulation', icon: '📝', color: 'yellow' },
+  { value: 'arrays', label: 'Arrays & Lists', icon: '📋', color: 'red' },
 ];
 
 const difficulties = [
@@ -88,7 +88,7 @@ const difficulties = [
   { value: 'hard', label: 'Hard', color: 'text-red-600', bgColor: 'bg-red-50', borderColor: 'border-red-200' }
 ];
 
-function CompilerPage() {
+function ProfessionalCodingInterview() {
   const [code, setCode] = useState(languages[3].template); // Default to Python
   const [language, setLanguage] = useState(languages[3]);
   const [problemDetails, setProblemDetails] = useState(null);
@@ -219,28 +219,28 @@ function CompilerPage() {
   // Configuration Screen (when no problem is loaded)
   if (!problemDetails && !loadingProblem) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="min-h-screen py-8 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+        <div className="min-h-screen bg-black/20 backdrop-blur-sm py-8 px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-4xl mx-auto"
+            className="max-w-5xl mx-auto"
           >
             {/* Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-12">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="inline-flex items-center justify-center w-16 h-16 bg-blue-700 rounded-full mb-6 shadow-lg"
+                className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 shadow-2xl"
               >
-                <span className="text-2xl text-white">💻</span>
+                <span className="text-3xl text-white">💻</span>
               </motion.div>
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-4xl font-bold text-gray-900 mb-3"
+                className="text-5xl font-bold text-white mb-4"
               >
                 AI Coding Interview
               </motion.h1>
@@ -248,7 +248,7 @@ function CompilerPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="text-lg text-gray-600 max-w-2xl mx-auto"
+                className="text-xl text-blue-100 max-w-3xl mx-auto"
               >
                 Solve AI-generated coding problems in your favorite programming language
               </motion.p>
@@ -259,31 +259,31 @@ function CompilerPage() {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6"
+              className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-8"
             >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Configure Your Coding Challenge</h2>
+              <h2 className="text-3xl font-bold text-white mb-8 text-center">Configure Your Coding Challenge</h2>
               
-              <div className="grid lg:grid-cols-3 gap-6">
+              <div className="grid lg:grid-cols-3 gap-8">
                 {/* Topic Selection */}
-                <div className="space-y-3">
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">Problem Topic</label>
-                  <div className="space-y-2">
+                <div className="space-y-4">
+                  <label className="block text-lg font-semibold text-blue-100 mb-4">Problem Topic</label>
+                  <div className="space-y-3">
                     {topics.map((topic) => (
                       <motion.button
                         key={topic.value}
-                        whileHover={{ scale: 1.02 }}
+                        whileHover={{ scale: 1.02, x: 4 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setProblemConfig({ ...problemConfig, topic: topic.value })}
-                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
+                        className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                           problemConfig.topic === topic.value
-                            ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
-                            : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                            ? 'border-blue-400 bg-blue-500/20 text-blue-100 shadow-lg'
+                            : 'border-white/20 bg-white/5 hover:border-white/30 text-gray-200 hover:bg-white/10'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="text-xl">{topic.icon}</span>
+                          <span className="text-2xl">{topic.icon}</span>
                           <div>
-                            <div className="font-medium">{topic.label}</div>
+                            <div className="font-semibold">{topic.label}</div>
                           </div>
                         </div>
                       </motion.button>
@@ -292,11 +292,11 @@ function CompilerPage() {
                 </div>
 
                 {/* Difficulty & Language */}
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Difficulty */}
                   <div>
-                    <label className="block text-lg font-semibold text-gray-700 mb-3">Difficulty Level</label>
-                    <div className="space-y-2">
+                    <label className="block text-lg font-semibold text-blue-100 mb-4">Difficulty Level</label>
+                    <div className="space-y-3">
                       {difficulties.map((diff) => (
                         <motion.button
                           key={diff.value}
@@ -305,11 +305,11 @@ function CompilerPage() {
                           onClick={() => setProblemConfig({ ...problemConfig, difficulty: diff.value })}
                           className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
                             problemConfig.difficulty === diff.value
-                              ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
-                              : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                              ? 'border-blue-400 bg-blue-500/20 text-blue-100 shadow-md'
+                              : 'border-white/20 bg-white/5 hover:border-white/30 text-gray-200'
                           }`}
                         >
-                          <span className="font-medium">{diff.label}</span>
+                          <span className="font-semibold">{diff.label}</span>
                         </motion.button>
                       ))}
                     </div>
@@ -317,27 +317,27 @@ function CompilerPage() {
                 </div>
 
                 {/* Language Selection */}
-                <div className="space-y-3">
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">Programming Language</label>
-                  <div className="space-y-2">
+                <div className="space-y-4">
+                  <label className="block text-lg font-semibold text-blue-100 mb-4">Programming Language</label>
+                  <div className="space-y-3">
                     {languages.map((lang) => (
                       <motion.button
                         key={lang.id}
-                        whileHover={{ scale: 1.02 }}
+                        whileHover={{ scale: 1.02, x: 4 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           setProblemConfig({ ...problemConfig, language: lang.name });
                           setLanguage(lang);
                         }}
-                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
+                        className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                           problemConfig.language === lang.name
-                            ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
-                            : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                            ? 'border-blue-400 bg-blue-500/20 text-blue-100 shadow-lg'
+                            : 'border-white/20 bg-white/5 hover:border-white/30 text-gray-200 hover:bg-white/10'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="text-lg">{lang.icon}</span>
-                          <div className="font-medium">{lang.label}</div>
+                          <span className="text-xl">{lang.icon}</span>
+                          <div className="font-semibold">{lang.label}</div>
                         </div>
                       </motion.button>
                     ))}
@@ -351,11 +351,11 @@ function CompilerPage() {
                 whileTap={{ scale: 0.98 }}
                 onClick={generateNewProblem}
                 disabled={loadingProblem}
-                className="w-full mt-8 py-3 px-6 bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:bg-blue-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                className="w-full mt-8 py-4 px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
               >
                 {loadingProblem ? (
                   <div className="flex items-center justify-center space-x-3">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
                     <span>Generating Challenge...</span>
                   </div>
                 ) : (
@@ -375,39 +375,39 @@ function CompilerPage() {
   // Loading Screen
   if (loadingProblem) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-700 border-t-transparent mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Generating Your Challenge...</h2>
-          <p className="text-gray-600">AI is crafting the perfect coding problem for you</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold mb-2">Generating Your Challenge...</h2>
+          <p className="text-blue-200">AI is crafting the perfect coding problem for you</p>
         </div>
       </div>
     );
   }
 
-  // Main Coding Interface - OPTIMIZED HEIGHT
+  // Main Coding Interface
   return (
-    <div className="h-screen bg-gray-900 flex flex-col max-h-screen overflow-hidden">
-      {/* Header - Compact */}
-      <div className="bg-gray-800 border-b border-gray-700 p-3">
+    <div className="h-screen bg-gray-900 flex flex-col">
+      {/* Header */}
+      <div className="bg-gray-800 border-b border-gray-700 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-white">💻 Coding Interview</h1>
+            <h1 className="text-2xl font-bold text-white">💻 Coding Interview</h1>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-400">Language:</span>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium border-2 ${language.color}`}>
+              <div className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${language.color}`}>
                 {language.icon} {language.label}
               </div>
             </div>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             {/* Theme Toggle */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setEditorTheme(editorTheme === 'vs-dark' ? 'light' : 'vs-dark')}
-              className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200"
             >
               {editorTheme === 'vs-dark' ? '☀️' : '🌙'}
             </motion.button>
@@ -416,7 +416,7 @@ function CompilerPage() {
             <select
               value={fontSize}
               onChange={(e) => setFontSize(Number(e.target.value))}
-              className="bg-blue-700 text-white rounded-lg px-2 py-1 text-sm border border-blue-600"
+              className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600"
             >
               <option value={12}>12px</option>
               <option value={14}>14px</option>
@@ -431,7 +431,7 @@ function CompilerPage() {
                 const newLang = languages.find(l => l.id === parseInt(e.target.value));
                 handleLanguageChange(newLang);
               }}
-              className="bg-blue-700 text-white rounded-lg px-2 py-1 text-sm border border-blue-600"
+              className="bg-gray-700 text-white rounded-lg px-3 py-2 border border-gray-600"
             >
               {languages.map(lang => (
                 <option key={lang.id} value={lang.id}>
@@ -444,92 +444,78 @@ function CompilerPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowProblemPanel(!showProblemPanel)}
-              className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200 flex items-center space-x-2"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200"
             >
-              <span>{showProblemPanel ? '👈' : '👉'}</span>
-              <span>{showProblemPanel ? 'Hide Problem' : 'Show Problem'}</span>
+              {showProblemPanel ? 'Hide Problem' : 'Show Problem'}
             </motion.button>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Optimized Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main Content */}
+      <div className="flex-1 flex">
         {/* Problem Panel */}
         <AnimatePresence>
           {showProblemPanel && (
             <motion.div
-              initial={{ x: -400, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -400, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="w-2/5 bg-white border-r border-gray-300 overflow-y-auto shadow-lg"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: '40%', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              className="bg-white border-r border-gray-300 p-6 overflow-y-auto"
             >
-              <div className="p-4">
-                {problemDetails && (
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-bold text-gray-900">{problemDetails.title}</h2>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={generateNewProblem}
-                        disabled={loadingProblem}
-                        className="px-3 py-2 bg-blue-700 text-white rounded-lg shadow-sm hover:bg-blue-800 transition-all duration-200 disabled:opacity-50 text-sm"
-                      >
-                        🔄 New Problem
-                      </motion.button>
+              {problemDetails && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">{problemDetails.title}</h2>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={generateNewProblem}
+                      disabled={loadingProblem}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+                    >
+                      🔄 New Problem
+                    </motion.button>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Description</h3>
+                      <p className="text-gray-600 leading-relaxed">{problemDetails.description}</p>
                     </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-                        <p className="text-gray-600 leading-relaxed text-sm">{problemDetails.description}</p>
-                      </div>
 
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Input Format</h3>
-                        <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-700">
-                          <p className="text-gray-700 text-sm">{problemDetails.inputFormat}</p>
-                        </div>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Input Format</h3>
+                      <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{problemDetails.inputFormat}</p>
+                    </div>
 
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Output Format</h3>
-                        <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
-                          <p className="text-gray-700 text-sm">{problemDetails.outputFormat}</p>
-                        </div>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Output Format</h3>
+                      <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">{problemDetails.outputFormat}</p>
+                    </div>
 
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Examples</h3>
-                        <div className="bg-gray-900 p-3 rounded-lg">
-                          <pre className="text-green-400 text-xs whitespace-pre-wrap font-mono">{problemDetails.examples}</pre>
-                        </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Examples</h3>
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <pre className="text-gray-600 text-sm whitespace-pre-wrap">{problemDetails.examples}</pre>
                       </div>
+                    </div>
 
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Constraints</h3>
-                        <div className="bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500">
-                          <p className="text-gray-700 text-sm">{problemDetails.constraints}</p>
-                        </div>
-                      </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Constraints</h3>
+                      <p className="text-gray-600 bg-yellow-50 p-3 rounded-lg">{problemDetails.constraints}</p>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Code Editor & Output - Fixed Height */}
-        <motion.div 
-          layout
-          className="flex-1 flex flex-col overflow-hidden"
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        >
-          {/* Editor - Main Area */}
-          <div className="flex-1 min-h-0">
+        {/* Code Editor & Output */}
+        <div className="flex-1 flex flex-col">
+          {/* Editor */}
+          <div className="flex-1">
             <Editor
               height="100%"
               language={language.name}
@@ -538,15 +524,15 @@ function CompilerPage() {
               theme={editorTheme}
               options={{
                 fontSize: fontSize,
-                minimap: { enabled: false },
+                minimap: { enabled: true },
                 scrollBeyondLastLine: false,
                 wordWrap: 'on',
                 lineNumbers: 'on',
-                glyphMargin: false,
+                glyphMargin: true,
                 folding: true,
-                lineDecorationsWidth: 10,
+                lineDecorationsWidth: 20,
                 lineNumbersMinChars: 3,
-                padding: { top: 10, bottom: 10 },
+                padding: { top: 20, bottom: 20 },
               }}
               onMount={(editor) => {
                 editorRef.current = editor;
@@ -554,8 +540,8 @@ function CompilerPage() {
             />
           </div>
 
-          {/* Controls - Compact */}
-          <div className="bg-gray-800 border-t border-gray-700 p-3">
+          {/* Controls */}
+          <div className="bg-gray-800 border-t border-gray-700 p-4">
             <div className="flex items-center justify-between">
               <div className="flex space-x-3">
                 <motion.button
@@ -563,7 +549,7 @@ function CompilerPage() {
                   whileTap={{ scale: 0.95 }}
                   onClick={runCode}
                   disabled={isRunning}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   {isRunning ? (
                     <>
@@ -582,7 +568,7 @@ function CompilerPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={resetCode}
-                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-all duration-200"
+                  className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all duration-200"
                 >
                   🔄 Reset
                 </motion.button>
@@ -594,29 +580,29 @@ function CompilerPage() {
             </div>
           </div>
 
-          {/* Output Panel - Compact */}
-          <div className="bg-gray-900 border-t border-gray-700 p-3 h-32 overflow-hidden">
+          {/* Output Panel */}
+          <div className="bg-gray-900 border-t border-gray-700 p-4 h-48">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-white">Output</h3>
+              <h3 className="text-lg font-semibold text-white">Output</h3>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setOutput('')}
-                className="px-2 py-1 bg-blue-700 hover:bg-blue-800 text-white text-xs rounded transition-all duration-200"
+                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-all duration-200"
               >
                 Clear
               </motion.button>
             </div>
-            <div className="bg-black rounded-lg p-3 h-20 overflow-y-auto">
+            <div className="bg-black rounded-lg p-4 h-32 overflow-y-auto">
               <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
                 {output || 'Click "Run Code" to see output...'}
               </pre>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
 }
 
-export default CompilerPage;
+export default ProfessionalCodingInterview;
