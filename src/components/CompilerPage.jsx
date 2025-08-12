@@ -98,7 +98,26 @@ function CompilerPage() {
   const [showProblemPanel, setShowProblemPanel] = useState(true);
   const [editorTheme, setEditorTheme] = useState('vs-dark');
   const [fontSize, setFontSize] = useState(14);
+  const [testResults, setTestResults] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef(null);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.key === 'Enter') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          submitCode();
+        } else {
+          runCode();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [code, isRunning, isSubmitting]);
 
   // Problem generation configuration
   const [problemConfig, setProblemConfig] = useState({
@@ -214,6 +233,141 @@ function CompilerPage() {
   const resetCode = () => {
     setCode(language.template);
     setOutput('');
+    setTestResults(null);
+  };
+
+  // Submit and test code
+  const submitCode = async () => {
+    if (!code.trim()) {
+      toast.error('Please write some code first!');
+      return;
+    }
+
+    if (!problemDetails || !problemDetails.testCases) {
+      toast.error('No test cases available for this problem!');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setTestResults({ passed: 0, total: 0, details: [] });
+    
+    try {
+      toast.info('🧪 Running test cases...', { duration: 3000 });
+      
+      const testCases = problemDetails.testCases;
+      const results = [];
+      let passedCount = 0;
+
+      for (let i = 0; i < testCases.length; i++) {
+        const testCase = testCases[i];
+        
+        try {
+          const response = await axios.post(
+            "https://judge0-ce.p.rapidapi.com/submissions",
+            {
+              source_code: btoa(code),
+              language_id: language.id,
+              stdin: btoa(testCase.input || ""),
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "X-RapidAPI-Key": "your-rapidapi-key", // Add your RapidAPI key
+                "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+              },
+            }
+          );
+
+          const token = response.data.token;
+
+          // Poll for result
+          const result = await pollForResult(token);
+          
+          const actualOutput = result.stdout 
+            ? atob(result.stdout).trim() 
+            : result.stderr 
+            ? atob(result.stderr).trim()
+            : "";
+
+          const expectedOutput = testCase.output.trim();
+          const passed = actualOutput === expectedOutput;
+          
+          if (passed) passedCount++;
+
+          results.push({
+            testCase: i + 1,
+            input: testCase.input || "No input",
+            expected: expectedOutput,
+            actual: actualOutput,
+            passed: passed,
+            error: result.stderr ? atob(result.stderr) : null
+          });
+
+        } catch (error) {
+          results.push({
+            testCase: i + 1,
+            input: testCase.input || "No input",
+            expected: testCase.output,
+            actual: "Error executing code",
+            passed: false,
+            error: error.message
+          });
+        }
+      }
+
+      setTestResults({
+        passed: passedCount,
+        total: testCases.length,
+        details: results
+      });
+
+      if (passedCount === testCases.length) {
+        toast.success(`🎉 All ${passedCount}/${testCases.length} test cases passed! Great job!`);
+      } else {
+        toast.error(`❌ ${passedCount}/${testCases.length} test cases passed. Keep trying!`);
+      }
+
+    } catch (error) {
+      console.error("Submit error:", error);
+      toast.error('Failed to submit code for testing');
+      setTestResults({
+        passed: 0,
+        total: 0,
+        details: [],
+        error: error.message
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper function to poll for result
+  const pollForResult = async (token) => {
+    return new Promise((resolve, reject) => {
+      const checkResult = async () => {
+        try {
+          const result = await axios.get(
+            `https://judge0-ce.p.rapidapi.com/submissions/${token}`,
+            {
+              headers: {
+                "X-RapidAPI-Key": "your-rapidapi-key",
+                "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+              },
+            }
+          );
+
+          if (result.data.status.id <= 2) {
+            setTimeout(checkResult, 1000);
+          } else {
+            resolve(result.data);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      checkResult();
+    });
   };
 
   // Configuration Screen (when no problem is loaded)
@@ -514,6 +668,59 @@ function CompilerPage() {
                           <p className="text-gray-700 text-sm">{problemDetails.constraints}</p>
                         </div>
                       </div>
+
+                      {/* Test Results */}
+                      {testResults && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-2">Test Results</h3>
+                          <div className={`p-4 rounded-lg border-l-4 ${
+                            testResults.passed === testResults.total 
+                              ? 'bg-green-50 border-green-500' 
+                              : 'bg-red-50 border-red-500'
+                          }`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="font-semibold text-gray-800">
+                                {testResults.passed}/{testResults.total} Test Cases Passed
+                              </span>
+                              <span className={`text-sm font-medium ${
+                                testResults.passed === testResults.total ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {testResults.passed === testResults.total ? '✅ Success' : '❌ Failed'}
+                              </span>
+                            </div>
+                            
+                            {testResults.details && testResults.details.length > 0 && (
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {testResults.details.map((result, index) => (
+                                  <div key={index} className={`p-2 rounded text-xs ${
+                                    result.passed ? 'bg-green-100' : 'bg-red-100'
+                                  }`}>
+                                    <div className="font-medium mb-1">
+                                      Test Case {result.testCase}: {result.passed ? '✅ Passed' : '❌ Failed'}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div>
+                                        <span className="font-medium">Input:</span> {result.input}
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Expected:</span> {result.expected}
+                                      </div>
+                                      <div className="col-span-2">
+                                        <span className="font-medium">Your Output:</span> {result.actual}
+                                      </div>
+                                      {result.error && (
+                                        <div className="col-span-2 text-red-600">
+                                          <span className="font-medium">Error:</span> {result.error}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -581,6 +788,26 @@ function CompilerPage() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={submitCode}
+                  disabled={isSubmitting || !problemDetails}
+                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      <span>Testing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>🧪</span>
+                      <span>Submit & Test</span>
+                    </>
+                  )}
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={resetCode}
                   className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-all duration-200"
                 >
@@ -589,7 +816,7 @@ function CompilerPage() {
               </div>
 
               <div className="text-gray-400 text-sm">
-                Press Ctrl+Enter to run code
+                Press Ctrl+Enter to run • Ctrl+Shift+Enter to submit
               </div>
             </div>
           </div>

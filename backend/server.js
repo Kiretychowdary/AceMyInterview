@@ -41,8 +41,8 @@ app.post('/api/mcq-questions', async (req, res) => {
   }
 
   try {
-    const prompt = `Generate ${count} multiple choice questions about ${topic} at ${difficulty} difficulty level. 
-    Return ONLY a JSON array with this exact format:
+    const prompt = `Generate exactly ${count} multiple choice questions about ${topic} at ${difficulty} difficulty level. 
+    Return ONLY a JSON array with exactly ${count} questions in this exact format:
     [
       {
         "question": "Your question here?",
@@ -51,7 +51,7 @@ app.post('/api/mcq-questions', async (req, res) => {
         "explanation": "Brief explanation of the correct answer"
       }
     ]
-    Make sure the questions are educational, accurate, and appropriate for ${difficulty} level. Do not include any markdown formatting or extra text, just pure JSON.`;
+    IMPORTANT: The array must contain exactly ${count} questions, no more, no less. Make sure the questions are educational, accurate, and appropriate for ${difficulty} level. Do not include any markdown formatting, code blocks, or extra text, just pure JSON array.`;
 
     console.log('🚀 Sending request to Gemini...');
     const response = await axios.post(
@@ -81,6 +81,30 @@ app.post('/api/mcq-questions', async (req, res) => {
     
     const questions = JSON.parse(cleanResponse);
     console.log('✅ Parsed Questions:', questions);
+    console.log(`📊 Expected count: ${count}, Actual count: ${questions.length}`);
+
+    // Validate question count
+    if (!Array.isArray(questions)) {
+      throw new Error('Response is not an array');
+    }
+    
+    if (questions.length !== parseInt(count)) {
+      console.log(`⚠️ Question count mismatch! Expected: ${count}, Got: ${questions.length}`);
+      // If we got fewer questions, pad with variations
+      while (questions.length < count && questions.length > 0) {
+        const baseQuestion = questions[questions.length % questions.length];
+        questions.push({
+          ...baseQuestion,
+          question: `${baseQuestion.question} (Variant ${questions.length + 1})`
+        });
+      }
+      // If we got too many questions, trim to exact count
+      if (questions.length > count) {
+        questions.splice(count);
+      }
+    }
+
+    console.log(`✅ Final question count: ${questions.length}`);
     console.log('🎯 ===============================================');
 
     res.json({
@@ -131,10 +155,15 @@ app.post('/api/coding-problems', async (req, res) => {
       "outputFormat": "Output format description", 
       "constraints": "Problem constraints",
       "examples": "Input/Output examples with explanations",
+      "testCases": [
+        {"input": "test input 1", "output": "expected output 1"},
+        {"input": "test input 2", "output": "expected output 2"},
+        {"input": "test input 3", "output": "expected output 3"}
+      ],
       "difficulty": "${difficulty}",
       "topic": "${topic}"
     }
-    Make it educational and appropriate for ${difficulty} level. Do not include markdown formatting, just pure JSON.`;
+    Make it educational and appropriate for ${difficulty} level. Include 3-5 test cases with varying complexity. Do not include markdown formatting, just pure JSON.`;
 
     console.log('🚀 Sending request to Gemini...');
     const response = await axios.post(
