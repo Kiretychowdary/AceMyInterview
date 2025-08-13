@@ -33,10 +33,15 @@ const InterviewModeSelect = () => {
             Coding Interview
           </button>
           <button
-            className="w-full px-6 py-3 rounded-full bg-blue-700 text-white font-bold shadow-lg hover:bg-blue-800 transition-all duration-200 text-lg"
-            onClick={() => navigate("/device-setup", { state: { subject, prompt: "Face to Face Interview" } })}
+            className="w-full px-6 py-3 rounded-full bg-purple-700 text-white font-bold shadow-lg hover:bg-purple-800 transition-all duration-200 text-lg"
+            onClick={() => navigate("/face-to-face-interview", { state: { 
+              topic: subject,
+              difficulty: 'medium',
+              duration: 30,
+              interviewType: 'technical'
+            }})}
           >
-            Face to Face Interview
+            🎤 Face to Face Interview
           </button>
         </div>
       </div>

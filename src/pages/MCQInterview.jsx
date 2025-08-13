@@ -4,10 +4,39 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../components/AuthContext';
+import { useLocation } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
+import { progressService } from '../services/ProgressService';
 
 const MCQInterview = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  
+  // Get selected topic from navigation state
+  const selectedTopic = location.state?.subject || 'JavaScript';
+  
+  // Map topics to API format
+  const mapTopicToAPI = (topic) => {
+    const topicMap = {
+      'Software Developer': 'JavaScript',
+      'DSA': 'Algorithms',
+      'OOPS': 'Object Oriented Programming',
+      'System Design': 'System Design',
+      'Cybersecurity': 'Cybersecurity',
+      'Network Security': 'Network Security',
+      'Ethical Hacking': 'Ethical Hacking',
+      'Cryptography': 'Cryptography',
+      'Data Analyst': 'Data Analysis',
+      'Product Manager': 'Product Management',
+      'HR Interview': 'HR',
+      'Project Coordinator': 'Project Management',
+      'System Admin': 'System Administration'
+    };
+    return topicMap[topic] || topic;
+  };
+  
+  const apiTopic = mapTopicToAPI(selectedTopic);
+  
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -17,23 +46,196 @@ const MCQInterview = () => {
   const [quizStarted, setQuizStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
 
-  // Quiz configuration
+  // Quiz configuration - use selected topic as default
   const [quizConfig, setQuizConfig] = useState({
-    topic: 'JavaScript',
+    topic: apiTopic,
     difficulty: 'medium',
     count: 5,
     type: 'multiple-choice'
   });
 
-  // Available options
-  const topics = [
-    { value: 'JavaScript', label: 'JavaScript', icon: '⚡' },
-    { value: 'Python', label: 'Python', icon: '🐍' },
-    { value: 'React', label: 'React', icon: '⚛️' },
-    { value: 'Node.js', label: 'Node.js', icon: '🟢' },
-    { value: 'Algorithms', label: 'Algorithms', icon: '🧠' },
-    { value: 'Data Structures', label: 'Data Structures', icon: '📊' }
+  // Topic hierarchy system
+  const [selectedMainTopic, setSelectedMainTopic] = useState(null);
+  const [showSubTopics, setShowSubTopics] = useState(false);
+
+  // Auto-configure based on selected topic from navigation
+  useEffect(() => {
+    if (selectedTopic && selectedTopic !== 'JavaScript') {
+      // Map selected topic to main categories
+      const topicToMainCategoryMap = {
+        'Software Developer': 'tech-computer-science',
+        'DSA': 'tech-computer-science', 
+        'OOPS': 'tech-computer-science',
+        'System Design': 'tech-computer-science',
+        'Cybersecurity': 'tech-computer-science',
+        'Network Security': 'tech-computer-science',
+        'Ethical Hacking': 'tech-computer-science', 
+        'Cryptography': 'tech-computer-science',
+        'Data Analyst': 'tech-computer-science',
+        'Product Manager': 'business-management',
+        'HR Interview': 'business-management',
+        'Project Coordinator': 'business-management',
+        'System Admin': 'tech-computer-science'
+      };
+      
+      const mainCategory = topicToMainCategoryMap[selectedTopic];
+      if (mainCategory) {
+        setSelectedMainTopic(mainCategory);
+        setShowSubTopics(true);
+        // Auto-select a default subtopic based on the main topic
+        const defaultSubtopic = getDefaultSubtopic(selectedTopic);
+        if (defaultSubtopic) {
+          setQuizConfig({ ...quizConfig, topic: defaultSubtopic });
+        }
+      }
+    }
+  }, [selectedTopic]);
+
+  // Get default subtopic based on selected main topic
+  const getDefaultSubtopic = (topic) => {
+    const defaultMap = {
+      'Software Developer': 'Software Developer',
+      'DSA': 'Algorithms', 
+      'OOPS': 'Java',
+      'System Design': 'System Design',
+      'Cybersecurity': 'Cybersecurity Specialist',
+      'Network Security': 'Network Security',
+      'Ethical Hacking': 'Cybersecurity Specialist',
+      'Cryptography': 'Cybersecurity Specialist',
+      'Data Analyst': 'Data Scientist',
+      'Product Manager': 'Product Manager',
+      'HR Interview': 'HR Manager',
+      'Project Coordinator': 'Project Manager',
+      'System Admin': 'System Administrator'
+    };
+    return defaultMap[topic] || null;
+  };
+
+  // Main topic categories - Enhanced with Tech Computer Science focus
+  const mainTopics = [
+    { value: 'tech-computer-science', label: 'Tech Computer Science', icon: '💻', color: 'blue' },
+    { value: 'business-management', label: 'Business & Management', icon: '📊', color: 'green' },
+    { value: 'engineering', label: 'Engineering & Sciences', icon: '⚙️', color: 'red' },
+    { value: 'creative-design', label: 'Creative & Design', icon: '🎨', color: 'purple' },
+    { value: 'healthcare-medical', label: 'Healthcare & Medical', icon: '🏥', color: 'orange' },
+    { value: 'finance-economics', label: 'Finance & Economics', icon: '�', color: 'yellow' }
   ];
+
+  // Subtopics for each main category - Enhanced structure
+  const subTopics = {
+    'tech-computer-science': [
+      // Core Tech Roles
+      { value: 'Software Developer', label: 'Software Developer', icon: '👨‍💻' },
+      { value: 'Data Scientist', label: 'Data Scientist', icon: '📈' },
+      { value: 'Cybersecurity Specialist', label: 'Cybersecurity Specialist', icon: '🔒' },
+      { value: 'DevOps Engineer', label: 'DevOps Engineer', icon: '�' },
+      { value: 'AI/ML Engineer', label: 'AI/ML Engineer', icon: '🤖' },
+      { value: 'Full Stack Developer', label: 'Full Stack Developer', icon: '🌐' },
+      { value: 'Mobile App Developer', label: 'Mobile App Developer', icon: '📱' },
+      { value: 'Cloud Architect', label: 'Cloud Architect', icon: '☁️' },
+      { value: 'Database Administrator', label: 'Database Administrator', icon: '🗄️' },
+      { value: 'System Administrator', label: 'System Administrator', icon: '�️' },
+      { value: 'Quality Assurance Engineer', label: 'QA Engineer', icon: '🧪' },
+      { value: 'UI/UX Developer', label: 'UI/UX Developer', icon: '🎨' },
+      // Programming Languages
+      { value: 'JavaScript', label: 'JavaScript Programming', icon: '⚡' },
+      { value: 'Python', label: 'Python Programming', icon: '�' },
+      { value: 'Java', label: 'Java Programming', icon: '☕' },
+      { value: 'C++', label: 'C++ Programming', icon: '⚡' },
+      { value: 'React', label: 'React.js Framework', icon: '⚛️' },
+      { value: 'Node.js', label: 'Node.js Backend', icon: '�' },
+      // Core CS Concepts
+      { value: 'Algorithms', label: 'Data Structures & Algorithms', icon: '🧠' },
+      { value: 'System Design', label: 'System Design', icon: '🏗️' },
+      { value: 'Database Design', label: 'Database Design & SQL', icon: '�' },
+      { value: 'Network Security', label: 'Network Security', icon: '🌐' },
+      { value: 'Machine Learning', label: 'Machine Learning', icon: '🤖' }
+    ],
+    'business-management': [
+      { value: 'Product Manager', label: 'Product Manager', icon: '📋' },
+      { value: 'Project Manager', label: 'Project Manager', icon: '📅' },
+      { value: 'Business Analyst', label: 'Business Analyst', icon: '📈' },
+      { value: 'Marketing Manager', label: 'Marketing Manager', icon: '�' },
+      { value: 'Sales Manager', label: 'Sales Manager', icon: '�' },
+      { value: 'HR Manager', label: 'HR Manager', icon: '�' },
+      { value: 'Operations Manager', label: 'Operations Manager', icon: '⚙️' },
+      { value: 'Strategy Consultant', label: 'Strategy Consultant', icon: '🎯' },
+      { value: 'Digital Marketing', label: 'Digital Marketing', icon: '💻' },
+      { value: 'Customer Success', label: 'Customer Success', icon: '🤝' }
+    ],
+    'cybersecurity': [
+      { value: 'Network Security', label: 'Network Security', icon: '🌐' },
+      { value: 'Ethical Hacking', label: 'Ethical Hacking', icon: '🎭' },
+      { value: 'Cryptography', label: 'Cryptography', icon: '🔐' },
+      { value: 'Web Security', label: 'Web Application Security', icon: '🔒' },
+      { value: 'Penetration Testing', label: 'Penetration Testing', icon: '🔍' },
+      { value: 'Incident Response', label: 'Incident Response', icon: '🚨' },
+      { value: 'Risk Management', label: 'Risk Management', icon: '⚖️' },
+      { value: 'Compliance', label: 'Security Compliance', icon: '📋' },
+      { value: 'Malware Analysis', label: 'Malware Analysis', icon: '�' },
+      { value: 'Digital Forensics', label: 'Digital Forensics', icon: '🔬' }
+    ],
+    'cloud-computing': [
+      { value: 'AWS', label: 'Amazon Web Services', icon: '☁️' },
+      { value: 'Azure', label: 'Microsoft Azure', icon: '🔷' },
+      { value: 'Google Cloud', label: 'Google Cloud Platform', icon: '🌤️' },
+      { value: 'Docker', label: 'Docker', icon: '🐳' },
+      { value: 'Kubernetes', label: 'Kubernetes', icon: '⚙️' },
+      { value: 'Serverless', label: 'Serverless Computing', icon: '⚡' },
+      { value: 'Microservices', label: 'Microservices', icon: '🔧' },
+      { value: 'CI/CD', label: 'CI/CD Pipelines', icon: '🔄' }
+    ],
+    'mobile-development': [
+      { value: 'React Native', label: 'React Native', icon: '📱' },
+      { value: 'Flutter', label: 'Flutter', icon: '🎯' },
+      { value: 'iOS Development', label: 'iOS (Swift)', icon: '🍎' },
+      { value: 'Android Development', label: 'Android (Kotlin)', icon: '🤖' },
+      { value: 'Xamarin', label: 'Xamarin', icon: '🔷' },
+      { value: 'Ionic', label: 'Ionic', icon: '⚡' }
+    ],
+    'engineering': [
+      { value: 'Mechanical Engineering', label: 'Mechanical Engineering', icon: '⚙️' },
+      { value: 'Electrical Engineering', label: 'Electrical Engineering', icon: '⚡' },
+      { value: 'Civil Engineering', label: 'Civil Engineering', icon: '🏗️' },
+      { value: 'Chemical Engineering', label: 'Chemical Engineering', icon: '🧪' },
+      { value: 'Aerospace Engineering', label: 'Aerospace Engineering', icon: '✈️' },
+      { value: 'Environmental Engineering', label: 'Environmental Engineering', icon: '🌍' },
+      { value: 'Biomedical Engineering', label: 'Biomedical Engineering', icon: '🏥' },
+      { value: 'Materials Science', label: 'Materials Science', icon: '🔬' }
+    ],
+    'creative-design': [
+      { value: 'Graphic Designer', label: 'Graphic Designer', icon: '🎨' },
+      { value: 'UI/UX Designer', label: 'UI/UX Designer', icon: '📱' },
+      { value: 'Web Designer', label: 'Web Designer', icon: '🌐' },
+      { value: 'Motion Graphics', label: 'Motion Graphics', icon: '🎬' },
+      { value: 'Brand Designer', label: 'Brand Designer', icon: '🏷️' },
+      { value: 'Product Designer', label: 'Product Designer', icon: '📦' }
+    ],
+    'healthcare-medical': [
+      { value: 'General Medicine', label: 'General Medicine', icon: '🩺' },
+      { value: 'Nursing', label: 'Nursing', icon: '👩‍⚕️' },
+      { value: 'Pharmacy', label: 'Pharmacy', icon: '💊' },
+      { value: 'Dentistry', label: 'Dentistry', icon: '🦷' },
+      { value: 'Psychology', label: 'Psychology', icon: '🧠' },
+      { value: 'Medical Technology', label: 'Medical Technology', icon: '🔬' }
+    ],
+    'finance-economics': [
+      { value: 'Financial Analyst', label: 'Financial Analyst', icon: '📊' },
+      { value: 'Investment Banking', label: 'Investment Banking', icon: '🏦' },
+      { value: 'Accounting', label: 'Accounting', icon: '📚' },
+      { value: 'Risk Management', label: 'Risk Management', icon: '⚖️' },
+      { value: 'Corporate Finance', label: 'Corporate Finance', icon: '💼' },
+      { value: 'Economics', label: 'Economics', icon: '📈' }
+    ]
+  };
+
+  // Current available topics (either main topics or subtopics)
+  const getCurrentTopics = () => {
+    if (selectedMainTopic && showSubTopics) {
+      return subTopics[selectedMainTopic] || [];
+    }
+    return mainTopics;
+  };
 
   const difficulties = [
     { value: 'easy', label: 'Easy', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
@@ -103,15 +305,45 @@ const MCQInterview = () => {
     }
   };
 
-  const handleQuizComplete = () => {
+  const handleQuizComplete = async () => {
     let correctAnswers = 0;
+    const userAnswers = [];
+    
     questions.forEach((question, index) => {
-      if (selectedAnswers[index] === question.correctAnswer) {
+      const isCorrect = selectedAnswers[index] === question.correctAnswer;
+      if (isCorrect) {
         correctAnswers++;
       }
+      userAnswers.push({
+        question: question.question,
+        selectedAnswer: question.options[selectedAnswers[index]] || 'Not answered',
+        correctAnswer: question.options[question.correctAnswer],
+        isCorrect
+      });
     });
+    
     setScore(correctAnswers);
     setShowResults(true);
+
+    // Save session to progress tracking
+    if (user) {
+      try {
+        await progressService.saveMCQSession(user.uid, {
+          topic: selectedTopic,
+          difficulty: quizConfig.difficulty,
+          totalQuestions: questions.length,
+          correctAnswers,
+          timeSpent: (quizConfig.timeLimit * 60) - (timeLeft || 0),
+          questions,
+          answers: userAnswers
+        });
+        
+        toast.success('Progress saved successfully!');
+      } catch (error) {
+        console.error('Error saving progress:', error);
+        toast.warn('Quiz completed but progress not saved');
+      }
+    }
   };
 
   const resetQuiz = () => {
@@ -161,10 +393,18 @@ const MCQInterview = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-lg text-gray-600 max-w-2xl mx-auto"
+              className="text-lg text-gray-600 max-w-2xl mx-auto mb-4"
             >
               Test your knowledge with AI-generated questions tailored to your skill level
             </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-lg font-semibold"
+            >
+              📚 Selected Topic: {selectedTopic}
+            </motion.div>
           </div>
 
           {/* Configuration Card */}
@@ -179,16 +419,42 @@ const MCQInterview = () => {
             <div className="grid md:grid-cols-2 gap-8">
               {/* Topic Selection */}
               <div className="space-y-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Select Topic</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {topics.map((topic) => (
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    {showSubTopics ? 'Select Specific Topic' : 'Select Main Category'}
+                  </label>
+                  {showSubTopics && (
+                    <button
+                      onClick={() => {
+                        setShowSubTopics(false);
+                        setSelectedMainTopic(null);
+                      }}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                    >
+                      ← Back to Categories
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                  {getCurrentTopics().map((topic) => (
                     <motion.button
                       key={topic.value}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setQuizConfig({ ...quizConfig, topic: topic.value })}
+                      onClick={() => {
+                        if (!showSubTopics) {
+                          // Main topic selected - show subtopics
+                          setSelectedMainTopic(topic.value);
+                          setShowSubTopics(true);
+                        } else {
+                          // Subtopic selected - set as quiz topic
+                          setQuizConfig({ ...quizConfig, topic: topic.value });
+                        }
+                      }}
                       className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                        quizConfig.topic === topic.value
+                        (!showSubTopics && selectedMainTopic === topic.value) ||
+                        (showSubTopics && quizConfig.topic === topic.value)
                           ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-lg'
                           : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
                       }`}
@@ -198,6 +464,16 @@ const MCQInterview = () => {
                     </motion.button>
                   ))}
                 </div>
+
+                {/* Selected Topic Display */}
+                {showSubTopics && quizConfig.topic && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <span className="text-lg">✅</span>
+                      <span className="font-medium">Selected: {quizConfig.topic}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Difficulty & Count */}
@@ -243,16 +519,30 @@ const MCQInterview = () => {
 
             {/* Start Button */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: showSubTopics && quizConfig.topic ? 1.02 : 1 }}
+              whileTap={{ scale: showSubTopics && quizConfig.topic ? 0.98 : 1 }}
               onClick={fetchQuestionsFromAI}
-              disabled={loading}
-              className="w-full mt-8 py-4 px-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !showSubTopics || !quizConfig.topic}
+              className={`w-full mt-8 py-4 px-8 font-semibold rounded-xl shadow-xl transition-all duration-300 ${
+                showSubTopics && quizConfig.topic && !loading
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-2xl cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               {loading ? (
                 <div className="flex items-center justify-center space-x-3">
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                   <span>Generating Questions...</span>
+                </div>
+              ) : !showSubTopics ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <span>📁</span>
+                  <span>Select a Category First</span>
+                </div>
+              ) : !quizConfig.topic ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <span>🎯</span>
+                  <span>Select a Topic First</span>
                 </div>
               ) : (
                 <div className="flex items-center justify-center space-x-2">

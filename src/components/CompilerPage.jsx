@@ -5,6 +5,7 @@ import { Editor } from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { toast } from 'react-toastify';
+import { useLocation } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
 
 const languages = [
@@ -82,6 +83,70 @@ const topics = [
   { value: 'arrays', label: 'Arrays & Lists', icon: '📋', color: 'blue' },
 ];
 
+// Topic hierarchy system for coding problems
+const mainCodingTopics = [
+  { value: 'algorithms', label: 'Algorithms & Logic', icon: '🧠', color: 'blue' },
+  { value: 'data-structures', label: 'Data Structures', icon: '📊', color: 'green' },
+  { value: 'system-design', label: 'System Design', icon: '🏗️', color: 'purple' },
+  { value: 'web-development', label: 'Web Development', icon: '🌐', color: 'orange' },
+  { value: 'database', label: 'Database & SQL', icon: '🗄️', color: 'indigo' },
+  { value: 'mathematics', label: 'Mathematical Programming', icon: '📐', color: 'red' }
+];
+
+// Subtopics for each main coding category
+const codingSubTopics = {
+  'algorithms': [
+    { value: 'sorting', label: 'Sorting Algorithms', icon: '🔄' },
+    { value: 'searching', label: 'Searching Algorithms', icon: '🔍' },
+    { value: 'graph-algorithms', label: 'Graph Algorithms', icon: '🕸️' },
+    { value: 'greedy', label: 'Greedy Algorithms', icon: '🎯' },
+    { value: 'divide-conquer', label: 'Divide & Conquer', icon: '⚡' },
+    { value: 'backtracking', label: 'Backtracking', icon: '🔙' },
+    { value: 'dynamic-programming', label: 'Dynamic Programming', icon: '💡' },
+    { value: 'bit-manipulation', label: 'Bit Manipulation', icon: '🔢' }
+  ],
+  'data-structures': [
+    { value: 'arrays', label: 'Arrays & Lists', icon: '📋' },
+    { value: 'linked-lists', label: 'Linked Lists', icon: '🔗' },
+    { value: 'stacks-queues', label: 'Stacks & Queues', icon: '📚' },
+    { value: 'trees', label: 'Trees & Binary Trees', icon: '🌳' },
+    { value: 'heaps', label: 'Heaps & Priority Queues', icon: '⛰️' },
+    { value: 'hash-tables', label: 'Hash Tables & Maps', icon: '🗂️' },
+    { value: 'graphs', label: 'Graphs & Networks', icon: '🕸️' },
+    { value: 'tries', label: 'Tries & Prefix Trees', icon: '🌲' }
+  ],
+  'system-design': [
+    { value: 'scalability', label: 'System Scalability', icon: '📈' },
+    { value: 'load-balancing', label: 'Load Balancing', icon: '⚖️' },
+    { value: 'caching', label: 'Caching Strategies', icon: '💾' },
+    { value: 'microservices', label: 'Microservices Design', icon: '🔧' },
+    { value: 'api-design', label: 'API Design', icon: '🔌' },
+    { value: 'distributed-systems', label: 'Distributed Systems', icon: '🌐' }
+  ],
+  'web-development': [
+    { value: 'javascript', label: 'JavaScript Challenges', icon: '⚡' },
+    { value: 'react', label: 'React Problems', icon: '⚛️' },
+    { value: 'nodejs', label: 'Node.js Backend', icon: '🟢' },
+    { value: 'dom-manipulation', label: 'DOM Manipulation', icon: '🎨' },
+    { value: 'async-programming', label: 'Async Programming', icon: '🔄' },
+    { value: 'web-apis', label: 'Web APIs', icon: '🔌' }
+  ],
+  'database': [
+    { value: 'sql-queries', label: 'SQL Query Problems', icon: '🔍' },
+    { value: 'database-design', label: 'Database Design', icon: '🏗️' },
+    { value: 'optimization', label: 'Query Optimization', icon: '⚡' },
+    { value: 'transactions', label: 'Transactions & ACID', icon: '🔒' },
+    { value: 'nosql', label: 'NoSQL Databases', icon: '📊' }
+  ],
+  'mathematics': [
+    { value: 'number-theory', label: 'Number Theory', icon: '🔢' },
+    { value: 'combinatorics', label: 'Combinatorics', icon: '🎲' },
+    { value: 'probability', label: 'Probability', icon: '📈' },
+    { value: 'geometry', label: 'Computational Geometry', icon: '📐' },
+    { value: 'matrix', label: 'Matrix Operations', icon: '⬜' }
+  ]
+};
+
 const difficulties = [
   { value: 'easy', label: 'Easy', color: 'text-green-600', bgColor: 'bg-green-50', borderColor: 'border-green-200' },
   { value: 'medium', label: 'Medium', color: 'text-orange-600', bgColor: 'bg-orange-50', borderColor: 'border-orange-200' },
@@ -89,6 +154,100 @@ const difficulties = [
 ];
 
 function CompilerPage() {
+  const location = useLocation();
+  
+  // Get selected topic from navigation state
+  const selectedTopic = location.state?.subject || 'algorithms';
+  
+  // Topic hierarchy state
+  const [selectedMainTopic, setSelectedMainTopic] = useState(null);
+  const [showSubTopics, setShowSubTopics] = useState(false);
+  const [configuredTopic, setConfiguredTopic] = useState(null);
+
+  // Auto-configure based on selected topic from navigation
+  useEffect(() => {
+    if (selectedTopic && selectedTopic !== 'algorithms') {
+      // Map selected topic to main categories
+      const topicToMainCategoryMap = {
+        'Software Developer': 'algorithms',
+        'DSA': 'data-structures', 
+        'OOPS': 'algorithms',
+        'System Design': 'system-design',
+        'Cybersecurity': 'algorithms',
+        'Network Security': 'algorithms',
+        'Ethical Hacking': 'algorithms', 
+        'Cryptography': 'algorithms',
+        'Data Analyst': 'mathematics',
+        'Product Manager': 'system-design',
+        'HR Interview': 'algorithms',
+        'Project Coordinator': 'system-design',
+        'System Admin': 'algorithms'
+      };
+      
+      const mainCategory = topicToMainCategoryMap[selectedTopic];
+      if (mainCategory) {
+        setSelectedMainTopic(mainCategory);
+        setShowSubTopics(true);
+        // Auto-select a default subtopic based on the main topic
+        const defaultSubtopic = getCodingDefaultSubtopic(selectedTopic);
+        if (defaultSubtopic) {
+          setProblemConfig({ ...problemConfig, topic: defaultSubtopic });
+          setConfiguredTopic(defaultSubtopic);
+        }
+      }
+    }
+  }, [selectedTopic]);
+
+  // Get default coding subtopic based on selected main topic
+  const getCodingDefaultSubtopic = (topic) => {
+    const defaultMap = {
+      'Software Developer': 'sorting',
+      'DSA': 'arrays', 
+      'OOPS': 'algorithms',
+      'System Design': 'scalability',
+      'Cybersecurity': 'bit-manipulation',
+      'Network Security': 'searching',
+      'Ethical Hacking': 'backtracking',
+      'Cryptography': 'bit-manipulation',
+      'Data Analyst': 'number-theory',
+      'Product Manager': 'api-design',
+      'HR Interview': 'sorting',
+      'Project Coordinator': 'microservices',
+      'System Admin': 'greedy'
+    };
+    return defaultMap[topic] || null;
+  };
+  
+  // Map topics to API format
+  const mapTopicToAPI = (topic) => {
+    const topicMap = {
+      'Software Developer': 'algorithms',
+      'DSA': 'data-structures',
+      'OOPS': 'algorithms',
+      'System Design': 'system-design',
+      'Cybersecurity': 'algorithms',
+      'Network Security': 'algorithms',
+      'Ethical Hacking': 'algorithms',
+      'Cryptography': 'algorithms',
+      'Data Analyst': 'arrays',
+      'Product Manager': 'algorithms',
+      'HR Interview': 'algorithms',
+      'Project Coordinator': 'algorithms',
+      'System Admin': 'algorithms'
+    };
+    return topicMap[topic] || topic.toLowerCase().replace(/\s+/g, '-');
+  };
+  
+  const apiTopic = mapTopicToAPI(selectedTopic);
+  
+  // Get current topics for display (main or sub)
+  const getCurrentCodingTopics = () => {
+    if (selectedMainTopic && showSubTopics) {
+      return codingSubTopics[selectedMainTopic] || [];
+    }
+    return mainCodingTopics;
+  };
+  
   const [code, setCode] = useState(languages[3].template); // Default to Python
   const [language, setLanguage] = useState(languages[3]);
   const [problemDetails, setProblemDetails] = useState(null);
@@ -119,9 +278,9 @@ function CompilerPage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [code, isRunning, isSubmitting]);
 
-  // Problem generation configuration
+  // Problem generation configuration - use selected topic as default
   const [problemConfig, setProblemConfig] = useState({
-    topic: 'algorithms',
+    topic: apiTopic,
     difficulty: 'medium',
     language: 'python'
   });
@@ -402,10 +561,18 @@ function CompilerPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="text-lg text-gray-600 max-w-2xl mx-auto"
+                className="text-lg text-gray-600 max-w-2xl mx-auto mb-4"
               >
                 Solve AI-generated coding problems in your favorite programming language
               </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-lg font-semibold"
+              >
+                💻 Selected Topic: {selectedTopic}
+              </motion.div>
             </div>
 
             {/* Configuration Card */}
@@ -420,16 +587,43 @@ function CompilerPage() {
               <div className="grid lg:grid-cols-3 gap-6">
                 {/* Topic Selection */}
                 <div className="space-y-3">
-                  <label className="block text-lg font-semibold text-gray-700 mb-3">Problem Topic</label>
-                  <div className="space-y-2">
-                    {topics.map((topic) => (
+                  <div className="flex items-center justify-between">
+                    <label className="block text-lg font-semibold text-gray-700">
+                      {showSubTopics ? 'Specific Topic' : 'Problem Category'}
+                    </label>
+                    {showSubTopics && (
+                      <button
+                        onClick={() => {
+                          setShowSubTopics(false);
+                          setSelectedMainTopic(null);
+                        }}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        ← Back to Categories
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {getCurrentCodingTopics().map((topic) => (
                       <motion.button
                         key={topic.value}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setProblemConfig({ ...problemConfig, topic: topic.value })}
+                        onClick={() => {
+                          if (!showSubTopics) {
+                            // Main topic selected - show subtopics
+                            setSelectedMainTopic(topic.value);
+                            setShowSubTopics(true);
+                          } else {
+                            // Subtopic selected - set as problem topic
+                            setProblemConfig({ ...problemConfig, topic: topic.value });
+                            setConfiguredTopic(topic.value);
+                          }
+                        }}
                         className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
-                          problemConfig.topic === topic.value
+                          (!showSubTopics && selectedMainTopic === topic.value) ||
+                          (showSubTopics && problemConfig.topic === topic.value)
                             ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
                             : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
                         }`}
@@ -443,6 +637,16 @@ function CompilerPage() {
                       </motion.button>
                     ))}
                   </div>
+
+                  {/* Selected Topic Display */}
+                  {showSubTopics && configuredTopic && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-800">
+                        <span className="text-lg">✅</span>
+                        <span className="font-medium">Selected: {configuredTopic}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Difficulty & Language */}
@@ -501,16 +705,30 @@ function CompilerPage() {
 
               {/* Generate Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: showSubTopics && configuredTopic ? 1.02 : 1 }}
+                whileTap={{ scale: showSubTopics && configuredTopic ? 0.98 : 1 }}
                 onClick={generateNewProblem}
-                disabled={loadingProblem}
-                className="w-full mt-8 py-3 px-6 bg-blue-700 text-white font-bold rounded-xl shadow-lg hover:bg-blue-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                disabled={loadingProblem || !showSubTopics || !configuredTopic}
+                className={`w-full mt-8 py-3 px-6 font-bold rounded-xl shadow-lg transition-all duration-300 text-lg ${
+                  showSubTopics && configuredTopic && !loadingProblem
+                    ? 'bg-blue-700 text-white hover:bg-blue-800 cursor-pointer'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
                 {loadingProblem ? (
                   <div className="flex items-center justify-center space-x-3">
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                     <span>Generating Challenge...</span>
+                  </div>
+                ) : !showSubTopics ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>📁</span>
+                    <span>Select a Category First</span>
+                  </div>
+                ) : !configuredTopic ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>🎯</span>
+                    <span>Select a Topic First</span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center space-x-2">

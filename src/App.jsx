@@ -17,6 +17,9 @@ import Register from './pages/Register.jsx';
 import InterviewModeSelect from './pages/InterviewModeSelect.jsx';
 import MCQInterview from './pages/MCQInterview.jsx';
 import Compiler from './pages/Compiler.jsx';
+import Dashboard from './pages/Dashboard.jsx';
+import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
+import DashboardTest from './pages/DashboardTest.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 
 // ProtectedRoute component to check authentication
@@ -94,6 +97,30 @@ function AppContent() {
             element={
               <ProtectedRoute>
                 <MCQInterview />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/face-to-face-interview" 
+            element={
+              <ProtectedRoute>
+                <FaceToFaceInterview />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard-test" 
+            element={
+              <ProtectedRoute>
+                <DashboardTest />
               </ProtectedRoute>
             } 
           />
