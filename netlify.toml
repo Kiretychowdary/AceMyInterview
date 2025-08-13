@@ -8,6 +8,13 @@
   # Default build command
   command = "npm run build"
 
+# Environment variables for production
+[build.environment]
+  VITE_API_BASE_URL = "https://acemyinterview-production.up.railway.app"
+  VITE_API_URL = "https://acemyinterview-production.up.railway.app/api"
+  VITE_APP_NAME = "AceMyInterview"
+  VITE_APP_VERSION = "1.0.0"
+
 [build.environment]
   NODE_VERSION = "18"
 
@@ -17,12 +24,8 @@
   to = "/index.html"
   status = 200
 
-# API proxy for backend calls (if backend is deployed separately)
-[[redirects]]
-  from = "/api/*"
-  to = "https://your-backend-url/.netlify/functions/:splat"
-  status = 200
-  force = false
+# Note: API calls go directly to Railway backend
+# https://acemyinterview-production.up.railway.app/api
 
 # Headers for better security and performance
 [[headers]]
