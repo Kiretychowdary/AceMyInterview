@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Webcam from 'react-webcam';
-import * as tf from '@tensorflow/tfjs';
-import * as blazeface from '@tensorflow-models/blazeface';
 import { useAuth } from '../components/AuthContext';
 import geminiService from '../services/GeminiService';
 import progressService from '../services/ProgressService';
@@ -13,8 +11,6 @@ const FaceToFaceInterview = () => {
   const { user } = useAuth();
   const webcamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
-  const canvasRef = useRef(null);
-  const faceDetectionIntervalRef = useRef(null);
   
   // Interview configuration from navigation state
   const interviewConfig = location.state || {
@@ -46,19 +42,11 @@ const FaceToFaceInterview = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [speechTranscription, setSpeechTranscription] = useState('');
 
-  // Face detection state
-  const [faceModel, setFaceModel] = useState(null);
-  const [faceCount, setFaceCount] = useState(0);
-  const [faceDetectionActive, setFaceDetectionActive] = useState(false);
-  const [integrityViolations, setIntegrityViolations] = useState([]);
-  const [showIntegrityAlert, setShowIntegrityAlert] = useState(false);
-
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
-    initializeFaceDetection();
     generateQuestions();
   }, [user, navigate]);
 
@@ -89,123 +77,6 @@ const FaceToFaceInterview = () => {
     }
     return () => clearInterval(recordingTimer);
   }, [isRecording]);
-
-  // Start face detection when interview begins
-  useEffect(() => {
-    if (interviewState === 'interview' && faceModel && webcamRef.current) {
-      startFaceDetection();
-    } else if (interviewState !== 'interview') {
-      stopFaceDetection();
-    }
-    return () => stopFaceDetection();
-  }, [interviewState, faceModel]);
-
-  // Initialize face detection model
-  const initializeFaceDetection = async () => {
-    try {
-      await tf.ready();
-      const model = await blazeface.load();
-      setFaceModel(model);
-      console.log('Face detection model loaded successfully');
-    } catch (error) {
-      console.error('Error loading face detection model:', error);
-    }
-  };
-
-  // Start continuous face detection
-  const startFaceDetection = () => {
-    if (faceDetectionIntervalRef.current) return;
-    
-    setFaceDetectionActive(true);
-    faceDetectionIntervalRef.current = setInterval(async () => {
-      await detectFaces();
-    }, 2000); // Check every 2 seconds
-  };
-
-  // Stop face detection
-  const stopFaceDetection = () => {
-    if (faceDetectionIntervalRef.current) {
-      clearInterval(faceDetectionIntervalRef.current);
-      faceDetectionIntervalRef.current = null;
-    }
-    setFaceDetectionActive(false);
-  };
-
-  // Detect faces in webcam feed
-  const detectFaces = async () => {
-    if (!faceModel || !webcamRef.current || !webcamRef.current.video) return;
-    
-    try {
-      const video = webcamRef.current.video;
-      const predictions = await faceModel.estimateFaces(video, false);
-      
-      const currentFaceCount = predictions.length;
-      setFaceCount(currentFaceCount);
-      
-      // Check for integrity violations
-      if (currentFaceCount === 0) {
-        handleIntegrityViolation('No face detected', 'Please ensure you are visible to the camera');
-      } else if (currentFaceCount > 1) {
-        handleIntegrityViolation('Multiple faces detected', `${currentFaceCount} faces detected. Only one person should be present`);
-      }
-      
-      // Draw face detection boxes (optional visual feedback)
-      if (canvasRef.current && predictions.length > 0) {
-        drawFaceBoxes(predictions);
-      }
-    } catch (error) {
-      console.error('Face detection error:', error);
-    }
-  };
-
-  // Draw bounding boxes around detected faces
-  const drawFaceBoxes = (predictions) => {
-    if (!canvasRef.current || !webcamRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const video = webcamRef.current.video;
-    const ctx = canvas.getContext('2d');
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    predictions.forEach(prediction => {
-      const [x, y, width, height] = prediction.topLeft.concat(prediction.bottomRight);
-      
-      // Draw bounding box
-      ctx.strokeStyle = predictions.length === 1 ? '#00ff00' : '#ff0000'; // Green for 1 face, red for multiple
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x, y, width - x, height - y);
-      
-      // Add face count label
-      ctx.fillStyle = predictions.length === 1 ? '#00ff00' : '#ff0000';
-      ctx.font = '16px Arial';
-      ctx.fillText(`Face ${predictions.indexOf(prediction) + 1}`, x, y - 10);
-    });
-  };
-
-  // Handle integrity violations
-  const handleIntegrityViolation = (type, message) => {
-    const violation = {
-      type,
-      message,
-      timestamp: new Date().toISOString(),
-      questionIndex: currentQuestionIndex
-    };
-    
-    setIntegrityViolations(prev => [...prev, violation]);
-    setShowIntegrityAlert(true);
-    
-    // Auto-hide alert after 5 seconds
-    setTimeout(() => {
-      setShowIntegrityAlert(false);
-    }, 5000);
-    
-    // Log violation for assessment
-    console.warn('Interview integrity violation:', violation);
-  };
 
   const generateQuestions = async () => {
     setLoading(true);
@@ -419,9 +290,7 @@ const FaceToFaceInterview = () => {
           answeredQuestions: finalResponses.filter(r => r.trim() !== '').length,
           timeSpent: (interviewConfig.duration * 60) - timeRemaining,
           inputMethod: inputMethod,
-          voiceUsed: inputMethod.includes('voice'),
-          integrityViolations: integrityViolations,
-          integrityScore: integrityViolations.length === 0 ? 5.0 : Math.max(1.0, 5.0 - (integrityViolations.length * 0.5))
+          voiceUsed: inputMethod.includes('voice')
         }
       };
 
@@ -737,152 +606,30 @@ const FaceToFaceInterview = () => {
         </div>
 
         <div className="max-w-7xl mx-auto p-6">
-          {/* Integrity Alert */}
-          {showIntegrityAlert && (
-            <div className="fixed top-4 right-4 z-50 bg-red-600 text-white p-4 rounded-lg shadow-lg border-l-4 border-red-800 max-w-md">
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-red-200 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                <div>
-                  <h4 className="font-semibold text-sm">Interview Integrity Alert</h4>
-                  <p className="text-sm mt-1 opacity-90">
-                    {integrityViolations[integrityViolations.length - 1]?.message}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setShowIntegrityAlert(false)}
-                  className="ml-auto text-red-200 hover:text-white"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Camera and Face Detection */}
+            {/* Left Column - Camera */}
             <div className="lg:col-span-1 space-y-6">
-              {/* Camera with Face Detection Overlay */}
               <div className="bg-black rounded-xl overflow-hidden shadow-lg">
-                <div className="p-3 bg-gray-800 border-b flex justify-between items-center">
-                  <h3 className="font-semibold flex items-center">
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Camera View
-                  </h3>
-                  
-                  {/* Face Detection Status */}
-                  <div className="flex items-center space-x-2 text-xs">
-                    <div className={`w-2 h-2 rounded-full ${
-                      faceDetectionActive ? 
-                        (faceCount === 1 ? 'bg-green-500' : 
-                         faceCount === 0 ? 'bg-yellow-500' : 'bg-red-500') : 
-                        'bg-gray-500'
-                    }`}></div>
-                    <span className={`${
-                      faceCount === 1 ? 'text-green-400' :
-                      faceCount === 0 ? 'text-yellow-400' :
-                      faceCount > 1 ? 'text-red-400' : 'text-gray-400'
-                    }`}>
-                      {faceDetectionActive ? 
-                        (faceCount === 1 ? '1 Face' :
-                         faceCount === 0 ? 'No Face' :
-                         `${faceCount} Faces`) : 'Detecting...'
-                      }
-                    </span>
-                  </div>
+                <div className="p-3 bg-gray-800 border-b">
+                  <h3 className="font-semibold">Camera View</h3>
                 </div>
-                
                 <div className="relative">
                   {cameraPermission ? (
-                    <>
-                      <Webcam
-                        ref={webcamRef}
-                        audio={false}
-                        className="w-full h-48 object-cover"
-                        videoConstraints={{
-                          width: 640,
-                          height: 480,
-                          facingMode: "user"
-                        }}
-                      />
-                      {/* Face Detection Canvas Overlay */}
-                      <canvas
-                        ref={canvasRef}
-                        className="absolute top-0 left-0 w-full h-48 pointer-events-none"
-                        style={{ zIndex: 10 }}
-                      />
-                    </>
+                    <Webcam
+                      ref={webcamRef}
+                      audio={false}
+                      className="w-full h-48 object-cover"
+                      videoConstraints={{
+                        width: 640,
+                        height: 480,
+                        facingMode: "user"
+                      }}
+                    />
                   ) : (
                     <div className="w-full h-48 flex items-center justify-center bg-gray-800">
                       <span className="text-gray-400">Camera not available</span>
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Face Detection Status Panel */}
-              <div className="bg-gray-800 rounded-xl p-4">
-                <h3 className="font-semibold mb-3 flex items-center">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Integrity Monitoring
-                </h3>
-                
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Face Detection</span>
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        faceDetectionActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
-                      }`}></div>
-                      <span className={faceDetectionActive ? 'text-green-400' : 'text-gray-400'}>
-                        {faceDetectionActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Faces Detected</span>
-                    <span className={`font-semibold ${
-                      faceCount === 1 ? 'text-green-400' :
-                      faceCount === 0 ? 'text-yellow-400' :
-                      'text-red-400'
-                    }`}>
-                      {faceCount}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Violations</span>
-                    <span className={`font-semibold ${
-                      integrityViolations.length === 0 ? 'text-green-400' : 'text-red-400'
-                    }`}>
-                      {integrityViolations.length}
-                    </span>
-                  </div>
-
-                  {/* Status Message */}
-                  <div className="mt-4 p-3 rounded-lg border text-center text-xs">
-                    {faceCount === 1 ? (
-                      <div className="text-green-300 border-green-600 bg-green-900 bg-opacity-30">
-                        ✓ Interview integrity maintained
-                      </div>
-                    ) : faceCount === 0 ? (
-                      <div className="text-yellow-300 border-yellow-600 bg-yellow-900 bg-opacity-30">
-                        ⚠ Please position yourself in front of camera
-                      </div>
-                    ) : (
-                      <div className="text-red-300 border-red-600 bg-red-900 bg-opacity-30">
-                        🚫 Multiple people detected - Interview may be flagged
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
@@ -1074,7 +821,7 @@ const FaceToFaceInterview = () => {
           </div>
 
           {/* Overall Score */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-white rounded-xl shadow-lg p-6 text-center">
               <div className="text-4xl font-bold text-blue-600 mb-2">
                 {assessment.overallScore.toFixed(1)}
@@ -1098,71 +845,7 @@ const FaceToFaceInterview = () => {
               <div className="text-gray-600">Time Taken</div>
               <div className="text-sm text-gray-500 mt-1">Interview duration</div>
             </div>
-
-            <div className="bg-white rounded-xl shadow-lg p-6 text-center">
-              <div className={`text-4xl font-bold mb-2 ${
-                integrityViolations.length === 0 ? 'text-green-600' : 
-                integrityViolations.length <= 2 ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                {integrityViolations.length === 0 ? '✓' : integrityViolations.length}
-              </div>
-              <div className="text-gray-600">Integrity Score</div>
-              <div className="text-sm text-gray-500 mt-1">
-                {integrityViolations.length === 0 ? 'Clean' : `${integrityViolations.length} violations`}
-              </div>
-            </div>
           </div>
-
-          {/* Integrity Report */}
-          {integrityViolations.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border-l-4 border-yellow-500">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <svg className="w-6 h-6 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Interview Integrity Report
-              </h2>
-              
-              <div className="bg-yellow-50 p-4 rounded-lg mb-4">
-                <p className="text-yellow-800 text-sm">
-                  <strong>Note:</strong> The following integrity violations were detected during your interview. 
-                  These may affect your assessment and could require verification with a human reviewer.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {integrityViolations.map((violation, index) => (
-                  <div key={index} className="flex items-start p-3 bg-gray-50 rounded-lg">
-                    <svg className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{violation.type}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{violation.message}</p>
-                        </div>
-                        <div className="text-xs text-gray-500 ml-4">
-                          <div>Q{violation.questionIndex + 1}</div>
-                          <div>{new Date(violation.timestamp).toLocaleTimeString()}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold text-blue-800 mb-2">Recommendations:</h4>
-                <ul className="text-blue-700 text-sm space-y-1">
-                  <li>• Ensure you are alone in the room during future interviews</li>
-                  <li>• Position yourself clearly in front of the camera</li>
-                  <li>• Maintain good lighting and camera stability</li>
-                  <li>• Consider retaking the interview if integrity score is significantly affected</li>
-                </ul>
-              </div>
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="bg-white rounded-2xl shadow-lg p-8">
