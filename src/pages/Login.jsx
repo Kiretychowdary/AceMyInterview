@@ -27,12 +27,36 @@ const Login = () => {
         registerPassword
       );
       console.log("User logged in:", userCredential.user);
-      toast.success("Login successful!");
+      toast.success("Login successful!", {
+        autoClose: 3000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#ecfdf5',
+          color: '#065f46',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #10b981'
+        }
+      });
       setUser(userCredential.user);
       navigate('/');
     } catch (error) {
       console.error("Login error:", error.message);
-      toast.error(error.message);
+      toast.error(error.message, {
+        autoClose: 5000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #ef4444'
+        }
+      });
     }
   };
 
@@ -41,11 +65,35 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       console.log("Google Login Success:", result.user);
-      toast.success("Logged in with Google!");
+      toast.success("Logged in with Google!", {
+        autoClose: 3000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#eff6ff',
+          color: '#1d4ed8',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #3b82f6'
+        }
+      });
       navigate('/');
     } catch (error) {
       console.error("Google login error:", error.message);
-      toast.error("Google login failed");
+      toast.error("Google login failed", {
+        autoClose: 5000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #ef4444'
+        }
+      });
     }
   };
 

@@ -16,6 +16,82 @@
   --glass-border: rgba(255, 255, 255, 0.2);
 }
 
+/* 🎨 TOAST ENHANCEMENT STYLES */
+.Toastify__toast-container {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  z-index: 9999999 !important; /* Ensure toasts are on top */
+}
+
+.Toastify__toast {
+  margin-bottom: 1rem !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(10px) !important;
+  min-height: 70px !important;
+  font-weight: 600 !important;
+}
+
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #e8f4fd, #f0f9ff) !important;
+  border: 2px solid #3b82f6 !important;
+  color: #1e40af !important;
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdf4) !important;
+  border: 2px solid #10b981 !important;
+  color: #065f46 !important;
+}
+
+.Toastify__toast--warning {
+  background: linear-gradient(135deg, #fef3c7, #fefce8) !important;
+  border: 2px solid #f59e0b !important;
+  color: #92400e !important;
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #fef2f2, #fef1f1) !important;
+  border: 2px solid #ef4444 !important;
+  color: #991b1b !important;
+}
+
+.Toastify__progress-bar--info {
+  background: #3b82f6 !important;
+}
+
+.Toastify__progress-bar--success {
+  background: #10b981 !important;
+}
+
+.Toastify__progress-bar--warning {
+  background: #f59e0b !important;
+}
+
+.Toastify__progress-bar--error {
+  background: #ef4444 !important;
+}
+
+/* Motivational toast specific styling */
+.motivational-toast,
+.motivational-toast-professional {
+  animation: slideInAndPulse 0.8s ease-out !important;
+}
+
+@keyframes slideInAndPulse {
+  0% {
+    transform: translateX(100%) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(0) scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
 /* Apply global styles */
 body {
   background-color: var(--bg-white);

@@ -60,24 +60,44 @@ const MCQInterview = () => {
       // Show motivational quote while loading
       const motivationalQuote = GeminiService.getMotivationalQuote();
       toast.info(motivationalQuote, { 
-        duration: 8000,  // Longer duration to read the quote
+        autoClose: 8000,  // Longer duration to read the quote
         position: "top-center",
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        className: "motivational-toast-professional",
         style: {
-          backgroundColor: '#f8f9fa',
-          color: '#2c3e50',
-          fontSize: '14px',
+          backgroundColor: '#fef7ff',
+          color: '#581c87',
+          fontSize: '16px',
+          fontWeight: '600',
           textAlign: 'center',
-          padding: '12px',
-          borderRadius: '8px',
-          maxWidth: '500px'
+          padding: '20px',
+          borderRadius: '12px',
+          border: '2px solid #a855f7',
+          maxWidth: '600px',
+          minHeight: '80px',
+          boxShadow: '0 8px 25px rgba(168, 85, 247, 0.15)',
+          lineHeight: '1.5'
         }
       });
 
       // Secondary loading message
       setTimeout(() => {
         toast.info('🤖 AI is crafting professional-level questions for you...', { 
-          duration: 5000,
-          position: "bottom-right"
+          autoClose: 5000,
+          position: "bottom-right",
+          hideProgressBar: false,
+          style: {
+            backgroundColor: '#f3f4f6',
+            color: '#374151',
+            fontSize: '14px',
+            fontWeight: '500',
+            padding: '16px',
+            borderRadius: '10px',
+            border: '1px solid #6b7280'
+          }
         });
       }, 2000);
 
@@ -91,12 +111,38 @@ const MCQInterview = () => {
         setQuestions(response.questions);
         setQuizStarted(true);
         setTimeLeft(quizConfig.count * 120); // 2 minutes per question
-        toast.success(`✅ ${response.questions.length} AI questions loaded!`);
+        toast.success(`✅ ${response.questions.length} Professional AI questions loaded!`, {
+          autoClose: 4000,
+          position: "top-center",
+          style: {
+            backgroundColor: '#f0fdf4',
+            color: '#14532d',
+            fontSize: '16px',
+            fontWeight: '600',
+            padding: '18px',
+            borderRadius: '12px',
+            border: '2px solid #22c55e',
+            boxShadow: '0 8px 25px rgba(34, 197, 94, 0.15)'
+          }
+        });
       } else {
         setQuestions(response.questions);
         setQuizStarted(true);
         setTimeLeft(quizConfig.count * 120);
-        toast.warn('⚠️ Using sample questions - AI service unavailable');
+        toast.warn('⚠️ Using sample questions - AI service unavailable', {
+          autoClose: 6000,
+          position: "top-center",
+          style: {
+            backgroundColor: '#fefce8',
+            color: '#a16207',
+            fontSize: '16px',
+            fontWeight: '600',
+            padding: '18px',
+            borderRadius: '12px',
+            border: '2px solid #eab308',
+            boxShadow: '0 8px 25px rgba(234, 179, 8, 0.15)'
+          }
+        });
       }
     } catch (error) {
       console.error('Error fetching questions:', error);

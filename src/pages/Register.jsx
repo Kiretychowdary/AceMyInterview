@@ -22,10 +22,36 @@ const Register = () => {
         registerPassword
       );
       console.log("User registered:", user.user);
-      toast.success("Registration successful!");
+      toast.success("Registration successful!", {
+        autoClose: 4000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#f0fdf4',
+          color: '#14532d',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #22c55e',
+          boxShadow: '0 6px 20px rgba(34, 197, 94, 0.15)'
+        }
+      });
     } catch (error) {
       console.error("Registration error:", error.message);
-      toast.error(error.message);
+      toast.error(error.message, {
+        autoClose: 5000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #ef4444',
+          boxShadow: '0 6px 20px rgba(239, 68, 68, 0.15)'
+        }
+      });
     }
   };
 

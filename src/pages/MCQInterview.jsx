@@ -262,24 +262,44 @@ const MCQInterview = () => {
       // Show motivational quote while loading
       const motivationalQuote = GeminiService.getMotivationalQuote();
       toast.info(motivationalQuote, { 
-        duration: 8000,  // Longer duration to read the quote
+        autoClose: 8000,  // Longer duration to read the quote
         position: "top-center",
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        className: "motivational-toast",
         style: {
-          backgroundColor: '#f8f9fa',
-          color: '#2c3e50',
-          fontSize: '14px',
+          backgroundColor: '#e8f4fd',
+          color: '#1a365d',
+          fontSize: '16px',
+          fontWeight: '600',
           textAlign: 'center',
-          padding: '12px',
-          borderRadius: '8px',
-          maxWidth: '500px'
+          padding: '20px',
+          borderRadius: '12px',
+          border: '2px solid #3182ce',
+          maxWidth: '600px',
+          minHeight: '80px',
+          boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
+          lineHeight: '1.5'
         }
       });
 
       // Secondary loading message
       setTimeout(() => {
         toast.info('🤖 AI is crafting personalized questions for you...', { 
-          duration: 5000,
-          position: "bottom-right"
+          autoClose: 5000,
+          position: "bottom-right",
+          hideProgressBar: false,
+          style: {
+            backgroundColor: '#f0f9ff',
+            color: '#0c4a6e',
+            fontSize: '14px',
+            fontWeight: '500',
+            padding: '16px',
+            borderRadius: '10px',
+            border: '1px solid #0ea5e9'
+          }
         });
       }, 2000);
 
@@ -293,16 +313,55 @@ const MCQInterview = () => {
         setQuestions(response.questions);
         setQuizStarted(true);
         setTimeLeft(quizConfig.count * 120); // 2 minutes per question
-        toast.success(`✅ ${response.questions.length} AI questions loaded!`);
+        toast.success(`✅ ${response.questions.length} AI questions loaded!`, {
+          autoClose: 4000,
+          position: "top-center",
+          style: {
+            backgroundColor: '#ecfdf5',
+            color: '#065f46',
+            fontSize: '16px',
+            fontWeight: '600',
+            padding: '18px',
+            borderRadius: '12px',
+            border: '2px solid #10b981',
+            boxShadow: '0 8px 25px rgba(16, 185, 129, 0.15)'
+          }
+        });
       } else {
         setQuestions(response.questions);
         setQuizStarted(true);
         setTimeLeft(quizConfig.count * 120);
-        toast.warn('⚠️ Using sample questions - AI service unavailable');
+        toast.warn('⚠️ Using sample questions - AI service unavailable', {
+          autoClose: 6000,
+          position: "top-center",
+          style: {
+            backgroundColor: '#fef3c7',
+            color: '#92400e',
+            fontSize: '16px',
+            fontWeight: '600',
+            padding: '18px',
+            borderRadius: '12px',
+            border: '2px solid #f59e0b',
+            boxShadow: '0 8px 25px rgba(245, 158, 11, 0.15)'
+          }
+        });
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
-      toast.error('Failed to generate questions');
+      toast.error('Failed to generate questions', {
+        autoClose: 5000,
+        position: "top-center",
+        style: {
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '18px',
+          borderRadius: '12px',
+          border: '2px solid #ef4444',
+          boxShadow: '0 8px 25px rgba(239, 68, 68, 0.15)'
+        }
+      });
     } finally {
       setLoading(false);
     }
@@ -362,10 +421,36 @@ const MCQInterview = () => {
           answers: userAnswers
         });
         
-        toast.success('Progress saved successfully!');
+        toast.success('Progress saved successfully!', {
+          autoClose: 4000,
+          position: "bottom-right",
+          style: {
+            backgroundColor: '#ecfdf5',
+            color: '#065f46',
+            fontSize: '15px',
+            fontWeight: '600',
+            padding: '16px',
+            borderRadius: '10px',
+            border: '2px solid #10b981',
+            boxShadow: '0 6px 20px rgba(16, 185, 129, 0.12)'
+          }
+        });
       } catch (error) {
         console.error('Error saving progress:', error);
-        toast.warn('Quiz completed but progress not saved');
+        toast.warn('Quiz completed but progress not saved', {
+          autoClose: 5000,
+          position: "bottom-right",
+          style: {
+            backgroundColor: '#fef3c7',
+            color: '#92400e',
+            fontSize: '15px',
+            fontWeight: '600',
+            padding: '16px',
+            borderRadius: '10px',
+            border: '2px solid #f59e0b',
+            boxShadow: '0 6px 20px rgba(245, 158, 11, 0.12)'
+          }
+        });
       }
     }
   };

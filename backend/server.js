@@ -28,6 +28,87 @@ const GEMINI_API_URL = process.env.GEMINI_API_URL;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT) || 30000;
 
+// 💾 Q&A STORAGE SYSTEM
+let questionAnswerStorage = {
+  sessions: new Map(),
+  userResponses: new Map(),
+  questionBank: new Map(),
+  analytics: {
+    totalQuestions: 0,
+    totalSessions: 0,
+    topicDistribution: new Map(),
+    difficultyDistribution: new Map()
+  }
+};
+
+// Store Q&A for analysis and learning
+function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorrect) {
+  const timestamp = new Date().toISOString();
+  
+  // Store in session
+  if (!questionAnswerStorage.sessions.has(sessionId)) {
+    questionAnswerStorage.sessions.set(sessionId, {
+      userId,
+      questions: [],
+      startTime: timestamp,
+      topic: questionData.topic,
+      difficulty: questionData.difficulty
+    });
+    questionAnswerStorage.analytics.totalSessions++;
+  }
+  
+  const sessionData = questionAnswerStorage.sessions.get(sessionId);
+  sessionData.questions.push({
+    question: questionData.question,
+    options: questionData.options,
+    correctAnswer: questionData.correctAnswer,
+    userAnswer,
+    isCorrect,
+    explanation: questionData.explanation,
+    answeredAt: timestamp
+  });
+  
+  // Store user responses
+  if (!questionAnswerStorage.userResponses.has(userId)) {
+    questionAnswerStorage.userResponses.set(userId, []);
+  }
+  questionAnswerStorage.userResponses.get(userId).push({
+    sessionId,
+    questionData,
+    userAnswer,
+    isCorrect,
+    timestamp
+  });
+  
+  // Store in question bank for analysis
+  const questionKey = `${questionData.topic}_${questionData.difficulty}_${questionData.question.substring(0, 50)}`;
+  questionAnswerStorage.questionBank.set(questionKey, {
+    ...questionData,
+    timesAsked: (questionAnswerStorage.questionBank.get(questionKey)?.timesAsked || 0) + 1,
+    correctRate: calculateCorrectRate(questionKey, isCorrect),
+    lastUsed: timestamp
+  });
+  
+  // Update analytics
+  questionAnswerStorage.analytics.totalQuestions++;
+  const topicCount = questionAnswerStorage.analytics.topicDistribution.get(questionData.topic) || 0;
+  questionAnswerStorage.analytics.topicDistribution.set(questionData.topic, topicCount + 1);
+  const diffCount = questionAnswerStorage.analytics.difficultyDistribution.get(questionData.difficulty) || 0;
+  questionAnswerStorage.analytics.difficultyDistribution.set(questionData.difficulty, diffCount + 1);
+}
+
+function calculateCorrectRate(questionKey, isCorrect) {
+  // Simple implementation - can be enhanced
+  const existing = questionAnswerStorage.questionBank.get(questionKey);
+  if (!existing) return isCorrect ? 1.0 : 0.0;
+  
+  const totalAnswers = existing.timesAsked || 1;
+  const currentCorrectRate = existing.correctRate || 0;
+  const correctAnswers = Math.round(currentCorrectRate * (totalAnswers - 1)) + (isCorrect ? 1 : 0);
+  
+  return correctAnswers / totalAnswers;
+}
+
 console.log('🔍 Environment Debug:');
 console.log('   GEMINI_API_URL:', GEMINI_API_URL ? 'SET' : 'NOT SET');
 console.log('   GEMINI_API_KEY:', GEMINI_API_KEY ? 'SET (length: ' + GEMINI_API_KEY.length + ')' : 'NOT SET');
@@ -830,13 +911,170 @@ app.get('/fetchProblem', async (req, res) => {
   }
 });
 
+// 💾 Q&A STORAGE ENDPOINTS
+
+// Store user's question response
+app.post('/api/store-qa', async (req, res) => {
+  const { sessionId, userId, questionData, userAnswer, isCorrect } = req.body;
+  
+  console.log(`💾 Storing Q&A: Session ${sessionId}, User ${userId}, Correct: ${isCorrect}`);
+  
+  try {
+    storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorrect);
+    
+    res.json({
+      success: true,
+      message: 'Q&A stored successfully',
+      analytics: {
+        totalQuestions: questionAnswerStorage.analytics.totalQuestions,
+        totalSessions: questionAnswerStorage.analytics.totalSessions
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error storing Q&A:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to store Q&A data'
+    });
+  }
+});
+
+// Get user's Q&A history
+app.get('/api/qa-history/:userId', (req, res) => {
+  const { userId } = req.params;
+  const { limit = 50 } = req.query;
+  
+  console.log(`📚 Fetching Q&A history for user: ${userId}`);
+  
+  try {
+    const userHistory = questionAnswerStorage.userResponses.get(userId) || [];
+    const limitedHistory = userHistory.slice(-parseInt(limit));
+    
+    res.json({
+      success: true,
+      history: limitedHistory,
+      totalQuestions: userHistory.length,
+      accuracy: calculateUserAccuracy(userId)
+    });
+  } catch (error) {
+    console.error('❌ Error fetching Q&A history:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch Q&A history'
+    });
+  }
+});
+
+// Get session details
+app.get('/api/session/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  
+  console.log(`🔍 Fetching session details: ${sessionId}`);
+  
+  try {
+    const sessionData = questionAnswerStorage.sessions.get(sessionId);
+    
+    if (!sessionData) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      session: sessionData,
+      analytics: calculateSessionAnalytics(sessionData)
+    });
+  } catch (error) {
+    console.error('❌ Error fetching session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch session data'
+    });
+  }
+});
+
+// Get Q&A analytics
+app.get('/api/qa-analytics', (req, res) => {
+  console.log('📊 Fetching Q&A analytics');
+  
+  try {
+    const analytics = {
+      ...questionAnswerStorage.analytics,
+      topicDistribution: Object.fromEntries(questionAnswerStorage.analytics.topicDistribution),
+      difficultyDistribution: Object.fromEntries(questionAnswerStorage.analytics.difficultyDistribution),
+      questionBank: {
+        totalUniqueQuestions: questionAnswerStorage.questionBank.size,
+        averageCorrectRate: calculateAverageCorrectRate()
+      }
+    };
+    
+    res.json({
+      success: true,
+      analytics
+    });
+  } catch (error) {
+    console.error('❌ Error fetching analytics:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch analytics'
+    });
+  }
+});
+
+function calculateUserAccuracy(userId) {
+  const userHistory = questionAnswerStorage.userResponses.get(userId) || [];
+  if (userHistory.length === 0) return 0;
+  
+  const correctAnswers = userHistory.filter(response => response.isCorrect).length;
+  return (correctAnswers / userHistory.length) * 100;
+}
+
+function calculateSessionAnalytics(sessionData) {
+  const totalQuestions = sessionData.questions.length;
+  const correctAnswers = sessionData.questions.filter(q => q.isCorrect).length;
+  const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+  
+  return {
+    totalQuestions,
+    correctAnswers,
+    accuracy,
+    topic: sessionData.topic,
+    difficulty: sessionData.difficulty,
+    duration: calculateSessionDuration(sessionData)
+  };
+}
+
+function calculateSessionDuration(sessionData) {
+  if (sessionData.questions.length === 0) return 0;
+  
+  const startTime = new Date(sessionData.startTime);
+  const lastAnswerTime = new Date(sessionData.questions[sessionData.questions.length - 1].answeredAt);
+  
+  return Math.round((lastAnswerTime - startTime) / 1000); // Duration in seconds
+}
+
+function calculateAverageCorrectRate() {
+  const allQuestions = Array.from(questionAnswerStorage.questionBank.values());
+  if (allQuestions.length === 0) return 0;
+  
+  const totalCorrectRate = allQuestions.reduce((sum, q) => sum + (q.correctRate || 0), 0);
+  return (totalCorrectRate / allQuestions.length) * 100;
+}
+
 app.listen(PORT, () => {
   console.log(`🚀 SIMPLIFIED AceMyInterview Backend running on http://localhost:${PORT}`);
   console.log(`🤖 Gemini AI: ${GEMINI_API_KEY ? 'READY' : 'NOT CONFIGURED'}`);
+  console.log(`💾 Q&A Storage: ENABLED`);
   console.log('');
   console.log('Available endpoints:');
   console.log('  POST /api/mcq-questions - Generate MCQ questions');
   console.log('  POST /api/coding-problems - Generate coding problems');
+  console.log('  POST /api/store-qa - Store question-answer data');
+  console.log('  GET  /api/qa-history/:userId - Get user Q&A history');
+  console.log('  GET  /api/session/:sessionId - Get session details');
+  console.log('  GET  /api/qa-analytics - Get Q&A analytics');
   console.log('  GET  /api/health - Health check');
   console.log('  GET  /fetchProblem - Codeforces proxy');
 });

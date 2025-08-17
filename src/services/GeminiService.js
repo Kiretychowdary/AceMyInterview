@@ -6,7 +6,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL + '/api' ||
   (process.env.NODE_ENV === 'production' 
-    ? 'https://acemyinterview-production.up.railway.app/api'
+    ? 'https://radhakrishna-8d46e.web.app/api'  // Firebase Hosting URL
     : 'http://localhost:5000/api');
 
 class GeminiService {
@@ -47,6 +47,72 @@ class GeminiService {
 
     const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
     return motivationalQuotes[randomIndex];
+  }
+
+  // 💾 Q&A STORAGE METHODS
+  static async storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorrect) {
+    console.log('💾 Storing Q&A:', { sessionId, userId, isCorrect });
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/store-qa`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          userId,
+          questionData,
+          userAnswer,
+          isCorrect
+        })
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to store Q&A:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async getUserQAHistory(userId, limit = 50) {
+    console.log('📚 Fetching Q&A history for:', userId);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/qa-history/${userId}?limit=${limit}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to fetch Q&A history:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async getSessionDetails(sessionId) {
+    console.log('🔍 Fetching session details:', sessionId);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/session/${sessionId}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to fetch session details:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  static async getQAAnalytics() {
+    console.log('📊 Fetching Q&A analytics');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/qa-analytics`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('❌ Failed to fetch Q&A analytics:', error);
+      return { success: false, error: error.message };
+    }
   }
 
   static async getMCQQuestions(topic, difficulty = 'medium', count = 5) {

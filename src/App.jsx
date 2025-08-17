@@ -52,7 +52,31 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <ToastContainer />
+      <ToastContainer 
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{
+          fontSize: '16px',
+          fontWeight: '500'
+        }}
+        toastStyle={{
+          backgroundColor: '#ffffff',
+          color: '#1f2937',
+          border: '2px solid #3b82f6',
+          borderRadius: '12px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+          minHeight: '70px',
+          padding: '16px'
+        }}
+      />
       {!hideNavbar && <Navbar />}
       <main className="flex-1 w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-16 xl:px-32 max-w-screen-2xl bg-white">
         <Routes>
