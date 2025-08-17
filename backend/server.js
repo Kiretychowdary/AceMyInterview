@@ -1,3 +1,5 @@
+//nmkrspvlidata
+//radhakrishna
 // SIMPLE GEMINI-ONLY BACKEND - NO N8N COMPLEXITY
 // NMKRSPVLIDATAPERMANENT - Direct Gemini AI Integration
 require('dotenv').config();
@@ -10,9 +12,12 @@ const PORT = process.env.PORT || 5000;
 
 // CORS Configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 };
 
 app.use(cors(corsOptions));
@@ -23,17 +28,22 @@ const GEMINI_API_URL = process.env.GEMINI_API_URL;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT) || 30000;
 
+console.log('🔍 Environment Debug:');
+console.log('   GEMINI_API_URL:', GEMINI_API_URL ? 'SET' : 'NOT SET');
+console.log('   GEMINI_API_KEY:', GEMINI_API_KEY ? 'SET (length: ' + GEMINI_API_KEY.length + ')' : 'NOT SET');
 console.log('🤖 Gemini API URL:', GEMINI_API_URL);
 console.log('🔑 API Key configured:', !!GEMINI_API_KEY);
 
 // 🤖 DIRECT GEMINI MCQ QUESTIONS
 app.post('/api/mcq-questions', async (req, res) => {
   const { topic = 'JavaScript', difficulty = 'medium', count = 5 } = req.body;
-  const sessionId = Date.now(); // Simple session tracking
+  const sessionId = Date.now() + Math.random().toString(36).substr(2, 9); // Unique session ID
+  const timestamp = new Date().toISOString();
 
   console.log('🎯 =================== MCQ REQUEST ===================');
   console.log(`📚 Topic: ${topic}, Difficulty: ${difficulty}, Count: ${count}`);
   console.log(`🆔 Session: ${sessionId}`);
+  console.log(`⏰ Timestamp: ${timestamp}`);
 
   if (!GEMINI_API_KEY) {
     return res.status(500).json({
@@ -80,21 +90,35 @@ app.post('/api/mcq-questions', async (req, res) => {
       const spec = difficultySpecs[difficulty] || difficultySpecs.medium;
       const topicInfo = topicInstructions[topic] || `${topic} concepts and applications`;
 
-      return `Generate exactly ${count} unique, non-repetitive multiple choice questions about ${topicInfo} at ${difficulty} difficulty level.
-Session ID: ${sessionId} (ensure uniqueness across requests)
+      return `Generate exactly ${count} COMPLETELY UNIQUE and FRESH multiple choice questions about ${topicInfo} at ${difficulty} difficulty level.
+
+🔄 SESSION: ${sessionId} - GENERATE BRAND NEW QUESTIONS (NOT SEEN BEFORE)
+⏰ TIMESTAMP: ${new Date().toISOString()}
+
+ANTI-REPETITION REQUIREMENTS:
+- Each question must be 100% different from any previously generated questions
+- Use creative, varied question patterns and structures
+- Cover different subtopics within ${topic}
+- Include diverse question types: conceptual, practical, scenario-based, code-analysis
+- Randomize question complexity within ${difficulty} level
+- Use different vocabulary and phrasing styles
 
 DIFFICULTY REQUIREMENTS (${difficulty.toUpperCase()}):
 - ${spec.instruction}
-- Question types: ${spec.questionTypes}
+- Question types: ${spec.questionTypes}  
 - Complexity: ${spec.complexity}
 
-QUESTION VARIETY REQUIREMENTS:
-- Each question must be completely different from others
-- Cover diverse aspects of ${topic}
-- Include practical, theoretical, and application-based questions
-- Avoid similar question patterns or repetitive topics
-- Make each question educational and interview-relevant
-- Questions should be fresh and not commonly repeated
+CONTENT VARIETY REQUIREMENTS:
+- Mix theoretical knowledge with practical application
+- Include current best practices and modern approaches
+- Add real-world scenarios and problem-solving
+- Test understanding from multiple angles
+- Ensure questions are professionally relevant and educational
+
+RANDOMIZATION SEEDS:
+- Time: ${Date.now()}
+- Random: ${Math.random()}
+- Hash: ${sessionId}
 
 Return ONLY a JSON array with exactly ${count} questions in this exact format:
 [
@@ -142,7 +166,7 @@ CRITICAL REQUIREMENTS:
 
     // Clean and parse JSON
     let cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
     const questions = JSON.parse(cleanResponse);
     console.log('✅ Parsed Questions:', questions);
     console.log(`📊 Expected count: ${count}, Actual count: ${questions.length}`);
@@ -151,7 +175,7 @@ CRITICAL REQUIREMENTS:
     if (!Array.isArray(questions)) {
       throw new Error('Response is not an array');
     }
-    
+
     if (questions.length !== parseInt(count)) {
       console.log(`⚠️ Question count mismatch! Expected: ${count}, Got: ${questions.length}`);
       // If we got fewer questions, pad with variations
@@ -186,7 +210,7 @@ CRITICAL REQUIREMENTS:
   } catch (error) {
     console.error('❌ Error:', error.message);
     console.log('🎯 ===============================================');
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to generate MCQ questions',
@@ -320,13 +344,14 @@ CRITICAL REQUIREMENTS:
       throw new Error('No response from Gemini API');
     }
 
-    // Clean and parse JSON
+
     let cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
     const problem = JSON.parse(cleanResponse);
     console.log('✅ Parsed Problem:', problem);
     console.log('🎯 ===============================================');
 
+    // Add any additional logging or processing here if needed
     res.json({
       success: true,
       problem: problem,
@@ -342,7 +367,7 @@ CRITICAL REQUIREMENTS:
   } catch (error) {
     console.error('❌ Error:', error.message);
     console.log('🎯 ===============================================');
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to generate coding problem',
@@ -364,15 +389,15 @@ app.get('/api/health', (req, res) => {
 
 // Store MCQ session results
 app.post('/api/store-mcq-session', async (req, res) => {
-  const { 
-    userId, 
-    topic, 
-    difficulty, 
-    totalQuestions, 
-    correctAnswers, 
-    timeSpent, 
+  const {
+    userId,
+    topic,
+    difficulty,
+    totalQuestions,
+    correctAnswers,
+    timeSpent,
     questions,
-    answers 
+    answers
   } = req.body;
 
   console.log('📊 Storing MCQ session for user:', userId);
@@ -411,16 +436,16 @@ app.post('/api/store-mcq-session', async (req, res) => {
 
 // Store coding session results
 app.post('/api/store-coding-session', async (req, res) => {
-  const { 
-    userId, 
-    topic, 
-    difficulty, 
+  const {
+    userId,
+    topic,
+    difficulty,
     language,
-    totalProblems, 
-    solvedProblems, 
-    timeSpent, 
+    totalProblems,
+    solvedProblems,
+    timeSpent,
     problems,
-    solutions 
+    solutions
   } = req.body;
 
   console.log('💻 Storing coding session for user:', userId);
@@ -460,10 +485,10 @@ app.post('/api/store-coding-session', async (req, res) => {
 
 // 🤖 AI-POWERED INTERVIEW ASSESSMENT
 app.post('/api/assess-interview', async (req, res) => {
-  const { 
-    userId, 
-    interviewType, 
-    topic, 
+  const {
+    userId,
+    interviewType,
+    topic,
     difficulty,
     duration,
     interviewData,
@@ -600,10 +625,150 @@ Provide constructive, actionable feedback that helps the candidate improve their
   } catch (error) {
     console.error('❌ Assessment Error:', error.message);
     console.log('🎯 ===============================================');
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to assess interview',
+      details: error.message
+    });
+  }
+});
+
+// 🤖 AI CODE ANALYSIS & CORRECTION
+app.post('/api/analyze-code', async (req, res) => {
+  const { code, language, problem, errors } = req.body;
+  const sessionId = Date.now() + Math.random().toString(36).substr(2, 9);
+
+  console.log('🔍 ============= CODE ANALYSIS REQUEST =============');
+  console.log(`💻 Language: ${language}, Session: ${sessionId}`);
+
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({
+      success: false,
+      error: 'Gemini API key not configured'
+    });
+  }
+
+  try {
+    const analysisPrompt = `You are an expert code reviewer and debugging assistant. Analyze the following code and provide comprehensive feedback.
+
+CODE TO ANALYZE:
+\`\`\`${language}
+${code}
+\`\`\`
+
+PROBLEM CONTEXT:
+${problem || 'General code analysis'}
+
+CURRENT ERRORS (if any):
+${errors || 'No specific errors reported'}
+
+Please provide a detailed analysis in the following JSON format:
+{
+  "syntaxErrors": [
+    {
+      "line": 5,
+      "error": "Missing semicolon",
+      "severity": "high",
+      "fix": "Add semicolon at end of line"
+    }
+  ],
+  "logicIssues": [
+    {
+      "issue": "Infinite loop detected",
+      "location": "lines 10-15", 
+      "explanation": "Loop condition never becomes false",
+      "suggestion": "Add proper exit condition"
+    }
+  ],
+  "improvements": [
+    {
+      "type": "performance",
+      "description": "Use more efficient algorithm",
+      "current": "O(n²) complexity",
+      "suggested": "O(n log n) with sorting"
+    },
+    {
+      "type": "readability",
+      "description": "Add meaningful variable names",
+      "example": "Change 'x' to 'userCount'"
+    }
+  ],
+  "correctedCode": "// Provide the corrected version of the code here",
+  "testCases": [
+    {
+      "input": "example input",
+      "expectedOutput": "example output",
+      "explanation": "Why this test case is important"
+    }
+  ],
+  "bestPractices": [
+    "Add input validation",
+    "Include error handling",
+    "Use consistent formatting"
+  ],
+  "codeQuality": {
+    "score": 7.5,
+    "strengths": ["Good algorithm choice", "Clear structure"],
+    "weaknesses": ["Poor variable naming", "Missing comments"]
+  }
+}
+
+ANALYSIS GUIDELINES:
+- Focus on ${language} specific best practices
+- Provide actionable, specific suggestions
+- Include corrected code if major issues found
+- Explain the reasoning behind each suggestion
+- Consider performance, readability, and maintainability`;
+
+    console.log('🚀 Sending code analysis request to Gemini...');
+    const response = await axios.post(
+      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{
+          parts: [{
+            text: analysisPrompt
+          }]
+        }]
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: REQUEST_TIMEOUT
+      }
+    );
+
+    const aiResponse = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    console.log('📥 Raw Gemini Code Analysis:', aiResponse);
+
+    if (!aiResponse) {
+      throw new Error('No analysis response from Gemini API');
+    }
+
+    // Clean and parse JSON
+    let cleanResponse = aiResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const analysis = JSON.parse(cleanResponse);
+
+    console.log('✅ Code analysis completed successfully');
+    console.log('🎯 ===============================================');
+
+    res.json({
+      success: true,
+      analysis: analysis,
+      metadata: {
+        language,
+        sessionId,
+        analyzedAt: new Date().toISOString(),
+        source: 'gemini-ai'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Code Analysis Error:', error.message);
+    console.log('🎯 ===============================================');
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to analyze code',
       details: error.message
     });
   }

@@ -1,8 +1,11 @@
+//nmkrspvlidata
+//radhakrishna
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import * as tf from '@tensorflow/tfjs';
 import * as blazeface from '@tensorflow-models/blazeface';
+import { toast } from 'react-toastify';
 import { useAuth } from '../components/AuthContext';
 import geminiService from '../services/GeminiService';
 import progressService from '../services/ProgressService';
@@ -210,6 +213,30 @@ const FaceToFaceInterview = () => {
   const generateQuestions = async () => {
     setLoading(true);
     try {
+      // Show motivational quote while loading
+      const motivationalQuote = geminiService.getMotivationalQuote();
+      toast.info(motivationalQuote, { 
+        duration: 8000,  // Longer duration to read the quote
+        position: "top-center",
+        style: {
+          backgroundColor: '#f8f9fa',
+          color: '#2c3e50',
+          fontSize: '14px',
+          textAlign: 'center',
+          padding: '12px',
+          borderRadius: '8px',
+          maxWidth: '500px'
+        }
+      });
+
+      // Secondary loading message
+      setTimeout(() => {
+        toast.info('🎤 AI is preparing interview questions tailored for you...', { 
+          duration: 5000,
+          position: "bottom-right"
+        });
+      }, 2000);
+
       const response = await geminiService.generateInterviewQuestions({
         topic: interviewConfig.topic,
         difficulty: interviewConfig.difficulty,

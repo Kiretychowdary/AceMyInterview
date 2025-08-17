@@ -1,3 +1,5 @@
+//nmkrspvlidata
+//radhakrishna
 // PROFESSIONAL CODING INTERVIEW - OPTIMIZED UI DESIGN
 // NMKRSPVLIDATAPERMANENT - Clean, Professional Coding Interface
 import React, { useState, useEffect, useRef } from "react";
@@ -7,6 +9,7 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
+import { validateJudge0Setup, getJudge0Headers, getJudge0Urls } from '../utils/judge0Config';
 
 const languages = [
   { 
@@ -291,7 +294,29 @@ function CompilerPage() {
     setProblemDetails(null);
     
     try {
-      toast.info('🤖 AI is generating a coding challenge...', { duration: 3000 });
+      // Show motivational quote while loading
+      const motivationalQuote = GeminiService.getMotivationalQuote();
+      toast.info(motivationalQuote, { 
+        duration: 8000,  // Longer duration to read the quote
+        position: "top-center",
+        style: {
+          backgroundColor: '#f8f9fa',
+          color: '#2c3e50',
+          fontSize: '14px',
+          textAlign: 'center',
+          padding: '12px',
+          borderRadius: '8px',
+          maxWidth: '500px'
+        }
+      });
+
+      // Secondary loading message
+      setTimeout(() => {
+        toast.info('🤖 AI is crafting a unique coding challenge for you...', { 
+          duration: 5000,
+          position: "bottom-right"
+        });
+      }, 2000);
       
       const response = await GeminiService.getCodingProblem(
         problemConfig.topic,
@@ -333,24 +358,29 @@ function CompilerPage() {
       return;
     }
 
+    // Check if Judge0 is properly configured
+    const judge0Status = validateJudge0Setup();
+    if (!judge0Status.valid) {
+      toast.error('Judge0 API key not configured');
+      setOutput(judge0Status.message);
+      return;
+    }
+
     setIsRunning(true);
     setOutput('Running code...');
     
     try {
+      const judge0Urls = getJudge0Urls();
+      const headers = getJudge0Headers();
+      
       const response = await axios.post(
-        "https://judge0-ce.p.rapidapi.com/submissions",
+        judge0Urls.submit,
         {
           source_code: btoa(code),
           language_id: language.id,
           stdin: btoa(""),
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-RapidAPI-Key": "your-rapidapi-key", // Add your RapidAPI key
-            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
-          },
-        }
+        { headers }
       );
 
       const token = response.data.token;
@@ -358,13 +388,8 @@ function CompilerPage() {
       // Poll for result
       const checkResult = async () => {
         const result = await axios.get(
-          `https://judge0-ce.p.rapidapi.com/submissions/${token}`,
-          {
-            headers: {
-              "X-RapidAPI-Key": "your-rapidapi-key",
-              "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
-            },
-          }
+          judge0Urls.getResult(token),
+          { headers }
         );
 
         if (result.data.status.id <= 2) {
@@ -407,6 +432,24 @@ function CompilerPage() {
       return;
     }
 
+    // Check if Judge0 is properly configured
+    const judge0Status = validateJudge0Setup();
+    if (!judge0Status.valid) {
+      toast.error('Judge0 API key not configured');
+      setTestResults({
+        passed: 0,
+        total: 1,
+        details: [{
+          passed: false,
+          input: 'Configuration Error',
+          expected: '',
+          actual: judge0Status.message,
+          error: 'Please check JUDGE0_SETUP.md for setup instructions'
+        }]
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setTestResults({ passed: 0, total: 0, details: [] });
     
@@ -416,25 +459,22 @@ function CompilerPage() {
       const testCases = problemDetails.testCases;
       const results = [];
       let passedCount = 0;
+      
+      const judge0Urls = getJudge0Urls();
+      const headers = getJudge0Headers();
 
       for (let i = 0; i < testCases.length; i++) {
         const testCase = testCases[i];
         
         try {
           const response = await axios.post(
-            "https://judge0-ce.p.rapidapi.com/submissions",
+            judge0Urls.submit,
             {
               source_code: btoa(code),
               language_id: language.id,
               stdin: btoa(testCase.input || ""),
             },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "X-RapidAPI-Key": "your-rapidapi-key", // Add your RapidAPI key
-                "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
-              },
-            }
+            { headers }
           );
 
           const token = response.data.token;
@@ -502,17 +542,15 @@ function CompilerPage() {
 
   // Helper function to poll for result
   const pollForResult = async (token) => {
+    const judge0Urls = getJudge0Urls();
+    const headers = getJudge0Headers();
+    
     return new Promise((resolve, reject) => {
       const checkResult = async () => {
         try {
           const result = await axios.get(
-            `https://judge0-ce.p.rapidapi.com/submissions/${token}`,
-            {
-              headers: {
-                "X-RapidAPI-Key": "your-rapidapi-key",
-                "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
-              },
-            }
+            judge0Urls.getResult(token),
+            { headers }
           );
 
           if (result.data.status.id <= 2) {
@@ -876,7 +914,12 @@ function CompilerPage() {
                       <div>
                         <h3 className="text-lg font-semibold text-gray-800 mb-2">Examples</h3>
                         <div className="bg-gray-900 p-3 rounded-lg">
-                          <pre className="text-green-400 text-xs whitespace-pre-wrap font-mono">{problemDetails.examples}</pre>
+                          <pre className="text-green-400 text-xs whitespace-pre-wrap font-mono">
+                            {typeof problemDetails.examples === 'string' 
+                              ? problemDetails.examples 
+                              : JSON.stringify(problemDetails.examples, null, 2)
+                            }
+                          </pre>
                         </div>
                       </div>
 
@@ -918,17 +961,33 @@ function CompilerPage() {
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                       <div>
-                                        <span className="font-medium">Input:</span> {result.input}
+                                        <span className="font-medium">Input:</span> {
+                                          typeof result.input === 'string' 
+                                            ? result.input 
+                                            : JSON.stringify(result.input)
+                                        }
                                       </div>
                                       <div>
-                                        <span className="font-medium">Expected:</span> {result.expected}
+                                        <span className="font-medium">Expected:</span> {
+                                          typeof result.expected === 'string' 
+                                            ? result.expected 
+                                            : JSON.stringify(result.expected)
+                                        }
                                       </div>
                                       <div className="col-span-2">
-                                        <span className="font-medium">Your Output:</span> {result.actual}
+                                        <span className="font-medium">Your Output:</span> {
+                                          typeof result.actual === 'string' 
+                                            ? result.actual 
+                                            : JSON.stringify(result.actual)
+                                        }
                                       </div>
                                       {result.error && (
                                         <div className="col-span-2 text-red-600">
-                                          <span className="font-medium">Error:</span> {result.error}
+                                          <span className="font-medium">Error:</span> {
+                                            typeof result.error === 'string' 
+                                              ? result.error 
+                                              : JSON.stringify(result.error)
+                                          }
                                         </div>
                                       )}
                                     </div>

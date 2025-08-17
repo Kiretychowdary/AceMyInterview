@@ -169,7 +169,7 @@ function ProfessionalCodingInterview() {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-RapidAPI-Key": "your-rapidapi-key", // Add your RapidAPI key
+            "X-RapidAPI-Key": import.meta.env.VITE_RAPIDAPI_KEY || "your-rapidapi-key-here",
             "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
           },
         }
@@ -183,7 +183,7 @@ function ProfessionalCodingInterview() {
           `https://judge0-ce.p.rapidapi.com/submissions/${token}`,
           {
             headers: {
-              "X-RapidAPI-Key": "your-rapidapi-key",
+              "X-RapidAPI-Key": import.meta.env.VITE_RAPIDAPI_KEY || "your-rapidapi-key-here",
               "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
             },
           }

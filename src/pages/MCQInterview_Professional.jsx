@@ -1,3 +1,5 @@
+//nmkrspvlidata
+//radhakrishna
 // PROFESSIONAL MCQ INTERVIEW - MODERN UI DESIGN
 // NMKRSPVLIDATAPERMANENT - Beautiful, Professional Interface
 import React, { useState, useEffect } from 'react';
@@ -55,7 +57,29 @@ const MCQInterview = () => {
   const fetchQuestionsFromAI = async () => {
     setLoading(true);
     try {
-      toast.info('🤖 AI is generating your questions...', { duration: 3000 });
+      // Show motivational quote while loading
+      const motivationalQuote = GeminiService.getMotivationalQuote();
+      toast.info(motivationalQuote, { 
+        duration: 8000,  // Longer duration to read the quote
+        position: "top-center",
+        style: {
+          backgroundColor: '#f8f9fa',
+          color: '#2c3e50',
+          fontSize: '14px',
+          textAlign: 'center',
+          padding: '12px',
+          borderRadius: '8px',
+          maxWidth: '500px'
+        }
+      });
+
+      // Secondary loading message
+      setTimeout(() => {
+        toast.info('🤖 AI is crafting professional-level questions for you...', { 
+          duration: 5000,
+          position: "bottom-right"
+        });
+      }, 2000);
 
       const response = await GeminiService.getMCQQuestions(
         quizConfig.topic,
