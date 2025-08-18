@@ -471,6 +471,113 @@ const MCQInterview = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // 🌟 BEAUTIFUL LOADING SCREEN - Show while questions are being generated
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center z-50">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="absolute top-1/3 -right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+          <div className="absolute -bottom-10 left-1/3 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+
+        {/* Main Loading Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center max-w-lg mx-auto px-6"
+        >
+          {/* Large Spinning Icon */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="w-24 h-24 mx-auto mb-8"
+          >
+            <div className="w-24 h-24 border-4 border-white border-t-transparent rounded-full"></div>
+          </motion.div>
+
+          {/* AI Brain Animation */}
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: [0.8, 1.1, 0.8] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-6xl mb-6"
+          >
+            🧠
+          </motion.div>
+
+          {/* Loading Title */}
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-4xl font-bold text-white mb-4"
+          >
+            AI is Thinking...
+          </motion.h2>
+
+          {/* Dynamic Loading Messages */}
+          <motion.div
+            key={Math.floor(Date.now() / 2000)} // Changes every 2 seconds
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="text-xl text-blue-200 mb-8"
+          >
+            {[
+              "🔍 Analyzing your skill level...",
+              "🎯 Crafting personalized questions...",
+              "⚡ Optimizing difficulty settings...",
+              "🚀 Preparing your AI interview...",
+              "💡 Generating intelligent content...",
+              "🎪 Almost ready for your challenge!"
+            ][Math.floor(Date.now() / 2000) % 6]}
+          </motion.div>
+
+          {/* Progress Dots */}
+          <div className="flex justify-center space-x-2 mb-8">
+            {[0, 1, 2].map((dot) => (
+              <motion.div
+                key={dot}
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: dot * 0.2
+                }}
+                className="w-3 h-3 bg-white rounded-full"
+              />
+            ))}
+          </div>
+
+          {/* Encouraging Message */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="text-lg text-blue-100 leading-relaxed"
+          >
+            🌟 <strong>Great choice on {apiTopic}!</strong><br />
+            Our AI is creating questions tailored just for you.<br />
+            Get ready for an amazing learning experience!
+          </motion.p>
+
+          {/* Subtle Loading Bar */}
+          <motion.div
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 8, ease: "easeInOut" }}
+            className="h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full mt-8 mx-auto max-w-xs"
+          />
+        </motion.div>
+      </div>
+    );
+  }
+
   // Configuration Screen
   if (!quizStarted && !loading) {
     return (

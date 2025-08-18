@@ -782,15 +782,143 @@ function CompilerPage() {
     );
   }
 
-  // Loading Screen
+  // 🌟 SPECTACULAR CODING PROBLEM LOADING SCREEN
   if (loadingProblem) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-700 border-t-transparent mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Generating Your Challenge...</h2>
-          <p className="text-gray-600">AI is crafting the perfect coding problem for you</p>
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center z-50">
+        {/* Animated Code Background */}
+        <div className="absolute inset-0 overflow-hidden opacity-10">
+          <div className="absolute top-20 left-20 text-green-400 font-mono text-sm animate-pulse">
+            {'function generateProblem() {'}
+          </div>
+          <div className="absolute top-32 left-32 text-blue-400 font-mono text-sm animate-pulse animation-delay-2000">
+            {'  return ai.createChallenge();'}
+          </div>
+          <div className="absolute top-44 left-24 text-yellow-400 font-mono text-sm animate-pulse animation-delay-4000">
+            {'}'}
+          </div>
+          <div className="absolute bottom-40 right-20 text-purple-400 font-mono text-sm animate-pulse">
+            {'console.log("Ready to code!");'}
+          </div>
         </div>
+
+        {/* Main Loading Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center max-w-lg mx-auto px-6"
+        >
+          {/* Code Brackets Animation */}
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-8xl mb-6 font-mono text-green-400"
+          >
+            {'{ }'}
+          </motion.div>
+
+          {/* Rotating Gear */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 mx-auto mb-8"
+          >
+            <div className="w-20 h-20 border-4 border-green-400 border-t-transparent rounded-full"></div>
+          </motion.div>
+
+          {/* Loading Title */}
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-4xl font-bold text-white mb-4"
+          >
+            Compiling Challenge...
+          </motion.h2>
+
+          {/* Dynamic Coding Messages */}
+          <motion.div
+            key={Math.floor(Date.now() / 2000)}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="text-xl text-green-300 mb-8 font-mono"
+          >
+            {[
+              "⚡ Parsing algorithms...",
+              "🔍 Scanning data structures...",
+              "🧠 Building logic puzzles...",
+              "🚀 Optimizing complexity...",
+              "💻 Generating test cases...",
+              "🎯 Finalizing your challenge..."
+            ][Math.floor(Date.now() / 2000) % 6]}
+          </motion.div>
+
+          {/* Code Block Animation */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="bg-gray-800 p-4 rounded-lg border border-green-400 mb-8 font-mono text-sm text-left"
+          >
+            <div className="text-green-400">// AI Algorithm Generator</div>
+            <div className="text-blue-400">const challenge = await ai.create({'{'}
+              <div className="ml-4 text-yellow-400">
+                difficulty: "{problemConfig.difficulty}",<br />
+                topic: "{problemConfig.topic}",<br />
+                type: "algorithm"
+              </div>
+            {'});'}
+            </div>
+          </motion.div>
+
+          {/* Progress Binary */}
+          <div className="flex justify-center space-x-1 mb-8 font-mono text-green-400">
+            {[0, 1, 0, 1, 1, 0, 1, 0].map((bit, index) => (
+              <motion.span
+                key={index}
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  delay: index * 0.2
+                }}
+                className="text-2xl"
+              >
+                {bit}
+              </motion.span>
+            ))}
+          </div>
+
+          {/* Encouraging Message */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="text-lg text-gray-300 leading-relaxed"
+          >
+            🌟 <strong>Preparing {problemConfig.topic} Challenge</strong><br />
+            Get ready to solve real-world coding problems<br />
+            that will enhance your programming skills!
+          </motion.p>
+
+          {/* Terminal Loading Bar */}
+          <motion.div
+            className="mt-8 mx-auto max-w-md bg-black p-3 rounded font-mono text-green-400 text-sm"
+          >
+            <div className="flex items-center">
+              <span className="mr-2">$</span>
+              <motion.div
+                initial={{ width: "0%" }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 6, ease: "easeInOut" }}
+                className="h-4 bg-green-400 rounded text-center text-black text-xs leading-4"
+              >
+                <span className="opacity-90">AI_GENERATING_PROBLEM...</span>
+              </motion.div>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
     );
   }

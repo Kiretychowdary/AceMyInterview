@@ -200,6 +200,127 @@ const MCQInterview = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // 🌟 BEAUTIFUL LOADING SCREEN - Professional Version
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 flex items-center justify-center z-50">
+        {/* Animated Background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-10 -left-10 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+          <div className="absolute top-1/4 -right-10 w-80 h-80 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
+          <div className="absolute -bottom-10 left-1/4 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-4000"></div>
+        </div>
+
+        {/* Main Loading Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center max-w-lg mx-auto px-6"
+        >
+          {/* Premium Spinner */}
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            className="w-28 h-28 mx-auto mb-8"
+          >
+            <div className="w-28 h-28 border-4 border-purple-300 border-t-white rounded-full"></div>
+          </motion.div>
+
+          {/* Professional AI Icon */}
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: [0.8, 1.2, 0.8] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            className="text-7xl mb-6"
+          >
+            🎓
+          </motion.div>
+
+          {/* Professional Loading Title */}
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-5xl font-bold text-white mb-4"
+          >
+            Professional AI
+          </motion.h2>
+
+          <motion.h3
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="text-2xl font-semibold text-purple-200 mb-8"
+          >
+            Crafting Expert Questions
+          </motion.h3>
+
+          {/* Advanced Loading Messages */}
+          <motion.div
+            key={Math.floor(Date.now() / 2500)} // Changes every 2.5 seconds
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="text-xl text-purple-100 mb-8"
+          >
+            {[
+              "🔬 Analyzing industry standards...",
+              "🎯 Building professional scenarios...",
+              "⚡ Calibrating expert difficulty...",
+              "🚀 Preparing advanced challenges...",
+              "💼 Generating real-world problems...",
+              "🏆 Finalizing premium content..."
+            ][Math.floor(Date.now() / 2500) % 6]}
+          </motion.div>
+
+          {/* Premium Progress Indicator */}
+          <div className="flex justify-center space-x-3 mb-8">
+            {[0, 1, 2, 3].map((dot) => (
+              <motion.div
+                key={dot}
+                animate={{
+                  scale: [1, 1.8, 1],
+                  opacity: [0.4, 1, 0.4]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: dot * 0.3
+                }}
+                className="w-4 h-4 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full"
+              />
+            ))}
+          </div>
+
+          {/* Professional Message */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="text-lg text-purple-100 leading-relaxed"
+          >
+            🌟 <strong>Professional {quizConfig.topic} Assessment</strong><br />
+            Our advanced AI is creating industry-level questions<br />
+            designed to test your expertise and skills.
+          </motion.p>
+
+          {/* Elite Progress Bar */}
+          <motion.div
+            className="mt-8 mx-auto max-w-sm"
+          >
+            <motion.div
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: 10, ease: "easeInOut" }}
+              className="h-2 bg-gradient-to-r from-purple-400 via-blue-400 to-indigo-400 rounded-full"
+            />
+            <p className="text-sm text-purple-200 mt-2">Professional content loading...</p>
+          </motion.div>
+        </motion.div>
+      </div>
+    );
+  }
+
   // Configuration Screen
   if (!quizStarted && !loading) {
     return (
