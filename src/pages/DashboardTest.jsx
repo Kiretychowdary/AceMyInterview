@@ -106,7 +106,10 @@ const DashboardTest = () => {
   const testApiConnection = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/health');
+      const API_URL = process.env.NODE_ENV === 'production' 
+        ? 'https://acemyinterview.onrender.com/api/health'
+        : 'http://localhost:5000/api/health';
+      const response = await fetch(API_URL);
       const data = await response.json();
       setResult(`✅ Backend connected: ${JSON.stringify(data, null, 2)}`);
     } catch (error) {

@@ -18,7 +18,7 @@ class ProgressService {
   constructor() {
     this.API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
       (process.env.NODE_ENV === 'production' 
-        ? 'https://acemyinterview-production.up.railway.app'
+        ? 'https://acemyinterview.onrender.com'
         : 'http://localhost:5000');
   }
 

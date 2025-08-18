@@ -6,7 +6,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL + '/api' ||
   (process.env.NODE_ENV === 'production' 
-    ? 'https://radhakrishna-8d46e.web.app/api'  // Firebase Hosting URL
+    ? 'https://acemyinterview.onrender.com/api'  // Render Backend URL
     : 'http://localhost:5000/api');
 
 class GeminiService {

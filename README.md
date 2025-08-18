@@ -1,21 +1,21 @@
 <!--nmkrspvlidata-->
 <!--radhakrishna-->
 
-# 🚀 AceMyInterview
-**AI-Powered Interview Practice Platform**
+# 🎯 AceMyInterview - AI-Powered Interview Platform
+**Professional interview preparation with advanced AI integration**
 
 A comprehensive interview preparation platform featuring AI-generated questions, real-time coding challenges, and face-to-face interview simulation.
 
-## ✨ Features
+## ✨ **Core Features**
 
-- 🤖 **AI-Generated MCQ Questions** - Dynamic questions powered by Google Gemini
-- 💻 **Live Code Compiler** - Execute code in multiple languages
-- 🎥 **Face-to-Face Interview Simulation** - Webcam-based interview practice
-- 📊 **Progress Tracking** - Monitor your improvement over time
-- 🔥 **Motivational Quotes** - Stay inspired during practice sessions
-- 🛡️ **Interview Integrity Monitoring** - Face detection and behavior analysis
+- 🤖 **AI-Generated Questions** - Dynamic MCQ & coding problems via Google Gemini 2.0
+- 💻 **Live Code Execution** - Multi-language support with Judge0 CE
+- 🎥 **Face-to-Face Simulation** - Webcam-based interview practice  
+- 📊 **Progress Analytics** - Comprehensive performance tracking
+- 🔥 **Motivational System** - Enhanced user experience with encouragement
+- 🛡️ **Interview Monitoring** - Professional integrity features
 
-## 🏗️ Project Structure
+## 📁 **Clean Project Structure**
 
 ```
 AceMyInterview/

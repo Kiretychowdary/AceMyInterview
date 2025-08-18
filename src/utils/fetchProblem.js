@@ -1,6 +1,27 @@
 // NMKRSPVLIDATAPERMANENE
+export const fetchProblem = async (contestId, index) => {
+  const BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://acemyinterview.onrender.com' 
+    : 'http://localhost:5000';
+  const url = `${BASE_URL}/fetchProblem?contestId=${contestId}&index=${index}`;
+  
+  try {
+    console.log(`Fetching URL: ${url}`);
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching problem:', error);
+    return null;
+  }
+};
+
 const fetchProblemDetails = async (contestId, index, retries = 3) => {
-  const url = `http://localhost:5000/fetchProblem?contestId=${contestId}&index=${index}`;
+  const BASE_URL = process.env.NODE_ENV === 'production' 
+    ? 'https://acemyinterview.onrender.com' 
+    : 'http://localhost:5000';
+  const url = `${BASE_URL}/fetchProblem?contestId=${contestId}&index=${index}`;
+  
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Attempt ${attempt}: Fetching URL: ${url}`);
