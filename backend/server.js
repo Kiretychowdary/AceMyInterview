@@ -114,7 +114,9 @@ console.log('   GEMINI_API_URL:', GEMINI_API_URL ? 'SET' : 'NOT SET');
 console.log('   GEMINI_API_KEY:', GEMINI_API_KEY ? 'SET (length: ' + GEMINI_API_KEY.length + ')' : 'NOT SET');
 console.log('🤖 Gemini API URL:', GEMINI_API_URL);
 console.log('🔑 API Key configured:', !!GEMINI_API_KEY);
-
+app.get("/", (req, res) => {
+  res.send("✅ Server is running on Render!");
+});
 // 🤖 DIRECT GEMINI MCQ QUESTIONS
 app.post('/api/mcq-questions', async (req, res) => {
   const { topic = 'JavaScript', difficulty = 'medium', count = 5 } = req.body;
