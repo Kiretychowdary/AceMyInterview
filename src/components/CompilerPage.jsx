@@ -300,14 +300,26 @@ function CompilerPage() {
   useEffect(() => {
     let interval;
     if (loadingProblem) {
+      // Reset message index when loading starts
+      setMessageIndex(0);
       interval = setInterval(() => {
-        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+        setMessageIndex((prevIndex) => {
+          const nextIndex = (prevIndex + 1) % loadingMessages.length;
+          return nextIndex;
+        });
       }, 2000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [loadingProblem, loadingMessages.length]);
+  }, [loadingProblem]);
+
+  // Dismiss all toasts when problem is displayed
+  useEffect(() => {
+    if (problemDetails && !loadingProblem) {
+      toast.dismiss(); // Clear all toasts when problem interface appears
+    }
+  }, [problemDetails, loadingProblem]);
 
   // Generate new problem
   const generateNewProblem = async () => {
@@ -315,29 +327,6 @@ function CompilerPage() {
     setProblemDetails(null);
     
     try {
-      // Show motivational quote while loading
-      const motivationalQuote = GeminiService.getMotivationalQuote();
-      toast.info(motivationalQuote, { 
-        duration: 8000,  // Longer duration to read the quote
-        position: "top-center",
-        style: {
-          backgroundColor: '#f8f9fa',
-          color: '#2c3e50',
-          fontSize: '14px',
-          textAlign: 'center',
-          padding: '12px',
-          borderRadius: '8px',
-          maxWidth: '500px'
-        }
-      });
-
-      // Secondary loading message
-      setTimeout(() => {
-        toast.info('🤖 AI is crafting a unique coding challenge for you...', { 
-          duration: 5000,
-          position: "bottom-right"
-        });
-      }, 2000);
       
       const response = await GeminiService.getCodingProblem(
         problemConfig.topic,
@@ -347,10 +336,12 @@ function CompilerPage() {
       
       if (response.success && response.problem) {
         setProblemDetails(response.problem);
-        toast.success(`✅ AI coding challenge ready!`);
+        
+        // No success toast - keep interface clean when problem appears
       } else {
         setProblemDetails(response.problem);
-        toast.warn('⚠️ Using sample problem - AI service unavailable');
+        
+        // No toasts when content appears - keep interface clean
       }
     } catch (error) {
       console.error("Failed to generate problem:", error);
@@ -858,16 +849,18 @@ function CompilerPage() {
           </motion.h2>
 
           {/* Dynamic Coding Messages */}
-          <motion.div
-            key={messageIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.5 }}
-            className="text-xl text-green-300 mb-8 font-mono"
-          >
-            {loadingMessages[messageIndex]}
-          </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={messageIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.5 }}
+              className="text-xl text-green-300 mb-8 font-mono"
+            >
+              {loadingMessages[messageIndex]}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Code Block Animation */}
           <motion.div

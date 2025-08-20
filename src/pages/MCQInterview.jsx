@@ -63,14 +63,19 @@ const MCQInterview = () => {
   useEffect(() => {
     let interval;
     if (loading) {
+      // Reset message index when loading starts
+      setMessageIndex(0);
       interval = setInterval(() => {
-        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+        setMessageIndex((prevIndex) => {
+          const nextIndex = (prevIndex + 1) % loadingMessages.length;
+          return nextIndex;
+        });
       }, 2000);
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [loading, loadingMessages.length]);
+  }, [loading]);
 
   // Quiz configuration - use selected topic as default
   const [quizConfig, setQuizConfig] = useState({
@@ -283,50 +288,7 @@ const MCQInterview = () => {
   const fetchQuestionsFromAI = async () => {
     setLoading(true);
     try {
-      // Show motivational quote while loading
-      const motivationalQuote = GeminiService.getMotivationalQuote();
-      toast.info(motivationalQuote, { 
-        autoClose: 8000,  // Longer duration to read the quote
-        position: "top-center",
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        className: "motivational-toast",
-        style: {
-          backgroundColor: '#e8f4fd',
-          color: '#1a365d',
-          fontSize: '16px',
-          fontWeight: '600',
-          textAlign: 'center',
-          padding: '20px',
-          borderRadius: '12px',
-          border: '2px solid #3182ce',
-          maxWidth: '600px',
-          minHeight: '80px',
-          boxShadow: '0 8px 25px rgba(59, 130, 246, 0.15)',
-          lineHeight: '1.5'
-        }
-      });
-
-      // Secondary loading message
-      setTimeout(() => {
-        toast.info('🤖 AI is crafting personalized questions for you...', { 
-          autoClose: 5000,
-          position: "bottom-right",
-          hideProgressBar: false,
-          style: {
-            backgroundColor: '#f0f9ff',
-            color: '#0c4a6e',
-            fontSize: '14px',
-            fontWeight: '500',
-            padding: '16px',
-            borderRadius: '10px',
-            border: '1px solid #0ea5e9'
-          }
-        });
-      }, 2000);
-
+      // Generate questions without motivational toast
       const response = await GeminiService.getMCQQuestions(
         quizConfig.topic,
         quizConfig.difficulty,
@@ -336,22 +298,9 @@ const MCQInterview = () => {
       if (response.success && response.questions?.length > 0) {
         setQuestions(response.questions);
         setQuizStarted(true);
-        setTimeLeft(quizConfig.count * 120); // 2 minutes per question
-        toast.success(`✅ ${response.questions.length} AI questions loaded!`, {
-          autoClose: 4000,
-          position: "top-center",
-          style: {
-            backgroundColor: '#ecfdf5',
-            color: '#065f46',
-            fontSize: '16px',
-            fontWeight: '600',
-            padding: '18px',
-            borderRadius: '12px',
-            border: '2px solid #10b981',
-            boxShadow: '0 8px 25px rgba(16, 185, 129, 0.15)'
-          }
-        });
+        setTimeLeft(quizConfig.count * 120); // 2 minutes per question  
       } else {
+        
         setQuestions(response.questions);
         setQuizStarted(true);
         setTimeLeft(quizConfig.count * 120);
@@ -542,16 +491,18 @@ const MCQInterview = () => {
           </motion.h2>
 
           {/* Dynamic Loading Messages */}
-          <motion.div
-            key={messageIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.5 }}
-            className="text-xl text-blue-200 mb-8"
-          >
-            {loadingMessages[messageIndex]}
-          </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={messageIndex}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.5 }}
+              className="text-xl text-blue-200 mb-8"
+            >
+              {loadingMessages[messageIndex]}
+            </motion.div>
+          </AnimatePresence>
 
           {/* Progress Dots */}
           <div className="flex justify-center space-x-2 mb-8">
