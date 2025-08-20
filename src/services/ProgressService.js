@@ -1,5 +1,5 @@
 // PROGRESS TRACKING SERVICE - COMPREHENSIVE DATA MANAGEMENT
-import { db } from '../components/firebase.config';
+import { db } from '../config/firebase.config';
 import { 
   doc, 
   setDoc, 

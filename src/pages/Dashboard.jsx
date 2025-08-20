@@ -1,7 +1,7 @@
 // USER PROGRESS DASHBOARD - COMPREHENSIVE TRACKING SYSTEM
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
-import { db } from '../components/firebase.config';
+import { db } from '../config/firebase.config';
 import { 
   collection, 
   doc, 

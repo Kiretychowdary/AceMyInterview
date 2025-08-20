@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../components/firebase.config";
+import { auth } from "../config/firebase.config";
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 import "tailwindcss/tailwind.css";

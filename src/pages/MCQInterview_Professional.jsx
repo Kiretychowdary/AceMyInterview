@@ -27,6 +27,30 @@ const MCQInterview = () => {
     type: 'multiple-choice'
   });
 
+  // Loading message cycling state
+  const [messageIndex, setMessageIndex] = useState(0);
+  const loadingMessages = [
+    "🔥 Assembling expert-level questions...",
+    "🎯 Tailoring to your expertise...",
+    "🧠 Crafting challenging scenarios...",
+    "⚡ Optimizing question complexity...", 
+    "🚀 Preparing professional assessment...",
+    "💎 Finalizing your challenge..."
+  ];
+
+  // Cycle through loading messages every 2.5 seconds during loading
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      interval = setInterval(() => {
+        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+      }, 2500);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading, loadingMessages.length]);
+
   // Available options
   const topics = [
     { value: 'JavaScript', label: 'JavaScript', icon: '⚡' },
@@ -257,20 +281,14 @@ const MCQInterview = () => {
 
           {/* Advanced Loading Messages */}
           <motion.div
-            key={Math.floor(Date.now() / 2500)} // Changes every 2.5 seconds
+            key={messageIndex}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
             className="text-xl text-purple-100 mb-8"
           >
-            {[
-              "🔬 Analyzing industry standards...",
-              "🎯 Building professional scenarios...",
-              "⚡ Calibrating expert difficulty...",
-              "🚀 Preparing advanced challenges...",
-              "💼 Generating real-world problems...",
-              "🏆 Finalizing premium content..."
-            ][Math.floor(Date.now() / 2500) % 6]}
+            {loadingMessages[messageIndex]}
           </motion.div>
 
           {/* Premium Progress Indicator */}

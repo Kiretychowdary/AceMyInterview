@@ -48,6 +48,30 @@ const MCQInterview = () => {
   const [quizStarted, setQuizStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
 
+  // Loading message cycling state
+  const [messageIndex, setMessageIndex] = useState(0);
+  const loadingMessages = [
+    "🔍 Analyzing your skill level...",
+    "🎯 Crafting personalized questions...", 
+    "🧠 Selecting the perfect challenges...",
+    "⚡ Optimizing difficulty balance...",
+    "📝 Preparing your interview...",
+    "🚀 Almost ready to begin!"
+  ];
+
+  // Cycle through loading messages every 2 seconds during loading
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      interval = setInterval(() => {
+        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+      }, 2000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading, loadingMessages.length]);
+
   // Quiz configuration - use selected topic as default
   const [quizConfig, setQuizConfig] = useState({
     topic: apiTopic,
@@ -519,20 +543,14 @@ const MCQInterview = () => {
 
           {/* Dynamic Loading Messages */}
           <motion.div
-            key={Math.floor(Date.now() / 2000)} // Changes every 2 seconds
+            key={messageIndex}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
             className="text-xl text-blue-200 mb-8"
           >
-            {[
-              "🔍 Analyzing your skill level...",
-              "🎯 Crafting personalized questions...",
-              "⚡ Optimizing difficulty settings...",
-              "🚀 Preparing your AI interview...",
-              "💡 Generating intelligent content...",
-              "🎪 Almost ready for your challenge!"
-            ][Math.floor(Date.now() / 2000) % 6]}
+            {loadingMessages[messageIndex]}
           </motion.div>
 
           {/* Progress Dots */}

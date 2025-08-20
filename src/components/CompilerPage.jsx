@@ -1,7 +1,4 @@
-//nmkrspvlidata
-//radhakrishna
 // PROFESSIONAL CODING INTERVIEW - OPTIMIZED UI DESIGN
-// NMKRSPVLIDATAPERMANENT - Clean, Professional Coding Interface
 import React, { useState, useEffect, useRef } from "react";
 import { Editor } from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -287,6 +284,30 @@ function CompilerPage() {
     difficulty: 'medium',
     language: 'python'
   });
+
+  // Loading message cycling state
+  const [messageIndex, setMessageIndex] = useState(0);
+  const loadingMessages = [
+    "⚡ Parsing algorithms...",
+    "🔍 Scanning data structures...",
+    "🧠 Building logic puzzles...",
+    "🚀 Optimizing complexity...",
+    "💻 Generating test cases...",
+    "🎯 Finalizing your challenge..."
+  ];
+
+  // Cycle through loading messages every 2 seconds during loading
+  useEffect(() => {
+    let interval;
+    if (loadingProblem) {
+      interval = setInterval(() => {
+        setMessageIndex((prevIndex) => (prevIndex + 1) % loadingMessages.length);
+      }, 2000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loadingProblem, loadingMessages.length]);
 
   // Generate new problem
   const generateNewProblem = async () => {
@@ -838,20 +859,14 @@ function CompilerPage() {
 
           {/* Dynamic Coding Messages */}
           <motion.div
-            key={Math.floor(Date.now() / 2000)}
+            key={messageIndex}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.5 }}
             className="text-xl text-green-300 mb-8 font-mono"
           >
-            {[
-              "⚡ Parsing algorithms...",
-              "🔍 Scanning data structures...",
-              "🧠 Building logic puzzles...",
-              "🚀 Optimizing complexity...",
-              "💻 Generating test cases...",
-              "🎯 Finalizing your challenge..."
-            ][Math.floor(Date.now() / 2000) % 6]}
+            {loadingMessages[messageIndex]}
           </motion.div>
 
           {/* Code Block Animation */}
