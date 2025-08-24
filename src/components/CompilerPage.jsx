@@ -292,6 +292,8 @@ function CompilerPage() {
   const [submissions, setSubmissions] = useState([]);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [consoleTab, setConsoleTab] = useState('output');
+  const [lastRequestTime, setLastRequestTime] = useState(0);
+  const [requestCount, setRequestCount] = useState(0);
   const editorRef = useRef(null);
 
   // Keyboard shortcuts
@@ -346,6 +348,16 @@ function CompilerPage() {
       if (interval) clearInterval(interval);
     };
   }, [loadingProblem]);
+
+  // Reset request count every 5 minutes to allow fresh rate limiting
+  useEffect(() => {
+    const resetInterval = setInterval(() => {
+      console.log('Resetting request count for rate limiting...');
+      setRequestCount(0);
+    }, 5 * 60 * 1000); // Reset every 5 minutes
+
+    return () => clearInterval(resetInterval);
+  }, []);
 
   // Dismiss all toasts when problem is displayed
   useEffect(() => {
@@ -408,6 +420,28 @@ function CompilerPage() {
     const headers = getJudge0Headers();
 
     try {
+      // Rate limiting check
+      const now = Date.now();
+      const timeSinceLastRequest = now - lastRequestTime;
+      const minInterval = 2000; // Minimum 2 seconds between requests
+      
+      if (timeSinceLastRequest < minInterval) {
+        const waitTime = minInterval - timeSinceLastRequest;
+        console.log(`Rate limiting: waiting ${waitTime}ms before next request...`);
+        setOutput(`⏳ Rate limiting active... waiting ${Math.ceil(waitTime/1000)} seconds before execution...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
+      
+      // Update request tracking
+      setLastRequestTime(Date.now());
+      setRequestCount(prev => prev + 1);
+      
+      // Show warning if too many requests
+      if (requestCount > 10) {
+        console.warn('High request count detected, adding extra delay...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+
       // Validate inputs
       if (!sourceCode || !sourceCode.trim()) {
         throw new Error('Source code cannot be empty');
@@ -424,7 +458,46 @@ function CompilerPage() {
         }
       };
 
-      // Submit code for execution
+      // Submit code for execution with rate limiting and retry logic
+      // Helper function to handle 429 rate limit errors
+      const submitWithRetry = async (payload, maxRetries = 3) => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            console.log(`Attempting submission (${attempt}/${maxRetries})...`);
+            
+            const response = await axios.post(
+              judge0Urls.submit,
+              payload,
+              {
+                headers,
+                timeout: 10000
+              }
+            );
+            
+            return response; // Success!
+            
+          } catch (error) {
+            // Check if it's a 429 rate limit error
+            if (error.response && error.response.status === 429) {
+              console.log(`Rate limit hit (429) on attempt ${attempt}`);
+              
+              if (attempt < maxRetries) {
+                // Calculate exponential backoff delay
+                const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
+                console.log(`Waiting ${delay}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue; // Try again
+              } else {
+                throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+              }
+            }
+            
+            // For other errors, throw immediately
+            throw error;
+          }
+        }
+      };
+
       // Try both plain text and base64 approaches
       let submitResponse;
 
@@ -439,14 +512,8 @@ function CompilerPage() {
         };
 
         console.log('Trying Judge0 submission with plain text...');
-        submitResponse = await axios.post(
-          judge0Urls.submit,
-          plainPayload,
-          {
-            headers,
-            timeout: 10000
-          }
-        );
+        submitResponse = await submitWithRetry(plainPayload);
+        
       } catch (plainError) {
         console.log('Plain text failed, trying base64...', plainError.message);
 
@@ -459,14 +526,7 @@ function CompilerPage() {
           memory_limit: 128000,
         };
 
-        submitResponse = await axios.post(
-          judge0Urls.submit,
-          base64Payload,
-          {
-            headers,
-            timeout: 10000
-          }
-        );
+        submitResponse = await submitWithRetry(base64Payload);
       }
 
       const token = submitResponse.data.token;
@@ -713,7 +773,17 @@ function CompilerPage() {
 
       let errorMessage = '❌ Execution Error!\n\n';
 
-      if (error.message.includes('atob') || error.message.includes('decode')) {
+      if (error.message.includes('Rate limit exceeded') || error.message.includes('429')) {
+        errorMessage += '🚦 RATE LIMIT EXCEEDED\n';
+        errorMessage += '═'.repeat(40) + '\n\n';
+        errorMessage += 'You\'ve made too many requests to Judge0 in a short time.\n\n';
+        errorMessage += '✅ What you can do:\n';
+        errorMessage += '• Wait 30-60 seconds before trying again\n';
+        errorMessage += '• Consider upgrading to Judge0 Pro for higher limits\n';
+        errorMessage += '• Check the JUDGE0_SETUP.md for free alternatives\n\n';
+        errorMessage += '💡 Tip: Free Judge0 CE has a limit of ~50 requests per day\n';
+        errorMessage += 'and rate limiting to prevent abuse.\n\n';
+      } else if (error.message.includes('atob') || error.message.includes('decode')) {
         errorMessage += 'Failed to decode response from Judge0. This might be due to:\n';
         errorMessage += '• Network connectivity issues\n';
         errorMessage += '• Invalid API response format\n';
