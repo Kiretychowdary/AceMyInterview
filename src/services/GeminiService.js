@@ -1,13 +1,16 @@
 //nmkrspvlidata
 //radhakrishna
-// SIMPLE GEMINI SERVICE - DIRECT API CALLS
-// NMKRSPVLIDATAPERMANENT - No more n8n complexity!
+// RAPIDAPI INTEGRATION - AI SERVICE API CALLS
+// NMKRSPVLIDATAPERMANENT - RapidAPI Integration
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL + '/api' ||
   (process.env.NODE_ENV === 'production' 
-    ? 'https://acemyinterview.onrender.com/api'  // Render Backend URL
-    : 'http://localhost:5000/api');
+    ? '/api'  // Use proxy in development
+    : '/api');
+
+const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY || 'li690033ea2mshd19e1cbf16ab7e6p15099ajsnb73c9a715dc5';
+const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST || 'acemyinterview.onrender.com';
 
 class GeminiService {
   // 🌟 MOTIVATIONAL QUOTES FOR LOADING STATES
@@ -116,7 +119,7 @@ class GeminiService {
   }
 
   static async getMCQQuestions(topic, difficulty = 'medium', count = 5) {
-    console.log('🎯 GeminiService: Generating MCQ Questions');
+    console.log('🎯 GeminiService: Generating MCQ Questions via RapidAPI');
     console.log(`📚 Topic: ${topic}, Difficulty: ${difficulty}, Count: ${count}`);
 
     try {
@@ -124,6 +127,8 @@ class GeminiService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': RAPIDAPI_HOST
         },
         body: JSON.stringify({
           topic,
@@ -192,9 +197,10 @@ class GeminiService {
   }
 
   static async getCodingProblem(topic, difficulty = 'medium', language = 'javascript') {
-    console.log('🎯 GeminiService: Generating Coding Problem');
+    console.log('🎯 GeminiService: Generating Coding Problem via RapidAPI');
     console.log(`💻 Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
     console.log(`🌐 API Base URL: ${API_BASE_URL}`);
+    console.log(`🔑 RapidAPI Key: ${RAPIDAPI_KEY ? 'SET' : 'NOT SET'}`);
 
     try {
       // Create an AbortController for timeout control
@@ -205,6 +211,8 @@ class GeminiService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': RAPIDAPI_HOST
         },
         body: JSON.stringify({
           topic,

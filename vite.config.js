@@ -11,7 +11,11 @@ export default defineConfig({
         target: 'https://acemyinterview.onrender.com',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api')
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
+        headers: {
+          'X-RapidAPI-Key': 'li690033ea2mshd19e1cbf16ab7e6p15099ajsnb73c9a715dc5',
+          'X-RapidAPI-Host': 'acemyinterview.onrender.com'
+        }
       }
     }
   }
