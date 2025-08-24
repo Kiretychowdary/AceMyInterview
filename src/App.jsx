@@ -1,7 +1,3 @@
-// NMKRSPVLIDATAPERMANENT
-// AMMARADHAKRISHNANANNA
-// KSVIDPERMANENT
-// KIRETY
 import React, { createContext, useContext, useState, useEffect } from "react";
 import 'tailwindcss/tailwind.css';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';

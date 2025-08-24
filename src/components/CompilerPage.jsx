@@ -1463,20 +1463,22 @@ function CompilerPage() {
   // Main Coding Interface - OPTIMIZED HEIGHT
   return (
     <div className="h-screen bg-gray-900 flex flex-col max-h-screen overflow-hidden">
-      {/* Enhanced Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-3">
+      {/* Optimized Compact Header */}
+      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-bold text-white">💻 Coding Interview</h1>
+            <h1 className="text-lg font-bold text-white flex items-center space-x-2">
+              <span>💻</span>
+              <span>AceMyInterview - Coding Challenge</span>
+            </h1>
             
-            {/* Problem Info */}
             {problemDetails && (
               <div className="flex items-center space-x-3 text-sm">
-                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
-                  Medium
+                <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
+                  ⭐ MEDIUM
                 </span>
-                <span className="text-gray-300">
-                  {problemDetails.title?.substring(0, 30)}...
+                <span className="text-gray-300 font-medium">
+                  {problemDetails.title?.substring(0, 40)}...
                 </span>
               </div>
             )}
@@ -1561,52 +1563,32 @@ function CompilerPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -400, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="w-2/5 bg-white border-r border-gray-200 overflow-hidden flex flex-col"
+              className="w-1/2 bg-white border-r border-gray-200 overflow-hidden flex flex-col"
             >
-              {/* Problem Header with Tabs */}
+              {/* Problem Header with Tabs - Only Description and Submissions */}
               <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center space-x-6">
                   <button 
                     onClick={() => setActiveTab('description')}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
                       activeTab === 'description' 
                         ? 'text-blue-600 border-blue-500' 
                         : 'text-gray-500 hover:text-gray-700 border-transparent'
                     }`}
                   >
-                    Description
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('editorial')}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
-                      activeTab === 'editorial' 
-                        ? 'text-blue-600 border-blue-500' 
-                        : 'text-gray-500 hover:text-gray-700 border-transparent'
-                    }`}
-                  >
-                    Editorial
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('solutions')}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
-                      activeTab === 'solutions' 
-                        ? 'text-blue-600 border-blue-500' 
-                        : 'text-gray-500 hover:text-gray-700 border-transparent'
-                    }`}
-                  >
-                    Solutions
+                    📚 Description
                   </button>
                   <button 
                     onClick={() => setActiveTab('submissions')}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
                       activeTab === 'submissions' 
                         ? 'text-blue-600 border-blue-500' 
                         : 'text-gray-500 hover:text-gray-700 border-transparent'
                     }`}
                   >
-                    Submissions
+                    📊 Submissions
                     {submissions.length > 0 && (
-                      <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
+                      <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full font-medium">
                         {submissions.length}
                       </span>
                     )}
@@ -1623,232 +1605,198 @@ function CompilerPage() {
                 </motion.button>
               </div>
 
-              {/* Problem Content */}
-              <div className="flex-1 overflow-y-auto">
+              {/* Problem Content - Optimized for Full Screen */}
+              <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
                 {problemDetails && (
-                  <div className="p-4 space-y-6">
+                  <div className="space-y-6">
                     {/* Tab Content */}
                     {activeTab === 'description' && (
-                      <>
-                        {/* Problem Title with Metadata */}
-                        <div>
-                          <div className="flex items-center space-x-2 mb-3">
-                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
-                              Medium
+                      <div className="space-y-6">
+                        {/* Problem Title Card */}
+                        <div className="bg-white rounded-lg p-6 shadow-sm border">
+                          <div className="flex items-center space-x-3 mb-4">
+                            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold">
+                              ⭐ MEDIUM
                             </span>
-                            <span className="text-gray-500 text-sm cursor-pointer hover:text-gray-700">📚 Topics</span>
-                            <span className="text-gray-500 text-sm cursor-pointer hover:text-gray-700">🏢 Companies</span>
-                            <span className="text-gray-500 text-sm cursor-pointer hover:text-gray-700">💡 Hint</span>
+                            <span className="text-gray-500 text-sm">📚 Algorithms</span>
+                            <span className="text-gray-500 text-sm">🏢 Top Companies</span>
                           </div>
-                          <h1 className="text-xl font-semibold text-gray-900 leading-tight">
+                          <h1 className="text-2xl font-bold text-gray-900 mb-2">
                             {problemDetails.title}
                           </h1>
+                          <div className="text-sm text-gray-600 flex items-center space-x-4">
+                            <span>🎯 Problem ID: #{Math.floor(Math.random() * 1000) + 1}</span>
+                            <span>👥 Solved by 2.5k+ developers</span>
+                          </div>
                         </div>
 
-                        {/* Problem Description */}
-                        <div className="prose prose-sm max-w-none">
-                          <p className="text-gray-700 leading-relaxed text-base">
-                            {typeof problemDetails.description === 'object' 
-                              ? JSON.stringify(problemDetails.description, null, 2) 
-                              : (problemDetails.description || 'No description available')}
-                          </p>
+                        {/* Description Card */}
+                        <div className="bg-white rounded-lg p-6 shadow-sm border">
+                          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <span className="mr-2">📝</span>
+                            Problem Description
+                          </h2>
+                          <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                            <p className="text-gray-700 leading-relaxed">
+                              {typeof problemDetails.description === 'object' 
+                                ? JSON.stringify(problemDetails.description, null, 2) 
+                                : (problemDetails.description || 'No description available')}
+                            </p>
+                          </div>
                         </div>
 
-                        {/* Examples Section */}
-                        <div className="space-y-4">
-                          {problemDetails.testCases && problemDetails.testCases.length > 0 && (
-                            <>
-                              {problemDetails.testCases.slice(0, 3).map((testCase, index) => (
-                                <div key={index} className="space-y-2">
-                                  <h3 className="text-sm font-semibold text-gray-900">
-                                    Example {index + 1}:
-                                  </h3>
+                        {/* Examples Card */}
+                        {problemDetails.testCases && problemDetails.testCases.length > 0 && (
+                          <div className="space-y-4">
+                            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                              <span className="mr-2">📋</span>
+                              Examples & Test Cases
+                            </h2>
+                            {problemDetails.testCases.slice(0, 3).map((testCase, index) => (
+                              <div key={index} className="bg-white rounded-lg p-6 shadow-sm border">
+                                <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm mr-3">
+                                    Example {index + 1}
+                                  </span>
+                                </h3>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                      <span className="mr-1">📥</span> Input:
+                                    </div>
+                                    <div className="bg-gray-900 text-green-400 rounded-lg p-3 border">
+                                      <code className="text-sm font-mono whitespace-pre-wrap">
+                                        {typeof testCase.input === 'object' 
+                                          ? JSON.stringify(testCase.input, null, 2) 
+                                          : (testCase.input || 'No input')}
+                                      </code>
+                                    </div>
+                                  </div>
                                   
-                                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                    <div className="space-y-3">
-                                      <div>
-                                        <div className="text-sm font-medium text-gray-900 mb-1">Input:</div>
-                                        <div className="bg-white border border-gray-200 rounded p-2">
-                                          <code className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
-                                            {(testCase.input && typeof testCase.input === 'string') 
-                                              ? testCase.input.replace(/\\n/g, '\n') 
-                                              : (typeof testCase.input === 'object' 
-                                                  ? JSON.stringify(testCase.input, null, 2) 
-                                                  : (testCase.input || 'No input'))}
-                                          </code>
-                                        </div>
-                                      </div>
-                                      
-                                      <div>
-                                        <div className="text-sm font-medium text-gray-900 mb-1">Output:</div>
-                                        <div className="bg-white border border-gray-200 rounded p-2">
-                                          <code className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
-                                            {(testCase.output && typeof testCase.output === 'string') 
-                                              ? testCase.output.replace(/\\n/g, '\n') 
-                                              : (typeof testCase.output === 'object' 
-                                                  ? JSON.stringify(testCase.output, null, 2) 
-                                                  : (testCase.output || 'No output'))}
-                                          </code>
-                                        </div>
-                                      </div>
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
+                                      <span className="mr-1">📤</span> Output:
+                                    </div>
+                                    <div className="bg-gray-900 text-blue-400 rounded-lg p-3 border">
+                                      <code className="text-sm font-mono whitespace-pre-wrap">
+                                        {typeof testCase.output === 'object' 
+                                          ? JSON.stringify(testCase.output, null, 2) 
+                                          : (testCase.output || 'No output')}
+                                      </code>
                                     </div>
                                   </div>
                                 </div>
-                              ))}
-                            </>
-                          )}
-                        </div>
-
-                        {/* Constraints */}
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Constraints:</h3>
-                          <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside bg-gray-50 rounded-lg p-3 border border-gray-200">
-                            <li>1 ≤ array length ≤ 10<sup>4</sup></li>
-                            <li>-10<sup>9</sup> ≤ array elements ≤ 10<sup>9</sup></li>
-                            <li>Time limit: 1 second</li>
-                            <li>Memory limit: 256 MB</li>
-                          </ul>
-                        </div>
-
-                        {/* Input/Output Format */}
-                        <div className="space-y-4">
-                          <div>
-                            <h3 className="text-sm font-semibold text-gray-900 mb-2">Input Format:</h3>
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                              <p className="text-sm text-gray-700 font-mono leading-relaxed whitespace-pre-line">
-                                {typeof problemDetails.inputFormat === 'object' 
-                                  ? JSON.stringify(problemDetails.inputFormat, null, 2) 
-                                  : (problemDetails.inputFormat || 'No input format specified')}
-                              </p>
-                            </div>
+                              </div>
+                            ))}
                           </div>
-                          
-                          <div>
-                            <h3 className="text-sm font-semibold text-gray-900 mb-2">Output Format:</h3>
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                              <p className="text-sm text-gray-700 font-mono leading-relaxed whitespace-pre-line">
-                                {typeof problemDetails.outputFormat === 'object' 
-                                  ? JSON.stringify(problemDetails.outputFormat, null, 2) 
-                                  : (problemDetails.outputFormat || 'No output format specified')}
-                              </p>
-                            </div>
+                        )}
+
+                        {/* Constraints Card */}
+                        <div className="bg-white rounded-lg p-6 shadow-sm border">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <span className="mr-2">⚡</span>
+                            Constraints & Limits
+                          </h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <ul className="text-sm text-gray-700 space-y-2">
+                              <li className="flex items-center">
+                                <span className="text-blue-500 mr-2">•</span>
+                                Array length: 1 ≤ n ≤ 10⁴
+                              </li>
+                              <li className="flex items-center">
+                                <span className="text-blue-500 mr-2">•</span>
+                                Elements: -10⁹ ≤ nums[i] ≤ 10⁹
+                              </li>
+                            </ul>
+                            <ul className="text-sm text-gray-700 space-y-2">
+                              <li className="flex items-center">
+                                <span className="text-green-500 mr-2">⏱️</span>
+                                Time limit: 1 second
+                              </li>
+                              <li className="flex items-center">
+                                <span className="text-purple-500 mr-2">💾</span>
+                                Memory limit: 256 MB
+                              </li>
+                            </ul>
                           </div>
                         </div>
-                      </>
-                    )}
-
-                    {activeTab === 'editorial' && (
-                      <div className="text-center py-16">
-                        <div className="text-6xl mb-4">📝</div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Editorial Coming Soon</h3>
-                        <p className="text-gray-600">
-                          Detailed explanation and optimal solution approach will be available here.
-                        </p>
-                      </div>
-                    )}
-
-                    {activeTab === 'solutions' && (
-                      <div className="text-center py-16">
-                        <div className="text-6xl mb-4">💡</div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Community Solutions</h3>
-                        <p className="text-gray-600">
-                          Solutions from other users will be displayed here once available.
-                        </p>
                       </div>
                     )}
 
                     {activeTab === 'submissions' && (
-                      <div>
+                      <div className="bg-white rounded-lg p-6 shadow-sm border">
                         <div className="flex items-center justify-between mb-6">
-                          <h3 className="text-lg font-semibold text-gray-900">Your Submissions</h3>
-                          <span className="text-sm text-gray-600">
+                          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                            <span className="mr-2">📊</span>
+                            Your Submissions
+                          </h3>
+                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                             {submissions.length} submission{submissions.length !== 1 ? 's' : ''}
                           </span>
                         </div>
 
                         {submissions.length === 0 ? (
-                          <div className="text-center py-16">
-                            <div className="text-6xl mb-4">📋</div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
-                            <p className="text-gray-600 mb-4">
-                              Click "Submit All Tests" to test your solution and see results here.
+                          <div className="text-center py-20 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+                            <div className="text-8xl mb-6">📋</div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">No Submissions Yet</h3>
+                            <p className="text-gray-600 mb-6 max-w-md mx-auto leading-relaxed">
+                              Ready to test your coding skills? Click <strong>"Submit All Tests"</strong> to run your solution.
                             </p>
                           </div>
                         ) : (
                           <div className="space-y-4">
                             {submissions.map((submission, index) => (
-                              <motion.div 
+                              <div 
                                 key={index} 
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setSelectedSubmission(submission)}
-                                className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                className={`border-2 rounded-xl p-5 transition-all duration-300 ${
                                   submission.status === 'Accepted' 
-                                    ? 'border-green-200 bg-green-50 hover:bg-green-100' 
-                                    : 'border-red-200 bg-red-50 hover:bg-red-100'
+                                    ? 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50' 
+                                    : 'border-red-200 bg-gradient-to-r from-red-50 to-pink-50'
                                 }`}
                               >
-                                {/* Submission Header */}
-                                <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center space-x-3">
-                                    <span className={`text-lg ${
-                                      submission.status === 'Accepted' ? '✅' : '❌'
-                                    }`}></span>
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center space-x-4">
+                                    <div className={`text-2xl ${
+                                      submission.status === 'Accepted' ? '🎉' : '⚠️'
+                                    }`}></div>
                                     <div>
-                                      <div className={`font-semibold text-sm ${
+                                      <div className={`font-bold text-base ${
                                         submission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
                                       }`}>
                                         {submission.status}
+                                        {submission.status === 'Accepted' && <span className="ml-2">🏆</span>}
                                       </div>
-                                      <div className="text-xs text-gray-600">
-                                        {submission.timestamp}
+                                      <div className="text-sm text-gray-600">
+                                        📅 {submission.timestamp}
                                       </div>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {submission.passedTests}/{submission.totalTests} passed
+                                    <div className={`text-lg font-bold ${
+                                      submission.status === 'Accepted' ? 'text-green-700' : 'text-red-700'
+                                    }`}>
+                                      {submission.passedTests}/{submission.totalTests}
                                     </div>
                                     <div className="text-xs text-gray-600">
-                                      {submission.language} • {submission.executionTime}
+                                      🐍 {submission.language} • ⚡ {submission.executionTime}
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Test Results Summary */}
-                                <div className="grid grid-cols-3 gap-4 text-sm mb-3">
-                                  <div className="text-center">
-                                    <div className="text-xs text-gray-600 uppercase tracking-wide">Runtime</div>
-                                    <div className="font-medium">{submission.executionTime}</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-xs text-gray-600 uppercase tracking-wide">Memory</div>
-                                    <div className="font-medium">{submission.memory}</div>
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="text-xs text-gray-600 uppercase tracking-wide">Accuracy</div>
-                                    <div className="font-medium">{submission.accuracy}%</div>
-                                  </div>
-                                </div>
-
-                                {/* Code Preview */}
-                                <div className="pt-3 border-t border-gray-200">
+                                <div className="bg-gray-900 rounded-lg p-4 border">
                                   <div className="flex items-center justify-between mb-2">
-                                    <div className="text-xs text-gray-600">Code Preview:</div>
-                                    <div className="text-xs text-blue-600 font-medium">
-                                      Click to view full details →
-                                    </div>
+                                    <span className="text-gray-400 text-xs font-medium">💻 CODE PREVIEW</span>
+                                    <span className="text-gray-400 text-xs">{submission.code.length} chars</span>
                                   </div>
-                                  <div className="bg-gray-900 rounded p-3 max-h-20 overflow-hidden">
-                                    <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap">
-                                      {submission.code.length > 150 
-                                        ? submission.code.substring(0, 150) + '...' 
-                                        : submission.code
-                                      }
-                                    </pre>
-                                  </div>
+                                  <pre className="text-green-400 text-xs font-mono leading-relaxed overflow-hidden">
+                                    {submission.code.length > 200 
+                                      ? submission.code.substring(0, 200) + '...' 
+                                      : submission.code
+                                    }
+                                  </pre>
                                 </div>
-                              </motion.div>
+                              </div>
                             ))}
                           </div>
                         )}
