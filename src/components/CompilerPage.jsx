@@ -6,6 +6,7 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
+import { localExecutionService } from '../services/LocalExecutionService';
 import { validateJudge0Setup, getJudge0Headers, getJudge0Urls, testJudge0Connection } from '../utils/judge0Config';
 
 const languages = [
@@ -639,6 +640,52 @@ function CompilerPage() {
     }
   };
 
+  // Hybrid execution method - tries Judge0 first, falls back to local execution
+  const executeCodeHybrid = async (sourceCode, languageId, input = "") => {
+    try {
+      // First try Judge0
+      console.log('🎯 Attempting Judge0 execution...');
+      const result = await executeCodeWithJudge0(sourceCode, languageId, input);
+      result.executionMethod = 'judge0';
+      return result;
+      
+    } catch (error) {
+      console.log('⚠️ Judge0 failed:', error.message);
+      
+      // Check if it's a rate limit error and local execution is available
+      if (error.message.includes('Rate limit exceeded') || error.message.includes('429')) {
+        const languageName = language.name.toLowerCase();
+        
+        if (localExecutionService.isLanguageSupported(languageName)) {
+          console.log('🔄 Falling back to local execution...');
+          
+          try {
+            const localResult = await localExecutionService.executeCode(languageName, sourceCode, input);
+            
+            return {
+              success: localResult.success,
+              output: localResult.output,
+              error: localResult.error,
+              status: localResult.status,
+              executionMethod: 'local',
+              time: null,
+              memory: null,
+              compileOutput: null
+            };
+            
+          } catch (localError) {
+            throw new Error(`Both Judge0 and local execution failed. Judge0: ${error.message}, Local: ${localError.message}`);
+          }
+        } else {
+          throw new Error(`Rate limit exceeded and local execution not available for ${language.label}. ${error.message}`);
+        }
+      } else {
+        // Re-throw non-rate-limit errors
+        throw error;
+      }
+    }
+  };
+
   // Enhanced run code with test case validation
   const runCode = async () => {
     if (!code.trim()) {
@@ -670,7 +717,7 @@ function CompilerPage() {
         hasTestCase = true;
       }
 
-      const result = await executeCodeWithJudge0(code, language.id, testInput);
+      const result = await executeCodeHybrid(code, language.id, testInput);
 
       let outputText = '';
 
@@ -737,8 +784,19 @@ function CompilerPage() {
           if (result.memory) {
             outputText += `💾 Memory Used: ${result.memory} KB\n`;
           }
-          outputText += `${'-'.repeat(20)}`;
+          outputText += `${'-'.repeat(20)}\n\n`;
         }
+        
+        // Show execution method
+        outputText += `🔧 EXECUTION INFO:\n`;
+        outputText += `${'-'.repeat(20)}\n`;
+        if (result.executionMethod === 'local') {
+          outputText += `🏠 Executed locally (Browser-based Python)\n`;
+          outputText += `ℹ️  Judge0 was rate-limited, used local fallback\n`;
+        } else {
+          outputText += `☁️  Executed via Judge0 API\n`;
+        }
+        outputText += `${'-'.repeat(20)}`;
       } else {
         outputText = `❌ EXECUTION FAILED\n`;
         outputText += `${'='.repeat(40)}\n\n`;
@@ -877,7 +935,7 @@ function CompilerPage() {
         });
 
         try {
-          const result = await executeCodeWithJudge0(code, language.id, testCase.input);
+          const result = await executeCodeHybrid(code, language.id, testCase.input);
 
           const actualOutput = result.output ? result.output.trim() : '';
           const expectedOutput = testCase.output.trim();
@@ -894,6 +952,7 @@ function CompilerPage() {
             executionTime: result.time,
             memory: result.memory,
             status: result.status,
+            executionMethod: result.executionMethod,
             error: result.success ? null : (result.error || result.compileOutput)
           });
 
