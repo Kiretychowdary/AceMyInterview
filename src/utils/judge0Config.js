@@ -1,10 +1,23 @@
 // Judge0 API Utility
-// Centralized configuration for Judge0 CE API calls
+// Enhanced configuration for Judge0 CE API calls
 
 const JUDGE0_CONFIG = {
   baseUrl: 'https://judge0-ce.p.rapidapi.com',
-  apiKey: import.meta.env.VITE_RAPIDAPI_KEY || 'your-rapidapi-key-here',
+  apiKey: import.meta.env.VITE_RAPIDAPI_KEY || 'de8d5e94a4mshf818c9f800a0a33p1e15a8jsnfc78cf9bd879',
   host: 'judge0-ce.p.rapidapi.com'
+};
+
+// Language ID mapping for Judge0
+export const LANGUAGE_IDS = {
+  'c': 50,
+  'cpp': 54,
+  'java': 62,
+  'python': 71,
+  'javascript': 63,
+  'typescript': 74,
+  'go': 60,
+  'rust': 73,
+  'csharp': 51
 };
 
 export const isJudge0Configured = () => {
@@ -25,7 +38,9 @@ export const getJudge0Headers = () => {
 
 export const getJudge0Urls = () => ({
   submit: `${JUDGE0_CONFIG.baseUrl}/submissions`,
-  getResult: (token) => `${JUDGE0_CONFIG.baseUrl}/submissions/${token}`
+  submitBatch: `${JUDGE0_CONFIG.baseUrl}/submissions/batch`,
+  getResult: (token) => `${JUDGE0_CONFIG.baseUrl}/submissions/${token}`,
+  getBatchResult: (tokens) => `${JUDGE0_CONFIG.baseUrl}/submissions/batch?tokens=${tokens.join(',')}`
 });
 
 export const validateJudge0Setup = () => {
@@ -60,6 +75,54 @@ export const JUDGE0_LANGUAGES = {
   go: { id: 60, name: 'Go (1.13.5)' },
   rust: { id: 73, name: 'Rust (1.40.0)' },
   typescript: { id: 74, name: 'TypeScript (3.7.4)' }
+};
+
+// Test Judge0 API connectivity
+export const testJudge0Connection = async () => {
+  if (!isJudge0Configured()) {
+    throw new Error('Judge0 API key not configured');
+  }
+
+  try {
+    const headers = getJudge0Headers();
+    const urls = getJudge0Urls();
+    
+    // Helper function to safely encode
+    const safeBtoa = (str) => {
+      try {
+        return btoa(str || '');
+      } catch (e) {
+        return btoa(unescape(encodeURIComponent(str || '')));
+      }
+    };
+    
+    const response = await fetch(urls.submit, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        source_code: safeBtoa('print("Hello World")'),
+        language_id: 71, // Python
+        stdin: safeBtoa('')
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      message: 'Judge0 API connection successful!',
+      token: data.token
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to connect to Judge0: ${error.message}`,
+      error: error.message
+    };
+  }
 };
 
 export default JUDGE0_CONFIG;

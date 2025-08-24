@@ -88,6 +88,8 @@ const MCQInterview = () => {
   // Topic hierarchy system
   const [selectedMainTopic, setSelectedMainTopic] = useState(null);
   const [showSubTopics, setShowSubTopics] = useState(false);
+  const [showCustomTopic, setShowCustomTopic] = useState(false);
+  const [customTopic, setCustomTopic] = useState('');
 
   // Auto-configure based on selected topic from navigation
   useEffect(() => {
@@ -97,7 +99,7 @@ const MCQInterview = () => {
         'Software Developer': 'tech-computer-science',
         'DSA': 'tech-computer-science', 
         'OOPS': 'tech-computer-science',
-        'System Design': 'tech-computer-science',
+        'System Design': 'system-design',
         'Cybersecurity': 'tech-computer-science',
         'Network Security': 'tech-computer-science',
         'Ethical Hacking': 'tech-computer-science', 
@@ -113,14 +115,19 @@ const MCQInterview = () => {
       if (mainCategory) {
         setSelectedMainTopic(mainCategory);
         setShowSubTopics(true);
-        // Auto-select a default subtopic based on the main topic
-        const defaultSubtopic = getDefaultSubtopic(selectedTopic);
-        if (defaultSubtopic) {
-          setQuizConfig({ ...quizConfig, topic: defaultSubtopic });
-        }
       }
     }
   }, [selectedTopic]);
+
+  // Separate useEffect to set default subtopic after main topic is set
+  useEffect(() => {
+    if (selectedMainTopic && showSubTopics && selectedTopic && selectedTopic !== 'JavaScript') {
+      const defaultSubtopic = getDefaultSubtopic(selectedTopic);
+      if (defaultSubtopic) {
+        setQuizConfig(prev => ({ ...prev, topic: defaultSubtopic }));
+      }
+    }
+  }, [selectedMainTopic, showSubTopics, selectedTopic]);
 
   // Get default subtopic based on selected main topic
   const getDefaultSubtopic = (topic) => {
@@ -128,7 +135,7 @@ const MCQInterview = () => {
       'Software Developer': 'Software Developer',
       'DSA': 'Algorithms', 
       'OOPS': 'Java',
-      'System Design': 'System Design',
+      'System Design': 'Caching Strategies',
       'Cybersecurity': 'Cybersecurity Specialist',
       'Network Security': 'Network Security',
       'Ethical Hacking': 'Cybersecurity Specialist',
@@ -159,28 +166,37 @@ const MCQInterview = () => {
       { value: 'Software Developer', label: 'Software Developer', icon: '👨‍💻' },
       { value: 'Data Scientist', label: 'Data Scientist', icon: '📈' },
       { value: 'Cybersecurity Specialist', label: 'Cybersecurity Specialist', icon: '🔒' },
-      { value: 'DevOps Engineer', label: 'DevOps Engineer', icon: '�' },
+      { value: 'DevOps Engineer', label: 'DevOps Engineer', icon: '⚙️' },
       { value: 'AI/ML Engineer', label: 'AI/ML Engineer', icon: '🤖' },
       { value: 'Full Stack Developer', label: 'Full Stack Developer', icon: '🌐' },
       { value: 'Mobile App Developer', label: 'Mobile App Developer', icon: '📱' },
       { value: 'Cloud Architect', label: 'Cloud Architect', icon: '☁️' },
       { value: 'Database Administrator', label: 'Database Administrator', icon: '🗄️' },
-      { value: 'System Administrator', label: 'System Administrator', icon: '�️' },
+      { value: 'System Administrator', label: 'System Administrator', icon: '🖥️' },
       { value: 'Quality Assurance Engineer', label: 'QA Engineer', icon: '🧪' },
       { value: 'UI/UX Developer', label: 'UI/UX Developer', icon: '🎨' },
       // Programming Languages
       { value: 'JavaScript', label: 'JavaScript Programming', icon: '⚡' },
-      { value: 'Python', label: 'Python Programming', icon: '�' },
+      { value: 'Python', label: 'Python Programming', icon: '🐍' },
       { value: 'Java', label: 'Java Programming', icon: '☕' },
       { value: 'C++', label: 'C++ Programming', icon: '⚡' },
       { value: 'React', label: 'React.js Framework', icon: '⚛️' },
-      { value: 'Node.js', label: 'Node.js Backend', icon: '�' },
+      { value: 'Node.js', label: 'Node.js Backend', icon: '🟢' },
       // Core CS Concepts
       { value: 'Algorithms', label: 'Data Structures & Algorithms', icon: '🧠' },
-      { value: 'System Design', label: 'System Design', icon: '🏗️' },
-      { value: 'Database Design', label: 'Database Design & SQL', icon: '�' },
+      { value: 'Database Design', label: 'Database Design & SQL', icon: '🗃️' },
       { value: 'Network Security', label: 'Network Security', icon: '🌐' },
       { value: 'Machine Learning', label: 'Machine Learning', icon: '🤖' }
+    ],
+    'system-design': [
+      { value: 'Caching Strategies', label: 'Caching Strategies', icon: '💾' },
+      { value: 'Microservices Design', label: 'Microservices Design', icon: '🔧' },
+      { value: 'API Design', label: 'API Design', icon: '🖇️' },
+      { value: 'Distributed Systems', label: 'Distributed Systems', icon: '🌐' },
+      { value: 'Load Balancing', label: 'Load Balancing', icon: '⚖️' },
+      { value: 'Database Scaling', label: 'Database Scaling', icon: '📊' },
+      { value: 'System Architecture', label: 'System Architecture', icon: '🏗️' },
+      { value: 'Message Queues', label: 'Message Queues', icon: '📨' }
     ],
     'business-management': [
       { value: 'Product Manager', label: 'Product Manager', icon: '📋' },
@@ -634,7 +650,7 @@ const MCQInterview = () => {
                           setShowSubTopics(true);
                         } else {
                           // Subtopic selected - set as quiz topic
-                          setQuizConfig({ ...quizConfig, topic: topic.value });
+                          setQuizConfig(prev => ({ ...prev, topic: topic.value }));
                         }
                       }}
                       className={`p-4 rounded-xl border-2 transition-all duration-200 ${
@@ -649,6 +665,54 @@ const MCQInterview = () => {
                     </motion.button>
                   ))}
                 </div>
+
+                {/* Custom Topic Section */}
+                {showSubTopics && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => setShowCustomTopic(!showCustomTopic)}
+                      className="w-full p-3 rounded-lg bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-400"
+                    >
+                      ➕ Add Custom Topic
+                    </button>
+                    
+                    {showCustomTopic && (
+                      <div className="mt-3 space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Enter your custom topic (e.g., Machine Learning, React.js, etc.)"
+                          value={customTopic}
+                          onChange={(e) => setCustomTopic(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-gray-700"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              if (customTopic.trim()) {
+                                setQuizConfig(prev => ({ ...prev, topic: customTopic.trim() }));
+                                setShowCustomTopic(false);
+                                setCustomTopic('');
+                              }
+                            }}
+                            disabled={!customTopic.trim()}
+                            className="flex-1 px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Use Custom Topic
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCustomTopic(false);
+                              setCustomTopic('');
+                            }}
+                            className="px-4 py-2 rounded-lg bg-gray-500 text-white font-semibold shadow hover:bg-gray-600 transition focus:outline-none focus:ring-2 focus:ring-gray-400"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Selected Topic Display */}
                 {showSubTopics && quizConfig.topic && (
@@ -672,7 +736,7 @@ const MCQInterview = () => {
                         key={diff.value}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setQuizConfig({ ...quizConfig, difficulty: diff.value })}
+                        onClick={() => setQuizConfig(prev => ({ ...prev, difficulty: diff.value }))}
                         className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
                           quizConfig.difficulty === diff.value
                             ? `${diff.borderColor} ${diff.bgColor} ${diff.color} shadow-md`
@@ -690,7 +754,7 @@ const MCQInterview = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-3">Number of Questions</label>
                   <select
                     value={quizConfig.count}
-                    onChange={(e) => setQuizConfig({ ...quizConfig, count: parseInt(e.target.value) })}
+                    onChange={(e) => setQuizConfig(prev => ({ ...prev, count: parseInt(e.target.value) }))}
                     className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-200 bg-white"
                   >
                     <option value={5}>5 Questions</option>

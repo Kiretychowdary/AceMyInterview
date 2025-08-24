@@ -6,12 +6,12 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
-import { validateJudge0Setup, getJudge0Headers, getJudge0Urls } from '../utils/judge0Config';
+import { validateJudge0Setup, getJudge0Headers, getJudge0Urls, testJudge0Connection } from '../utils/judge0Config';
 
 const languages = [
-  { 
-    id: 50, 
-    name: "c", 
+  {
+    id: 50,
+    name: "c",
     label: "C",
     icon: "🔧",
     color: "bg-gray-100 text-gray-800 border-gray-300",
@@ -21,11 +21,11 @@ int main() {
     // Your solution here
     printf("Hello, World!\\n");
     return 0;
-}` 
+}`
   },
-  { 
-    id: 54, 
-    name: "cpp", 
+  {
+    id: 54,
+    name: "cpp",
     label: "C++",
     icon: "⚡",
     color: "bg-blue-100 text-blue-800 border-blue-300",
@@ -38,11 +38,11 @@ int main() {
     // Your solution here
     cout << "Hello, World!" << endl;
     return 0;
-}` 
+}`
   },
-  { 
-    id: 62, 
-    name: "java", 
+  {
+    id: 62,
+    name: "java",
     label: "Java",
     icon: "☕",
     color: "bg-orange-100 text-orange-800 border-orange-300",
@@ -56,11 +56,11 @@ public class Main {
         System.out.println("Hello, World!");
         sc.close();
     }
-}` 
+}`
   },
-  { 
-    id: 71, 
-    name: "python", 
+  {
+    id: 71,
+    name: "python",
     label: "Python",
     icon: "🐍",
     color: "bg-green-100 text-green-800 border-green-300",
@@ -71,7 +71,7 @@ def solve():
 
 if __name__ == "__main__":
     solve()
-` 
+`
   },
 ];
 
@@ -155,10 +155,10 @@ const difficulties = [
 
 function CompilerPage() {
   const location = useLocation();
-  
+
   // Get selected topic from navigation state
   const selectedTopic = location.state?.subject || 'algorithms';
-  
+
   // Topic hierarchy state
   const [selectedMainTopic, setSelectedMainTopic] = useState(null);
   const [showSubTopics, setShowSubTopics] = useState(false);
@@ -170,12 +170,12 @@ function CompilerPage() {
       // Map selected topic to main categories
       const topicToMainCategoryMap = {
         'Software Developer': 'algorithms',
-        'DSA': 'data-structures', 
+        'DSA': 'data-structures',
         'OOPS': 'algorithms',
         'System Design': 'system-design',
         'Cybersecurity': 'algorithms',
         'Network Security': 'algorithms',
-        'Ethical Hacking': 'algorithms', 
+        'Ethical Hacking': 'algorithms',
         'Cryptography': 'algorithms',
         'Data Analyst': 'mathematics',
         'Product Manager': 'system-design',
@@ -183,16 +183,23 @@ function CompilerPage() {
         'Project Coordinator': 'system-design',
         'System Admin': 'algorithms'
       };
-      
+
       const mainCategory = topicToMainCategoryMap[selectedTopic];
+      console.log('CompilerPage topic selection debug:', {
+        selectedTopic,
+        mainCategory,
+        defaultSubtopic: getCodingDefaultSubtopic(selectedTopic)
+      });
+
       if (mainCategory) {
         setSelectedMainTopic(mainCategory);
         setShowSubTopics(true);
         // Auto-select a default subtopic based on the main topic
         const defaultSubtopic = getCodingDefaultSubtopic(selectedTopic);
         if (defaultSubtopic) {
-          setProblemConfig({ ...problemConfig, topic: defaultSubtopic });
+          setProblemConfig(prev => ({ ...prev, topic: defaultSubtopic }));
           setConfiguredTopic(defaultSubtopic);
+          console.log('Set configuredTopic to:', defaultSubtopic, 'which displays as:', getTopicDisplayLabel(defaultSubtopic));
         }
       }
     }
@@ -202,7 +209,7 @@ function CompilerPage() {
   const getCodingDefaultSubtopic = (topic) => {
     const defaultMap = {
       'Software Developer': 'sorting',
-      'DSA': 'arrays', 
+      'DSA': 'arrays',
       'OOPS': 'algorithms',
       'System Design': 'scalability',
       'Cybersecurity': 'bit-manipulation',
@@ -217,7 +224,29 @@ function CompilerPage() {
     };
     return defaultMap[topic] || null;
   };
-  
+
+  // Get display label for a topic value
+  const getTopicDisplayLabel = (topicValue) => {
+    if (!topicValue) return '';
+
+    // Search through all subtopics to find the matching label
+    for (const [mainTopic, subtopics] of Object.entries(codingSubTopics)) {
+      const foundSubtopic = subtopics.find(subtopic => subtopic.value === topicValue);
+      if (foundSubtopic) {
+        return foundSubtopic.label;
+      }
+    }
+
+    // If not found in subtopics, check main topics
+    const mainTopic = codingTopics.find(topic => topic.value === topicValue);
+    if (mainTopic) {
+      return mainTopic.label;
+    }
+
+    // Return the original value if no match found
+    return topicValue;
+  };
+
   // Map topics to API format
   const mapTopicToAPI = (topic) => {
     const topicMap = {
@@ -237,9 +266,9 @@ function CompilerPage() {
     };
     return topicMap[topic] || topic.toLowerCase().replace(/\s+/g, '-');
   };
-  
+
   const apiTopic = mapTopicToAPI(selectedTopic);
-  
+
   // Get current topics for display (main or sub)
   const getCurrentCodingTopics = () => {
     if (selectedMainTopic && showSubTopics) {
@@ -247,11 +276,11 @@ function CompilerPage() {
     }
     return mainCodingTopics;
   };
-  
+
   const [code, setCode] = useState(languages[3].template); // Default to Python
   const [language, setLanguage] = useState(languages[3]);
   const [problemDetails, setProblemDetails] = useState(null);
-  const [loadingProblem, setLoadingProblem] = useState(false);
+  const [loadingProblem, setLoadingProblem] = useState(true); // Start with loading to auto-generate problem
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [showProblemPanel, setShowProblemPanel] = useState(true);
@@ -259,6 +288,10 @@ function CompilerPage() {
   const [fontSize, setFontSize] = useState(14);
   const [testResults, setTestResults] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState('description');
+  const [submissions, setSubmissions] = useState([]);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [consoleTab, setConsoleTab] = useState('output');
   const editorRef = useRef(null);
 
   // Keyboard shortcuts
@@ -321,32 +354,38 @@ function CompilerPage() {
     }
   }, [problemDetails, loadingProblem]);
 
+  // Auto-generate problem when component mounts
+  useEffect(() => {
+    // Generate a problem on initial load
+    generateNewProblem();
+  }, []); // Empty dependency array means this runs once on mount
+
   // Generate new problem
   const generateNewProblem = async () => {
     setLoadingProblem(true);
     setProblemDetails(null);
-    
+
     try {
-      
+
       const response = await GeminiService.getCodingProblem(
         problemConfig.topic,
         problemConfig.difficulty,
         problemConfig.language
       );
-      
+
       if (response.success && response.problem) {
         setProblemDetails(response.problem);
-        
+
         // No success toast - keep interface clean when problem appears
       } else {
         setProblemDetails(response.problem);
-        
+
         // No toasts when content appears - keep interface clean
       }
     } catch (error) {
       console.error("Failed to generate problem:", error);
       toast.error(`❌ Failed to generate problem: ${error.message}`);
-      setProblemDetails({ 
+      setProblemDetails({
         error: "Unable to generate AI problem. Please try again later.",
         title: "Error",
         description: "The AI service is currently unavailable. Please check your connection and try again."
@@ -360,10 +399,187 @@ function CompilerPage() {
   const handleLanguageChange = (newLanguage) => {
     setLanguage(newLanguage);
     setCode(newLanguage.template);
-    setProblemConfig({ ...problemConfig, language: newLanguage.name });
+    setProblemConfig(prev => ({ ...prev, language: newLanguage.name }));
   };
 
-  // Run code
+  // Enhanced code execution with Judge0
+  const executeCodeWithJudge0 = async (sourceCode, languageId, input = "", timeout = 5) => {
+    const judge0Urls = getJudge0Urls();
+    const headers = getJudge0Headers();
+
+    try {
+      // Validate inputs
+      if (!sourceCode || !sourceCode.trim()) {
+        throw new Error('Source code cannot be empty');
+      }
+
+      // Helper function to safely encode to base64
+      const safeBtoa = (str) => {
+        try {
+          return btoa(str || '');
+        } catch (e) {
+          console.warn('Failed to encode to base64:', str);
+          // Fallback: encode as UTF-8 bytes first, then base64
+          return btoa(unescape(encodeURIComponent(str || '')));
+        }
+      };
+
+      // Submit code for execution
+      // Try both plain text and base64 approaches
+      let submitResponse;
+
+      try {
+        // First try: Plain text (some Judge0 versions expect this)
+        const plainPayload = {
+          source_code: sourceCode,
+          language_id: languageId,
+          stdin: input || "",
+          cpu_time_limit: timeout,
+          memory_limit: 128000,
+        };
+
+        console.log('Trying Judge0 submission with plain text...');
+        submitResponse = await axios.post(
+          judge0Urls.submit,
+          plainPayload,
+          {
+            headers,
+            timeout: 10000
+          }
+        );
+      } catch (plainError) {
+        console.log('Plain text failed, trying base64...', plainError.message);
+
+        // Second try: Base64 encoded (official Judge0 CE format)
+        const base64Payload = {
+          source_code: safeBtoa(sourceCode),
+          language_id: languageId,
+          stdin: safeBtoa(input || ""),
+          cpu_time_limit: timeout,
+          memory_limit: 128000,
+        };
+
+        submitResponse = await axios.post(
+          judge0Urls.submit,
+          base64Payload,
+          {
+            headers,
+            timeout: 10000
+          }
+        );
+      }
+
+      const token = submitResponse.data.token;
+      console.log('Judge0 submission successful, token:', token);
+      console.log('Submit response:', submitResponse.data);
+
+      if (!token) {
+        throw new Error('No token received from Judge0');
+      }
+
+      // Poll for result with exponential backoff
+      let attempts = 0;
+      const maxAttempts = 20;
+      const pollInterval = 1000; // Start with 1 second
+
+      const pollResult = async () => {
+        attempts++;
+
+        const resultResponse = await axios.get(
+          judge0Urls.getResult(token),
+          { headers, timeout: 5000 }
+        );
+
+        const result = resultResponse.data;
+        console.log('=== Full Judge0 Result ===');
+        console.log(JSON.stringify(result, null, 2));
+        console.log('=== Judge0 Result Analysis ===');
+        console.log('Status ID:', result.status?.id);
+        console.log('Status Description:', result.status?.description);
+        console.log('Raw stdout:', result.stdout);
+        console.log('Raw stdout type:', typeof result.stdout);
+        console.log('Raw stderr:', result.stderr);
+        console.log('Raw compile_output:', result.compile_output);
+
+        // Status IDs: 1=In Queue, 2=Processing, 3=Accepted, 4=Wrong Answer, 5=Time Limit Exceeded, etc.
+        if (result.status.id <= 2) {
+          // Still processing
+          if (attempts >= maxAttempts) {
+            throw new Error('Execution timeout - taking too long to process');
+          }
+
+          // Wait with exponential backoff
+          const delay = Math.min(pollInterval * Math.pow(1.5, attempts), 5000);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return await pollResult();
+        }
+
+        // Execution completed
+        // Helper function to safely decode base64
+        const safeAtob = (str) => {
+          if (!str) return '';
+          
+          // If it's already a string and not base64 encoded, return as is
+          if (typeof str === 'string' && !str.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
+            console.log('Returning non-base64 string as is:', str.substring(0, 50) + '...');
+            return str;
+          }
+          
+          // If it's an array, convert to string
+          if (Array.isArray(str)) {
+            console.log('Converting array to string:', str);
+            return str.join('\n');
+          }
+          
+          // If it's an object, stringify it
+          if (typeof str === 'object') {
+            console.log('Converting object to string:', str);
+            return JSON.stringify(str, null, 2);
+          }
+          
+          try {
+            const decoded = atob(str);
+            console.log('Successfully decoded base64:', str.substring(0, 50) + '... -> ' + decoded.substring(0, 50) + '...');
+            return decoded;
+          } catch (e) {
+            console.warn('Failed to decode base64:', str.substring(0, 100) + '...');
+            console.warn('Using original string instead');
+            return str; // Return original string if decode fails
+          }
+        };
+
+        console.log('Raw Judge0 response fields:', {
+          stdout: result.stdout ? result.stdout.substring(0, 100) + '...' : 'null',
+          stderr: result.stderr ? result.stderr.substring(0, 100) + '...' : 'null',
+          compile_output: result.compile_output ? result.compile_output.substring(0, 100) + '...' : 'null'
+        });
+
+        const finalOutput = safeAtob(result.stdout);
+        console.log('Final processed output:', finalOutput);
+        console.log('Final output type:', typeof finalOutput);
+        console.log('Final output length:', finalOutput ? finalOutput.length : 0);
+
+        return {
+          success: result.status.id === 3, // 3 = Accepted
+          output: finalOutput,
+          error: safeAtob(result.stderr),
+          status: result.status.description,
+          statusId: result.status.id,
+          time: result.time,
+          memory: result.memory,
+          compileOutput: safeAtob(result.compile_output)
+        };
+      };
+
+      return await pollResult();
+
+    } catch (error) {
+      console.error('Judge0 execution error:', error);
+      throw new Error(`Execution failed: ${error.message}`);
+    }
+  };
+
+  // Enhanced run code with test case validation
   const runCode = async () => {
     if (!code.trim()) {
       toast.error('Please write some code first!');
@@ -379,49 +595,155 @@ function CompilerPage() {
     }
 
     setIsRunning(true);
-    setOutput('Running code...');
-    
+    setOutput('🚀 Submitting code to Judge0...\n⏳ Waiting for execution...');
+
     try {
-      const judge0Urls = getJudge0Urls();
-      const headers = getJudge0Headers();
-      
-      const response = await axios.post(
-        judge0Urls.submit,
-        {
-          source_code: btoa(code),
-          language_id: language.id,
-          stdin: btoa(""),
-        },
-        { headers }
-      );
+      // If problem is loaded, run with first test case for validation
+      let testInput = "";
+      let expectedOutput = "";
+      let hasTestCase = false;
 
-      const token = response.data.token;
+      if (problemDetails && problemDetails.testCases && problemDetails.testCases.length > 0) {
+        const firstTestCase = problemDetails.testCases[0];
+        testInput = firstTestCase.input || "";
+        expectedOutput = firstTestCase.output || "";
+        hasTestCase = true;
+      }
 
-      // Poll for result
-      const checkResult = async () => {
-        const result = await axios.get(
-          judge0Urls.getResult(token),
-          { headers }
-        );
+      const result = await executeCodeWithJudge0(code, language.id, testInput);
 
-        if (result.data.status.id <= 2) {
-          setTimeout(checkResult, 1000);
-        } else {
-          const output = result.data.stdout
-            ? atob(result.data.stdout)
-            : result.data.stderr
-            ? atob(result.data.stderr)
-            : "No output";
-          setOutput(output);
-          setIsRunning(false);
+      let outputText = '';
+
+      if (result.success) {
+        // Check if answer is correct when test case is available
+        let isCorrect = false;
+        if (hasTestCase && result.output) {
+          const userOutput = result.output.trim();
+          const expected = expectedOutput.trim();
+          isCorrect = userOutput === expected;
         }
-      };
 
-      setTimeout(checkResult, 1000);
+        if (hasTestCase) {
+          // Show result validation
+          if (isCorrect) {
+            outputText = `🎉 CORRECT ANSWER!\n`;
+            outputText += `${'='.repeat(40)}\n\n`;
+            outputText += `✅ Your solution produces the correct output!\n\n`;
+          } else {
+            outputText = `❌ WRONG ANSWER\n`;
+            outputText += `${'='.repeat(40)}\n\n`;
+            outputText += `❌ Your solution produces incorrect output.\n\n`;
+          }
+
+          // Show comparison
+          outputText += `🔍 OUTPUT COMPARISON:\n`;
+          outputText += `${'-'.repeat(30)}\n`;
+          outputText += `📥 Input:\n${testInput || '(no input)'}\n\n`;
+          outputText += `✅ Expected Output:\n${expectedOutput}\n\n`;
+          outputText += `📤 Your Output:\n${result.output || '(no output)'}\n`;
+          outputText += `${'-'.repeat(30)}\n\n`;
+
+          if (!isCorrect) {
+            outputText += `💡 DEBUGGING TIPS:\n`;
+            outputText += `${'-'.repeat(20)}\n`;
+            outputText += `• Check for extra spaces or newlines\n`;
+            outputText += `• Verify your algorithm logic\n`;
+            outputText += `• Test with the provided examples\n`;
+            outputText += `• Make sure output format matches exactly\n\n`;
+          }
+        } else {
+          // No test case available, show basic execution
+          outputText = `✅ EXECUTION SUCCESSFUL\n`;
+          outputText += `${'='.repeat(40)}\n\n`;
+          outputText += `ℹ️ No test cases available for validation.\n`;
+          outputText += `Code executed successfully, check output below.\n\n`;
+          
+          if (result.output && result.output.trim()) {
+            outputText += `📤 PROGRAM OUTPUT:\n`;
+            outputText += `${'-'.repeat(20)}\n`;
+            outputText += `${result.output}\n`;
+            outputText += `${'-'.repeat(20)}\n\n`;
+          } else {
+            outputText += `📤 PROGRAM OUTPUT: (no output)\n\n`;
+          }
+        }
+        
+        if (result.time || result.memory) {
+          outputText += `📊 PERFORMANCE METRICS:\n`;
+          outputText += `${'-'.repeat(20)}\n`;
+          if (result.time) {
+            outputText += `⏱️  Execution Time: ${result.time}s\n`;
+          }
+          if (result.memory) {
+            outputText += `💾 Memory Used: ${result.memory} KB\n`;
+          }
+          outputText += `${'-'.repeat(20)}`;
+        }
+      } else {
+        outputText = `❌ EXECUTION FAILED\n`;
+        outputText += `${'='.repeat(40)}\n\n`;
+        outputText += `📋 Status: ${result.status}\n\n`;
+        
+        if (result.compileOutput && result.compileOutput.trim()) {
+          outputText += `🔧 COMPILATION ERROR:\n`;
+          outputText += `${'-'.repeat(20)}\n`;
+          outputText += `${result.compileOutput}\n`;
+          outputText += `${'-'.repeat(20)}\n\n`;
+        }
+        
+        if (result.error && result.error.trim()) {
+          outputText += `🐛 RUNTIME ERROR:\n`;
+          outputText += `${'-'.repeat(20)}\n`;
+          outputText += `${result.error}\n`;
+          outputText += `${'-'.repeat(20)}\n\n`;
+        }
+        
+        if (result.output && result.output.trim()) {
+          outputText += `📤 PARTIAL OUTPUT:\n`;
+          outputText += `${'-'.repeat(20)}\n`;
+          outputText += `${result.output}\n`;
+          outputText += `${'-'.repeat(20)}`;
+        }
+      }
+      
+      setOutput(outputText);
+
     } catch (error) {
-      setOutput('Error: Unable to run code. Please check your internet connection.');
-      setIsRunning(false);
+      console.error('Code execution error:', error);
+
+      let errorMessage = '❌ Execution Error!\n\n';
+
+      if (error.message.includes('atob') || error.message.includes('decode')) {
+        errorMessage += 'Failed to decode response from Judge0. This might be due to:\n';
+        errorMessage += '• Network connectivity issues\n';
+        errorMessage += '• Invalid API response format\n';
+        errorMessage += '• Judge0 service unavailable\n\n';
+        errorMessage += 'Please check:\n';
+        errorMessage += '1. Internet connection\n';
+        errorMessage += '2. Judge0 API key configuration\n';
+        errorMessage += '3. Code syntax\n\n';
+      } else if (error.message.includes('timeout')) {
+        errorMessage += 'Request timed out. This might be due to:\n';
+        errorMessage += '• Code taking too long to execute\n';
+        errorMessage += '• Network latency issues\n';
+        errorMessage += '• Judge0 server overload\n\n';
+      } else if (error.message.includes('token')) {
+        errorMessage += 'Failed to get execution token from Judge0.\n';
+        errorMessage += 'Please check your API key configuration.\n\n';
+      } else {
+        errorMessage += `${error.message}\n\n`;
+        errorMessage += 'Please check:\n';
+        errorMessage += '1. Internet connection\n';
+        errorMessage += '2. Judge0 API key configuration\n';
+        errorMessage += '3. Code syntax\n\n';
+      }
+
+      errorMessage += `Technical Details: ${error.message}`;
+
+      setOutput(errorMessage);
       toast.error('Failed to execute code');
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -432,7 +754,7 @@ function CompilerPage() {
     setTestResults(null);
   };
 
-  // Submit and test code
+  // Submit and test code against all test cases
   const submitCode = async () => {
     if (!code.trim()) {
       toast.error('Please write some code first!');
@@ -464,88 +786,160 @@ function CompilerPage() {
 
     setIsSubmitting(true);
     setTestResults({ passed: 0, total: 0, details: [] });
-    
+
     try {
       toast.info('🧪 Running test cases...', { duration: 3000 });
-      
+
       const testCases = problemDetails.testCases;
       const results = [];
       let passedCount = 0;
-      
-      const judge0Urls = getJudge0Urls();
-      const headers = getJudge0Headers();
 
+      // Execute each test case
       for (let i = 0; i < testCases.length; i++) {
         const testCase = testCases[i];
-        
+
+        // Update progress
+        setTestResults({
+          passed: passedCount,
+          total: testCases.length,
+          details: results,
+          currentTest: i + 1
+        });
+
         try {
-          const response = await axios.post(
-            judge0Urls.submit,
-            {
-              source_code: btoa(code),
-              language_id: language.id,
-              stdin: btoa(testCase.input || ""),
-            },
-            { headers }
-          );
+          const result = await executeCodeWithJudge0(code, language.id, testCase.input);
 
-          const token = response.data.token;
-
-          // Poll for result
-          const result = await pollForResult(token);
-          
-          const actualOutput = result.stdout 
-            ? atob(result.stdout).trim() 
-            : result.stderr 
-            ? atob(result.stderr).trim()
-            : "";
-
+          const actualOutput = result.output ? result.output.trim() : '';
           const expectedOutput = testCase.output.trim();
           const passed = actualOutput === expectedOutput;
-          
+
           if (passed) passedCount++;
 
           results.push({
             testCase: i + 1,
-            input: testCase.input || "No input",
+            passed: passed,
+            input: testCase.input,
             expected: expectedOutput,
             actual: actualOutput,
-            passed: passed,
-            error: result.stderr ? atob(result.stderr) : null
+            executionTime: result.time,
+            memory: result.memory,
+            status: result.status,
+            error: result.success ? null : (result.error || result.compileOutput)
           });
 
         } catch (error) {
           results.push({
             testCase: i + 1,
-            input: testCase.input || "No input",
-            expected: testCase.output,
-            actual: "Error executing code",
             passed: false,
-            error: error.message
+            input: testCase.input,
+            expected: testCase.output,
+            actual: '',
+            error: error.message,
+            status: 'Execution Error'
           });
+        }
+
+        // Small delay between test cases to avoid rate limiting
+        if (i < testCases.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
-      setTestResults({
+      // Final results
+      const finalResults = {
         passed: passedCount,
         total: testCases.length,
-        details: results
-      });
+        details: results,
+        accuracy: Math.round((passedCount / testCases.length) * 100)
+      };
+
+      setTestResults(finalResults);
+
+      // Add submission to history
+      const newSubmission = {
+        timestamp: new Date().toLocaleString(),
+        status: passedCount === testCases.length ? 'Accepted' : 'Wrong Answer',
+        passedTests: passedCount,
+        totalTests: testCases.length,
+        accuracy: finalResults.accuracy,
+        language: language.label,
+        executionTime: `${results.reduce((sum, r) => sum + (parseFloat(r.executionTime) || 0), 0).toFixed(3)}s`,
+        memory: results.length > 0 && results[0].memory ? `${results[0].memory} KB` : 'N/A',
+        code: code,
+        problemTitle: problemDetails?.title || 'Unknown Problem'
+      };
+
+      setSubmissions(prev => [newSubmission, ...prev]);
+
+      // Switch to submissions tab if all tests passed
+      if (passedCount === testCases.length) {
+        setActiveTab('submissions');
+      }
+
+      // Update console output with test summary
+      let consoleOutput = `🧪 TEST EXECUTION COMPLETED\n`;
+      consoleOutput += `${'='.repeat(50)}\n\n`;
+      consoleOutput += `📊 RESULTS SUMMARY:\n`;
+      consoleOutput += `${'-'.repeat(25)}\n`;
+      consoleOutput += `✅ Passed: ${passedCount}/${testCases.length} test cases\n`;
+      consoleOutput += `📈 Accuracy: ${finalResults.accuracy}%\n`;
+      consoleOutput += `⏱️  Total Execution Time: ${results.reduce((sum, r) => sum + (parseFloat(r.executionTime) || 0), 0).toFixed(3)}s\n\n`;
 
       if (passedCount === testCases.length) {
-        toast.success(`🎉 All ${passedCount}/${testCases.length} test cases passed! Great job!`);
+        consoleOutput += `🎉 CONGRATULATIONS! All test cases passed!\n`;
+        consoleOutput += `Your solution is correct and ready for submission.\n\n`;
       } else {
-        toast.error(`❌ ${passedCount}/${testCases.length} test cases passed. Keep trying!`);
+        consoleOutput += `⚠️  ${testCases.length - passedCount} test case(s) failed.\n`;
+        consoleOutput += `Review the expected output below to fix your solution.\n\n`;
+      }
+
+      consoleOutput += `📋 DETAILED RESULTS:\n`;
+      consoleOutput += `${'-'.repeat(25)}\n`;
+      results.forEach((result, index) => {
+        consoleOutput += `Test ${index + 1}: ${result.passed ? '✅ PASS' : '❌ FAIL'}`;
+        if (result.executionTime) {
+          consoleOutput += ` (${result.executionTime}s)`;
+        }
+        consoleOutput += `\n`;
+      });
+
+      setOutput(consoleOutput);
+
+      // Show completion message
+      if (passedCount === testCases.length) {
+        toast.success(`🎉 All ${testCases.length} test cases passed!`);
+      } else {
+        toast.warning(`${passedCount}/${testCases.length} test cases passed`);
       }
 
     } catch (error) {
-      console.error("Submit error:", error);
-      toast.error('Failed to submit code for testing');
+      console.error('Submit code error:', error);
+      
+      // Update console with error information
+      let errorOutput = `❌ TEST EXECUTION FAILED\n`;
+      errorOutput += `${'='.repeat(50)}\n\n`;
+      errorOutput += `🚨 ERROR DETAILS:\n`;
+      errorOutput += `${'-'.repeat(20)}\n`;
+      errorOutput += `${error.message}\n\n`;
+      errorOutput += `💡 TROUBLESHOOTING TIPS:\n`;
+      errorOutput += `${'-'.repeat(20)}\n`;
+      errorOutput += `• Check your internet connection\n`;
+      errorOutput += `• Verify your code syntax\n`;
+      errorOutput += `• Ensure Judge0 API is configured\n`;
+      errorOutput += `• Try running a simple test first\n\n`;
+      errorOutput += `🔧 If the problem persists, contact support.`;
+      
+      setOutput(errorOutput);
+      toast.error('Failed to run test cases');
+      
       setTestResults({
         passed: 0,
-        total: 0,
-        details: [],
-        error: error.message
+        total: problemDetails.testCases.length,
+        details: [{
+          passed: false,
+          error: error.message,
+          status: 'System Error'
+        }]
       });
     } finally {
       setIsSubmitting(false);
@@ -556,7 +950,7 @@ function CompilerPage() {
   const pollForResult = async (token) => {
     const judge0Urls = getJudge0Urls();
     const headers = getJudge0Headers();
-    
+
     return new Promise((resolve, reject) => {
       const checkResult = async () => {
         try {
@@ -574,7 +968,7 @@ function CompilerPage() {
           reject(error);
         }
       };
-      
+
       checkResult();
     });
   };
@@ -633,7 +1027,7 @@ function CompilerPage() {
               className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6"
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Configure Your Coding Challenge</h2>
-              
+
               <div className="grid lg:grid-cols-3 gap-6">
                 {/* Topic Selection */}
                 <div className="space-y-3">
@@ -667,16 +1061,15 @@ function CompilerPage() {
                             setShowSubTopics(true);
                           } else {
                             // Subtopic selected - set as problem topic
-                            setProblemConfig({ ...problemConfig, topic: topic.value });
+                            setProblemConfig(prev => ({ ...prev, topic: topic.value }));
                             setConfiguredTopic(topic.value);
                           }
                         }}
-                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
-                          (!showSubTopics && selectedMainTopic === topic.value) ||
-                          (showSubTopics && problemConfig.topic === topic.value)
+                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${(!showSubTopics && selectedMainTopic === topic.value) ||
+                            (showSubTopics && problemConfig.topic === topic.value)
                             ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
                             : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center space-x-3">
                           <span className="text-xl">{topic.icon}</span>
@@ -688,12 +1081,22 @@ function CompilerPage() {
                     ))}
                   </div>
 
+                  {/* Selected Main Category Display */}
+                  {selectedMainTopic && !showSubTopics && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-blue-800">
+                        <span className="text-lg">📂</span>
+                        <span className="font-medium">Category Selected: {codingTopics.find(t => t.value === selectedMainTopic)?.label || selectedMainTopic}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Selected Topic Display */}
                   {showSubTopics && configuredTopic && (
                     <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2 text-green-800">
                         <span className="text-lg">✅</span>
-                        <span className="font-medium">Selected: {configuredTopic}</span>
+                        <span className="font-medium">Selected: {getTopicDisplayLabel(configuredTopic)}</span>
                       </div>
                     </div>
                   )}
@@ -710,12 +1113,11 @@ function CompilerPage() {
                           key={diff.value}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={() => setProblemConfig({ ...problemConfig, difficulty: diff.value })}
-                          className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${
-                            problemConfig.difficulty === diff.value
+                          onClick={() => setProblemConfig(prev => ({ ...prev, difficulty: diff.value }))}
+                          className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${problemConfig.difficulty === diff.value
                               ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
                               : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
-                          }`}
+                            }`}
                         >
                           <span className="font-medium">{diff.label}</span>
                         </motion.button>
@@ -734,14 +1136,13 @@ function CompilerPage() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
-                          setProblemConfig({ ...problemConfig, language: lang.name });
+                          setProblemConfig(prev => ({ ...prev, language: lang.name }));
                           setLanguage(lang);
                         }}
-                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
-                          problemConfig.language === lang.name
+                        className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${problemConfig.language === lang.name
                             ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
                             : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center space-x-3">
                           <span className="text-lg">{lang.icon}</span>
@@ -759,11 +1160,10 @@ function CompilerPage() {
                 whileTap={{ scale: showSubTopics && configuredTopic ? 0.98 : 1 }}
                 onClick={generateNewProblem}
                 disabled={loadingProblem || !showSubTopics || !configuredTopic}
-                className={`w-full mt-8 py-3 px-6 font-bold rounded-xl shadow-lg transition-all duration-300 text-lg ${
-                  showSubTopics && configuredTopic && !loadingProblem
+                className={`w-full mt-8 py-3 px-6 font-bold rounded-xl shadow-lg transition-all duration-300 text-lg ${showSubTopics && configuredTopic && !loadingProblem
                     ? 'bg-blue-700 text-white hover:bg-blue-800 cursor-pointer'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {loadingProblem ? (
                   <div className="flex items-center justify-center space-x-3">
@@ -876,7 +1276,7 @@ function CompilerPage() {
                 topic: "{problemConfig.topic}",<br />
                 type: "algorithm"
               </div>
-            {'});'}
+              {'});'}
             </div>
           </motion.div>
 
@@ -934,74 +1334,97 @@ function CompilerPage() {
   // Main Coding Interface - OPTIMIZED HEIGHT
   return (
     <div className="h-screen bg-gray-900 flex flex-col max-h-screen overflow-hidden">
-      {/* Header - Compact */}
+      {/* Enhanced Header */}
       <div className="bg-gray-800 border-b border-gray-700 p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold text-white">💻 Coding Interview</h1>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-400">Language:</span>
-              <div className={`px-2 py-1 rounded-full text-xs font-medium border-2 ${language.color}`}>
-                {language.icon} {language.label}
+            
+            {/* Problem Info */}
+            {problemDetails && (
+              <div className="flex items-center space-x-3 text-sm">
+                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
+                  Medium
+                </span>
+                <span className="text-gray-300">
+                  {problemDetails.title?.substring(0, 30)}...
+                </span>
               </div>
-            </div>
+            )}
           </div>
-          
+
           <div className="flex items-center space-x-3">
-            {/* Theme Toggle */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setEditorTheme(editorTheme === 'vs-dark' ? 'light' : 'vs-dark')}
-              className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200"
-            >
-              {editorTheme === 'vs-dark' ? '☀️' : '🌙'}
-            </motion.button>
-
-            {/* Font Size */}
-            <select
-              value={fontSize}
-              onChange={(e) => setFontSize(Number(e.target.value))}
-              className="bg-blue-700 text-white rounded-lg px-2 py-1 text-sm border border-blue-600"
-            >
-              <option value={12}>12px</option>
-              <option value={14}>14px</option>
-              <option value={16}>16px</option>
-              <option value={18}>18px</option>
-            </select>
-
-            {/* Language Switcher */}
-            <select
-              value={language.id}
-              onChange={(e) => {
-                const newLang = languages.find(l => l.id === parseInt(e.target.value));
-                handleLanguageChange(newLang);
-              }}
-              className="bg-blue-700 text-white rounded-lg px-2 py-1 text-sm border border-blue-600"
-            >
-              {languages.map(lang => (
-                <option key={lang.id} value={lang.id}>
-                  {lang.icon} {lang.label}
-                </option>
-              ))}
-            </select>
-
+            {/* Problem Panel Toggle */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowProblemPanel(!showProblemPanel)}
-              className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200 flex items-center space-x-2"
+              className={`px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
+                showProblemPanel 
+                  ? 'bg-green-700 hover:bg-green-800 text-white' 
+                  : 'bg-gray-600 hover:bg-gray-700 text-gray-200'
+              }`}
             >
-              <span>{showProblemPanel ? '👈' : '👉'}</span>
-              <span>{showProblemPanel ? 'Hide Problem' : 'Show Problem'}</span>
+              {showProblemPanel ? '📖 Hide Problem' : '📖 Show Problem'}
             </motion.button>
+
+            {/* Language Selector Dropdown */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-400">Language:</span>
+              <select
+                value={language.id}
+                onChange={(e) => {
+                  const newLang = languages.find(l => l.id === parseInt(e.target.value));
+                  if (newLang) {
+                    setLanguage(newLang);
+                    setCode(newLang.template);
+                    toast.success(`Switched to ${newLang.label}`);
+                  }
+                }}
+                className="bg-gray-700 text-white rounded-lg px-3 py-2 text-sm border border-gray-600 hover:bg-gray-600 transition-all duration-200"
+              >
+                {languages.map((lang) => (
+                  <option key={lang.id} value={lang.id}>
+                    {lang.icon} {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Editor Controls */}
+            <div className="flex items-center space-x-2">
+              {/* Theme Toggle */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setEditorTheme(editorTheme === 'vs-dark' ? 'light' : 'vs-dark')}
+                className="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg transition-all duration-200 text-sm"
+                title={`Switch to ${editorTheme === 'vs-dark' ? 'Light' : 'Dark'} theme`}
+              >
+                {editorTheme === 'vs-dark' ? '☀️' : '🌙'}
+              </motion.button>
+
+              {/* Font Size */}
+              <select
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="bg-gray-700 text-white rounded-lg px-2 py-1 text-sm border border-gray-600 hover:bg-gray-600 transition-all duration-200"
+                title="Font Size"
+              >
+                <option value={12}>12px</option>
+                <option value={14}>14px</option>
+                <option value={16}>16px</option>
+                <option value={18}>18px</option>
+                <option value={20}>20px</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content - Optimized Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Problem Panel */}
+        {/* LeetCode-Style Problem Panel */}
         <AnimatePresence>
           {showProblemPanel && (
             <motion.div
@@ -1009,132 +1432,299 @@ function CompilerPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -400, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="w-2/5 bg-white border-r border-gray-300 overflow-y-auto shadow-lg"
+              className="w-2/5 bg-white border-r border-gray-200 overflow-hidden flex flex-col"
             >
-              <div className="p-4">
+              {/* Problem Header with Tabs */}
+              <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                  <button 
+                    onClick={() => setActiveTab('description')}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                      activeTab === 'description' 
+                        ? 'text-blue-600 border-blue-500' 
+                        : 'text-gray-500 hover:text-gray-700 border-transparent'
+                    }`}
+                  >
+                    Description
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('editorial')}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                      activeTab === 'editorial' 
+                        ? 'text-blue-600 border-blue-500' 
+                        : 'text-gray-500 hover:text-gray-700 border-transparent'
+                    }`}
+                  >
+                    Editorial
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('solutions')}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                      activeTab === 'solutions' 
+                        ? 'text-blue-600 border-blue-500' 
+                        : 'text-gray-500 hover:text-gray-700 border-transparent'
+                    }`}
+                  >
+                    Solutions
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('submissions')}
+                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                      activeTab === 'submissions' 
+                        ? 'text-blue-600 border-blue-500' 
+                        : 'text-gray-500 hover:text-gray-700 border-transparent'
+                    }`}
+                  >
+                    Submissions
+                    {submissions.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-600 text-xs rounded-full">
+                        {submissions.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={generateNewProblem}
+                  disabled={loadingProblem}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-medium transition-all duration-200 disabled:opacity-50"
+                >
+                  🔄 New
+                </motion.button>
+              </div>
+
+              {/* Problem Content */}
+              <div className="flex-1 overflow-y-auto">
                 {problemDetails && (
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-bold text-gray-900">{problemDetails.title}</h2>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={generateNewProblem}
-                        disabled={loadingProblem}
-                        className="px-3 py-2 bg-blue-700 text-white rounded-lg shadow-sm hover:bg-blue-800 transition-all duration-200 disabled:opacity-50 text-sm"
-                      >
-                        🔄 New Problem
-                      </motion.button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-                        <p className="text-gray-600 leading-relaxed text-sm">{problemDetails.description}</p>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Input Format</h3>
-                        <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-700">
-                          <p className="text-gray-700 text-sm">{problemDetails.inputFormat}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Output Format</h3>
-                        <div className="bg-green-50 p-3 rounded-lg border-l-4 border-green-500">
-                          <p className="text-gray-700 text-sm">{problemDetails.outputFormat}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Examples</h3>
-                        <div className="bg-gray-900 p-3 rounded-lg">
-                          <pre className="text-green-400 text-xs whitespace-pre-wrap font-mono">
-                            {typeof problemDetails.examples === 'string' 
-                              ? problemDetails.examples 
-                              : JSON.stringify(problemDetails.examples, null, 2)
-                            }
-                          </pre>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Constraints</h3>
-                        <div className="bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500">
-                          <p className="text-gray-700 text-sm">{problemDetails.constraints}</p>
-                        </div>
-                      </div>
-
-                      {/* Test Results */}
-                      {testResults && (
+                  <div className="p-4 space-y-6">
+                    {/* Tab Content */}
+                    {activeTab === 'description' && (
+                      <>
+                        {/* Problem Title with Metadata */}
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2">Test Results</h3>
-                          <div className={`p-4 rounded-lg border-l-4 ${
-                            testResults.passed === testResults.total 
-                              ? 'bg-green-50 border-green-500' 
-                              : 'bg-red-50 border-red-500'
-                          }`}>
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="font-semibold text-gray-800">
-                                {testResults.passed}/{testResults.total} Test Cases Passed
-                              </span>
-                              <span className={`text-sm font-medium ${
-                                testResults.passed === testResults.total ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {testResults.passed === testResults.total ? '✅ Success' : '❌ Failed'}
-                              </span>
-                            </div>
-                            
-                            {testResults.details && testResults.details.length > 0 && (
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {testResults.details.map((result, index) => (
-                                  <div key={index} className={`p-2 rounded text-xs ${
-                                    result.passed ? 'bg-green-100' : 'bg-red-100'
-                                  }`}>
-                                    <div className="font-medium mb-1">
-                                      Test Case {result.testCase}: {result.passed ? '✅ Passed' : '❌ Failed'}
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-medium">
+                              Medium
+                            </span>
+                            <span className="text-gray-500 text-sm cursor-pointer hover:text-gray-700">📚 Topics</span>
+                            <span className="text-gray-500 text-sm cursor-pointer hover:text-gray-700">🏢 Companies</span>
+                            <span className="text-gray-500 text-sm cursor-pointer hover:text-gray-700">💡 Hint</span>
+                          </div>
+                          <h1 className="text-xl font-semibold text-gray-900 leading-tight">
+                            {problemDetails.title}
+                          </h1>
+                        </div>
+
+                        {/* Problem Description */}
+                        <div className="prose prose-sm max-w-none">
+                          <p className="text-gray-700 leading-relaxed text-base">
+                            {typeof problemDetails.description === 'object' 
+                              ? JSON.stringify(problemDetails.description, null, 2) 
+                              : (problemDetails.description || 'No description available')}
+                          </p>
+                        </div>
+
+                        {/* Examples Section */}
+                        <div className="space-y-4">
+                          {problemDetails.testCases && problemDetails.testCases.length > 0 && (
+                            <>
+                              {problemDetails.testCases.slice(0, 3).map((testCase, index) => (
+                                <div key={index} className="space-y-2">
+                                  <h3 className="text-sm font-semibold text-gray-900">
+                                    Example {index + 1}:
+                                  </h3>
+                                  
+                                  <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                    <div className="space-y-3">
                                       <div>
-                                        <span className="font-medium">Input:</span> {
-                                          typeof result.input === 'string' 
-                                            ? result.input 
-                                            : JSON.stringify(result.input)
-                                        }
-                                      </div>
-                                      <div>
-                                        <span className="font-medium">Expected:</span> {
-                                          typeof result.expected === 'string' 
-                                            ? result.expected 
-                                            : JSON.stringify(result.expected)
-                                        }
-                                      </div>
-                                      <div className="col-span-2">
-                                        <span className="font-medium">Your Output:</span> {
-                                          typeof result.actual === 'string' 
-                                            ? result.actual 
-                                            : JSON.stringify(result.actual)
-                                        }
-                                      </div>
-                                      {result.error && (
-                                        <div className="col-span-2 text-red-600">
-                                          <span className="font-medium">Error:</span> {
-                                            typeof result.error === 'string' 
-                                              ? result.error 
-                                              : JSON.stringify(result.error)
-                                          }
+                                        <div className="text-sm font-medium text-gray-900 mb-1">Input:</div>
+                                        <div className="bg-white border border-gray-200 rounded p-2">
+                                          <code className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
+                                            {(testCase.input && typeof testCase.input === 'string') 
+                                              ? testCase.input.replace(/\\n/g, '\n') 
+                                              : (typeof testCase.input === 'object' 
+                                                  ? JSON.stringify(testCase.input, null, 2) 
+                                                  : (testCase.input || 'No input'))}
+                                          </code>
                                         </div>
-                                      )}
+                                      </div>
+                                      
+                                      <div>
+                                        <div className="text-sm font-medium text-gray-900 mb-1">Output:</div>
+                                        <div className="bg-white border border-gray-200 rounded p-2">
+                                          <code className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
+                                            {(testCase.output && typeof testCase.output === 'string') 
+                                              ? testCase.output.replace(/\\n/g, '\n') 
+                                              : (typeof testCase.output === 'object' 
+                                                  ? JSON.stringify(testCase.output, null, 2) 
+                                                  : (testCase.output || 'No output'))}
+                                          </code>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            )}
+                                </div>
+                              ))}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Constraints */}
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">Constraints:</h3>
+                          <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <li>1 ≤ array length ≤ 10<sup>4</sup></li>
+                            <li>-10<sup>9</sup> ≤ array elements ≤ 10<sup>9</sup></li>
+                            <li>Time limit: 1 second</li>
+                            <li>Memory limit: 256 MB</li>
+                          </ul>
+                        </div>
+
+                        {/* Input/Output Format */}
+                        <div className="space-y-4">
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-2">Input Format:</h3>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                              <p className="text-sm text-gray-700 font-mono leading-relaxed whitespace-pre-line">
+                                {typeof problemDetails.inputFormat === 'object' 
+                                  ? JSON.stringify(problemDetails.inputFormat, null, 2) 
+                                  : (problemDetails.inputFormat || 'No input format specified')}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900 mb-2">Output Format:</h3>
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <p className="text-sm text-gray-700 font-mono leading-relaxed whitespace-pre-line">
+                                {typeof problemDetails.outputFormat === 'object' 
+                                  ? JSON.stringify(problemDetails.outputFormat, null, 2) 
+                                  : (problemDetails.outputFormat || 'No output format specified')}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </>
+                    )}
+
+                    {activeTab === 'editorial' && (
+                      <div className="text-center py-16">
+                        <div className="text-6xl mb-4">📝</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Editorial Coming Soon</h3>
+                        <p className="text-gray-600">
+                          Detailed explanation and optimal solution approach will be available here.
+                        </p>
+                      </div>
+                    )}
+
+                    {activeTab === 'solutions' && (
+                      <div className="text-center py-16">
+                        <div className="text-6xl mb-4">💡</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Community Solutions</h3>
+                        <p className="text-gray-600">
+                          Solutions from other users will be displayed here once available.
+                        </p>
+                      </div>
+                    )}
+
+                    {activeTab === 'submissions' && (
+                      <div>
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="text-lg font-semibold text-gray-900">Your Submissions</h3>
+                          <span className="text-sm text-gray-600">
+                            {submissions.length} submission{submissions.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+
+                        {submissions.length === 0 ? (
+                          <div className="text-center py-16">
+                            <div className="text-6xl mb-4">📋</div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
+                            <p className="text-gray-600 mb-4">
+                              Click "Submit All Tests" to test your solution and see results here.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {submissions.map((submission, index) => (
+                              <motion.div 
+                                key={index} 
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => setSelectedSubmission(submission)}
+                                className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                                  submission.status === 'Accepted' 
+                                    ? 'border-green-200 bg-green-50 hover:bg-green-100' 
+                                    : 'border-red-200 bg-red-50 hover:bg-red-100'
+                                }`}
+                              >
+                                {/* Submission Header */}
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-3">
+                                    <span className={`text-lg ${
+                                      submission.status === 'Accepted' ? '✅' : '❌'
+                                    }`}></span>
+                                    <div>
+                                      <div className={`font-semibold text-sm ${
+                                        submission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
+                                      }`}>
+                                        {submission.status}
+                                      </div>
+                                      <div className="text-xs text-gray-600">
+                                        {submission.timestamp}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {submission.passedTests}/{submission.totalTests} passed
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      {submission.language} • {submission.executionTime}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Test Results Summary */}
+                                <div className="grid grid-cols-3 gap-4 text-sm mb-3">
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-600 uppercase tracking-wide">Runtime</div>
+                                    <div className="font-medium">{submission.executionTime}</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-600 uppercase tracking-wide">Memory</div>
+                                    <div className="font-medium">{submission.memory}</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-xs text-gray-600 uppercase tracking-wide">Accuracy</div>
+                                    <div className="font-medium">{submission.accuracy}%</div>
+                                  </div>
+                                </div>
+
+                                {/* Code Preview */}
+                                <div className="pt-3 border-t border-gray-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="text-xs text-gray-600">Code Preview:</div>
+                                    <div className="text-xs text-blue-600 font-medium">
+                                      Click to view full details →
+                                    </div>
+                                  </div>
+                                  <div className="bg-gray-900 rounded p-3 max-h-20 overflow-hidden">
+                                    <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap">
+                                      {submission.code.length > 150 
+                                        ? submission.code.substring(0, 150) + '...' 
+                                        : submission.code
+                                      }
+                                    </pre>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1143,7 +1733,7 @@ function CompilerPage() {
         </AnimatePresence>
 
         {/* Code Editor & Output - Fixed Height */}
-        <motion.div 
+        <motion.div
           layout
           className="flex-1 flex flex-col overflow-hidden"
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -1193,7 +1783,7 @@ function CompilerPage() {
                   ) : (
                     <>
                       <span>▶️</span>
-                      <span>Run Code</span>
+                      <span>{problemDetails ? 'Test Sample' : 'Run Code'}</span>
                     </>
                   )}
                 </motion.button>
@@ -1213,7 +1803,7 @@ function CompilerPage() {
                   ) : (
                     <>
                       <span>🧪</span>
-                      <span>Submit & Test</span>
+                      <span>Submit All Tests</span>
                     </>
                   )}
                 </motion.button>
@@ -1229,34 +1819,368 @@ function CompilerPage() {
               </div>
 
               <div className="text-gray-400 text-sm">
-                Press Ctrl+Enter to run • Ctrl+Shift+Enter to submit
+                {problemDetails 
+                  ? 'Press Ctrl+Enter to test sample • Ctrl+Shift+Enter to submit all tests'
+                  : 'Press Ctrl+Enter to run • Ctrl+Shift+Enter to submit'
+                }
               </div>
             </div>
           </div>
 
-          {/* Output Panel - Compact */}
-          <div className="bg-gray-900 border-t border-gray-700 p-3 h-32 overflow-hidden">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-white">Output</h3>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setOutput('')}
-                className="px-2 py-1 bg-blue-700 hover:bg-blue-800 text-white text-xs rounded transition-all duration-200"
-              >
-                Clear
-              </motion.button>
+          {/* Enhanced Console with Tabs */}
+          <div className="bg-gray-900 border-t border-gray-700 p-4 h-80 overflow-hidden flex flex-col">
+            {/* Console Header with Tabs */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-4">
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <span>📟</span> Console
+                </h3>
+                <div className="flex space-x-1">
+                  <button
+                    onClick={() => setConsoleTab('output')}
+                    className={`px-3 py-1 text-xs rounded transition-all duration-200 ${
+                      consoleTab === 'output' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Output
+                  </button>
+                  <button
+                    onClick={() => setConsoleTab('tests')}
+                    className={`px-3 py-1 text-xs rounded transition-all duration-200 ${
+                      consoleTab === 'tests' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Test Results
+                    {testResults && (
+                      <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
+                        testResults.passed === testResults.total ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
+                        {testResults.passed}/{testResults.total}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setConsoleTab('debug')}
+                    className={`px-3 py-1 text-xs rounded transition-all duration-200 ${
+                      consoleTab === 'debug' 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    Debug
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setOutput('')}
+                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md transition-all duration-200"
+                >
+                  Clear
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = output;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    toast.success('Output copied to clipboard!');
+                  }}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-all duration-200"
+                >
+                  Copy
+                </motion.button>
+              </div>
             </div>
-            <div className="bg-black rounded-lg p-3 h-20 overflow-y-auto">
-              <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
-                {output || 'Click "Run Code" to see output...'}
-              </pre>
+            
+            {/* Tab Content */}
+            <div className="flex-1 bg-black rounded-lg border border-gray-700 overflow-hidden flex flex-col">
+              {consoleTab === 'output' && (
+                <div className="flex-1 p-4 overflow-y-auto">
+                  <div className="text-blue-400 text-xs uppercase font-semibold mb-2 flex items-center gap-2">
+                    <span>🖥️</span> Your Program Output:
+                  </div>
+                  <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+                    {output ? output : (
+                      <span className="text-gray-500 italic">
+                        {problemDetails 
+                          ? '💡 Click "Test Sample" to validate your solution against the first test case...'
+                          : '💡 Click "Run Code" to execute your program and see output here...'
+                        }
+                      </span>
+                    )}
+                  </pre>
+                </div>
+              )}
+
+              {consoleTab === 'tests' && (
+                <div className="flex-1 p-4 overflow-y-auto">
+                  {testResults && testResults.details && testResults.details.length > 0 ? (
+                    <div className="space-y-3">
+                      <div className="text-yellow-400 text-xs uppercase font-semibold mb-3 flex items-center gap-2">
+                        <span>🎯</span> Test Results ({testResults.passed}/{testResults.total} passed):
+                      </div>
+                      {testResults.details.map((result, index) => (
+                        <div key={index} className={`p-3 rounded border-l-4 ${
+                          result.passed ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20'
+                        }`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-gray-400">
+                              Test Case {result.testCase}: {result.passed ? '✅ PASSED' : '❌ FAILED'}
+                            </div>
+                            {result.executionTime && (
+                              <div className="text-xs text-gray-500">
+                                {result.executionTime}s
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-yellow-300">Expected:</span>
+                              <pre className="text-yellow-100 mt-1 font-mono whitespace-pre-wrap bg-black/30 p-2 rounded">
+                                {typeof result.expected === 'object' 
+                                  ? JSON.stringify(result.expected, null, 2) 
+                                  : (result.expected || '(no output expected)')}
+                              </pre>
+                            </div>
+                            <div>
+                              <span className={result.passed ? 'text-green-300' : 'text-red-300'}>
+                                Your Output:
+                              </span>
+                              <pre className={`mt-1 font-mono whitespace-pre-wrap bg-black/30 p-2 rounded ${
+                                result.passed ? 'text-green-100' : 'text-red-100'
+                              }`}>
+                                {typeof result.actual === 'object' 
+                                  ? JSON.stringify(result.actual, null, 2) 
+                                  : (result.actual || '(no output)')}
+                              </pre>
+                            </div>
+                          </div>
+                          
+                          {result.error && (
+                            <div className="mt-2 p-2 bg-red-800/30 rounded">
+                              <span className="text-red-300 text-xs">Error:</span>
+                              <pre className="text-red-100 text-xs mt-1 font-mono whitespace-pre-wrap">
+                                {result.error}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-2">🧪</div>
+                      <div className="text-gray-400 text-sm">
+                        No test results yet. Click "Submit All Tests" to see detailed test results here.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {consoleTab === 'debug' && (
+                <div className="flex-1 p-4 overflow-y-auto">
+                  <div className="text-purple-400 text-xs uppercase font-semibold mb-2 flex items-center gap-2">
+                    <span>🐛</span> Debug Information:
+                  </div>
+                  <div className="space-y-2 text-xs text-gray-300">
+                    <div>Language: <span className="text-blue-400">{language.label}</span></div>
+                    <div>Language ID: <span className="text-blue-400">{language.id}</span></div>
+                    <div>Editor Theme: <span className="text-blue-400">{editorTheme}</span></div>
+                    <div>Font Size: <span className="text-blue-400">{fontSize}px</span></div>
+                    <div>Problem Loaded: <span className="text-blue-400">{problemDetails ? 'Yes' : 'No'}</span></div>
+                    {problemDetails && (
+                      <>
+                        <div>Test Cases: <span className="text-blue-400">{problemDetails.testCases?.length || 0}</span></div>
+                        <div>Problem Title: <span className="text-blue-400">{problemDetails.title}</span></div>
+                      </>
+                    )}
+                    <div>Total Submissions: <span className="text-blue-400">{submissions.length}</span></div>
+                    <div className="pt-2 border-t border-gray-700">
+                      <div className="text-yellow-400 mb-1">Keyboard Shortcuts:</div>
+                      <div>Ctrl+Enter: Test Sample</div>
+                      <div>Ctrl+Shift+Enter: Submit All Tests</div>
+                      <div>Ctrl+/: Toggle Comment</div>
+                      <div>Ctrl+Z: Undo</div>
+                      <div>Ctrl+Y: Redo</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
       </div>
+      
+      {/* Detailed Submission Modal */}
+      <AnimatePresence>
+        {selectedSubmission && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedSubmission(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className={`px-6 py-4 border-b ${
+                selectedSubmission.status === 'Accepted' 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <span className={`text-2xl ${
+                      selectedSubmission.status === 'Accepted' ? '✅' : '❌'
+                    }`}></span>
+                    <div>
+                      <h2 className={`text-xl font-bold ${
+                        selectedSubmission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {selectedSubmission.status}
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        {selectedSubmission.problemTitle} • {selectedSubmission.timestamp}
+                      </p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSelectedSubmission(null)}
+                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                  >
+                    ×
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {/* Test Results Summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className={`text-center p-4 rounded-lg ${
+                    selectedSubmission.status === 'Accepted' ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    <div className="text-sm text-gray-600 uppercase tracking-wide">Test Results</div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {selectedSubmission.passedTests}/{selectedSubmission.totalTests}
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-100 rounded-lg">
+                    <div className="text-sm text-gray-600 uppercase tracking-wide">Runtime</div>
+                    <div className="text-lg font-bold text-gray-900">{selectedSubmission.executionTime}</div>
+                  </div>
+                  <div className="text-center p-4 bg-purple-100 rounded-lg">
+                    <div className="text-sm text-gray-600 uppercase tracking-wide">Memory</div>
+                    <div className="text-lg font-bold text-gray-900">{selectedSubmission.memory}</div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-100 rounded-lg">
+                    <div className="text-sm text-gray-600 uppercase tracking-wide">Accuracy</div>
+                    <div className="text-lg font-bold text-gray-900">{selectedSubmission.accuracy}%</div>
+                  </div>
+                </div>
+
+                {/* Language and Submission Info */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Submission Details</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Language:</span>
+                      <span className="ml-2 font-medium">{selectedSubmission.language}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Submitted:</span>
+                      <span className="ml-2 font-medium">{selectedSubmission.timestamp}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Problem:</span>
+                      <span className="ml-2 font-medium">{selectedSubmission.problemTitle}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`ml-2 font-medium ${
+                        selectedSubmission.status === 'Accepted' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {selectedSubmission.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Full Code Display */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900">Complete Code Solution</h3>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedSubmission.code);
+                        toast.success('Code copied to clipboard!');
+                      }}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-all duration-200"
+                    >
+                      📋 Copy Code
+                    </motion.button>
+                  </div>
+                  <div className="bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto">
+                    <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+                      {selectedSubmission.code}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setCode(selectedSubmission.code);
+                      setSelectedSubmission(null);
+                      toast.success('Code loaded into editor!');
+                    }}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200"
+                  >
+                    📝 Load Code to Editor
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedSubmission(null)}
+                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-all duration-200"
+                  >
+                    Close
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
-}
+};
 
 export default CompilerPage;

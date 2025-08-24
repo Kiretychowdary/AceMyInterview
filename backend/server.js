@@ -450,14 +450,168 @@ CRITICAL REQUIREMENTS:
   } catch (error) {
     console.error('❌ Error:', error.message);
     console.log('🎯 ===============================================');
-
-    res.status(500).json({
-      success: false,
-      error: 'Failed to generate coding problem',
-      details: error.message
+    
+    // Return a well-structured fallback problem instead of error
+    const fallbackProblem = generateFallbackProblem(topic, difficulty, language);
+    
+    res.json({
+      success: true, // Mark as success so frontend can display the problem
+      problem: fallbackProblem,
+      metadata: {
+        topic,
+        difficulty,
+        language,
+        source: 'backend-fallback',
+        generatedAt: new Date().toISOString(),
+        note: 'Generated from fallback due to API issues'
+      }
     });
   }
 });
+
+// Fallback problem generator
+function generateFallbackProblem(topic, difficulty, language) {
+  const problems = {
+    'arrays': {
+      title: "Array Sum Calculator",
+      description: "Given an array of integers, calculate and return the sum of all elements. This fundamental problem tests your ability to iterate through arrays and perform arithmetic operations.",
+      inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
+      outputFormat: "Single integer representing the sum of all array elements",
+      constraints: "1 ≤ n ≤ 1000\n-1000 ≤ each element ≤ 1000",
+      examples: "Input:\n3\n1 2 3\n\nOutput:\n6\n\nExplanation: 1 + 2 + 3 = 6",
+      testCases: [
+        { 
+          input: "3\n1 2 3", 
+          output: "6",
+          explanation: "Sum: 1 + 2 + 3 = 6"
+        },
+        { 
+          input: "4\n-1 0 1 2", 
+          output: "2",
+          explanation: "Sum: (-1) + 0 + 1 + 2 = 2"
+        },
+        { 
+          input: "1\n5", 
+          output: "5",
+          explanation: "Sum: 5 = 5"
+        },
+        { 
+          input: "5\n10 -5 3 -2 4", 
+          output: "10",
+          explanation: "Sum: 10 + (-5) + 3 + (-2) + 4 = 10"
+        }
+      ],
+      hints: "1. Use a loop to iterate through all elements\n2. Keep a running sum variable\n3. Handle negative numbers correctly"
+    },
+    'sorting': {
+      title: "Array Sorting Challenge",
+      description: "Given an array of integers, sort the array in ascending order and return the sorted result. You can use any sorting algorithm or built-in functions.",
+      inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
+      outputFormat: "Single line with n space-separated integers in ascending order",
+      constraints: "1 ≤ n ≤ 1000\n-1000 ≤ each element ≤ 1000",
+      examples: "Input:\n5\n3 1 4 1 5\n\nOutput:\n1 1 3 4 5\n\nExplanation: Elements arranged in ascending order",
+      testCases: [
+        { 
+          input: "5\n3 1 4 1 5", 
+          output: "1 1 3 4 5",
+          explanation: "Elements sorted in ascending order"
+        },
+        { 
+          input: "3\n-1 0 1", 
+          output: "-1 0 1",
+          explanation: "Already sorted array"
+        },
+        { 
+          input: "1\n42", 
+          output: "42",
+          explanation: "Single element array"
+        },
+        { 
+          input: "4\n10 5 2 8", 
+          output: "2 5 8 10",
+          explanation: "Sort: [10,5,2,8] → [2,5,8,10]"
+        }
+      ],
+      hints: "1. Use built-in sort or implement your own\n2. Handle negative numbers properly\n3. Output space-separated values"
+    },
+    'strings': {
+      title: "String Reversal",
+      description: "Given a string, return the string with its characters in reverse order. This tests basic string manipulation skills.",
+      inputFormat: "Single line containing a string (may include spaces)",
+      outputFormat: "Single line containing the reversed string",
+      constraints: "1 ≤ string length ≤ 1000\nString may contain letters, digits, spaces, and punctuation",
+      examples: "Input:\nhello world\n\nOutput:\ndlrow olleh\n\nExplanation: Characters are reversed position by position",
+      testCases: [
+        { 
+          input: "hello", 
+          output: "olleh",
+          explanation: "Reverse each character: h-e-l-l-o → o-l-l-e-h"
+        },
+        { 
+          input: "abc 123", 
+          output: "321 cba",
+          explanation: "Reverse including spaces: 'abc 123' → '321 cba'"
+        },
+        { 
+          input: "a", 
+          output: "a",
+          explanation: "Single character remains the same"
+        },
+        { 
+          input: "Programming", 
+          output: "gnimmargorP",
+          explanation: "Reverse: Programming → gnimmargorP"
+        }
+      ],
+      hints: "1. Iterate from end to beginning\n2. Build result character by character\n3. Preserve all characters including spaces"
+    }
+  };
+
+  // Get topic-specific problem or create generic one
+  const specificProblem = problems[topic];
+  if (specificProblem) {
+    return {
+      ...specificProblem,
+      difficulty: difficulty,
+      topic: topic
+    };
+  }
+
+  // Generic fallback
+  return {
+    title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} Programming Challenge`,
+    description: `A ${difficulty} level programming problem focusing on ${topic}. Read a number from input and output the same number to test basic input/output handling.`,
+    inputFormat: "Single integer n",
+    outputFormat: "Single integer n",
+    constraints: "1 ≤ n ≤ 100",
+    examples: "Input:\n5\n\nOutput:\n5\n\nExplanation: Echo the input number",
+    testCases: [
+      { 
+        input: "5", 
+        output: "5",
+        explanation: "Echo the input number as output"
+      },
+      { 
+        input: "10", 
+        output: "10",
+        explanation: "Output the same value as input"
+      },
+      { 
+        input: "1", 
+        output: "1",
+        explanation: "Simple input-output test"
+      },
+      { 
+        input: "42", 
+        output: "42",
+        explanation: "Test with a different number"
+      }
+    ],
+    difficulty: difficulty,
+    topic: topic,
+    hints: "1. Read the input carefully\n2. Output the exact same value\n3. Check input/output format requirements"
+  };
+}
 
 // Health Check
 app.get('/api/health', (req, res) => {

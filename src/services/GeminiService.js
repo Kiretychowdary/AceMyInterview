@@ -388,40 +388,182 @@ class GeminiService {
 
   // Simple fallback coding problem
   static getFallbackCodingProblem(topic, difficulty) {
-    const testCases = [
-      { input: "5", output: "5" },
-      { input: "10", output: "10" },
-      { input: "1", output: "1" }
-    ];
+    const problems = {
+      'arrays': {
+        easy: {
+          title: "Sum of Array Elements",
+          description: "Given an array of integers, calculate and return the sum of all elements in the array. This is a fundamental array operation that tests your ability to iterate through arrays and perform basic arithmetic operations.",
+          inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
+          outputFormat: "Single integer representing the sum of all elements",
+          constraints: "1 ≤ n ≤ 1000\n-1000 ≤ elements ≤ 1000",
+          examples: "Input:\n3\n1 2 3\n\nOutput:\n6\n\nExplanation: 1 + 2 + 3 = 6",
+          testCases: [
+            { 
+              input: "3\n1 2 3", 
+              output: "6",
+              explanation: "Sum: 1 + 2 + 3 = 6"
+            },
+            { 
+              input: "4\n-1 0 1 2", 
+              output: "2",
+              explanation: "Sum: (-1) + 0 + 1 + 2 = 2"
+            },
+            { 
+              input: "1\n5", 
+              output: "5",
+              explanation: "Sum of single element: 5"
+            },
+            { 
+              input: "5\n10 -5 3 -2 4", 
+              output: "10",
+              explanation: "Sum: 10 + (-5) + 3 + (-2) + 4 = 10"
+            }
+          ],
+          hints: "1. Use a loop to iterate through all elements\n2. Keep a running sum variable\n3. Handle negative numbers correctly"
+        },
+        medium: {
+          title: "Maximum Subarray Sum",
+          description: "Find the contiguous subarray within a one-dimensional array of numbers that has the largest sum. This classic problem tests your understanding of dynamic programming and optimal substructure.",
+          inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
+          outputFormat: "Single integer representing the maximum sum of any contiguous subarray",
+          constraints: "1 ≤ n ≤ 10000\n-1000 ≤ elements ≤ 1000",
+          examples: "Input:\n6\n-2 1 -3 4 5 -1\n\nOutput:\n8\n\nExplanation: The subarray [4, 5] has the largest sum = 8",
+          testCases: [
+            { 
+              input: "6\n-2 1 -3 4 5 -1", 
+              output: "8",
+              explanation: "Maximum subarray [4, 5] has sum = 8"
+            },
+            { 
+              input: "4\n1 2 3 4", 
+              output: "10",
+              explanation: "All positive numbers: [1, 2, 3, 4] sum = 10"
+            },
+            { 
+              input: "3\n-1 -2 -3", 
+              output: "-1",
+              explanation: "All negative: best single element is -1"
+            },
+            { 
+              input: "1\n5", 
+              output: "5",
+              explanation: "Single element array"
+            }
+          ],
+          hints: "1. Consider Kadane's algorithm\n2. Track both current and maximum sum\n3. Handle all negative numbers case"
+        }
+      },
+      'sorting': {
+        easy: {
+          title: "Sort Array in Ascending Order",
+          description: "Given an array of integers, sort the array in ascending order and return the sorted array. You can use any sorting algorithm of your choice.",
+          inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
+          outputFormat: "Single line with n space-separated integers in ascending order",
+          constraints: "1 ≤ n ≤ 1000\n-1000 ≤ elements ≤ 1000",
+          examples: "Input:\n5\n3 1 4 1 5\n\nOutput:\n1 1 3 4 5\n\nExplanation: Elements arranged in ascending order",
+          testCases: [
+            { 
+              input: "5\n3 1 4 1 5", 
+              output: "1 1 3 4 5",
+              explanation: "Sorted in ascending order"
+            },
+            { 
+              input: "3\n-1 0 1", 
+              output: "-1 0 1",
+              explanation: "Already sorted array"
+            },
+            { 
+              input: "1\n42", 
+              output: "42",
+              explanation: "Single element"
+            },
+            { 
+              input: "4\n10 5 2 8", 
+              output: "2 5 8 10",
+              explanation: "Sort [10,5,2,8] → [2,5,8,10]"
+            }
+          ],
+          hints: "1. Use built-in sort function or implement bubble/selection sort\n2. Remember to handle negative numbers\n3. Output space-separated values"
+        }
+      },
+      'strings': {
+        easy: {
+          title: "Reverse a String",
+          description: "Given a string, return the string with its characters reversed. This tests basic string manipulation and iteration skills.",
+          inputFormat: "Single line containing a string (may contain spaces)",
+          outputFormat: "Single line containing the reversed string",
+          constraints: "1 ≤ string length ≤ 1000\nString may contain letters, digits, and spaces",
+          examples: "Input:\nhello world\n\nOutput:\ndlrow olleh\n\nExplanation: Each character position is reversed",
+          testCases: [
+            { 
+              input: "hello", 
+              output: "olleh",
+              explanation: "Reverse: h-e-l-l-o → o-l-l-e-h"
+            },
+            { 
+              input: "abc 123", 
+              output: "321 cba",
+              explanation: "Reverse with spaces: 'abc 123' → '321 cba'"
+            },
+            { 
+              input: "a", 
+              output: "a",
+              explanation: "Single character"
+            },
+            { 
+              input: "racecar", 
+              output: "racecar",
+              explanation: "Palindrome remains same when reversed"
+            }
+          ],
+          hints: "1. Iterate from end to beginning\n2. Build result string character by character\n3. Handle spaces and special characters"
+        }
+      }
+    };
 
-    if (topic === 'arrays') {
+    // Get specific problem or default
+    const topicProblems = problems[topic];
+    if (topicProblems && topicProblems[difficulty]) {
       return {
-        title: "Sum of Array Elements",
-        description: "Write a function that takes an array of integers and returns the sum of all elements.",
-        inputFormat: "First line contains n (number of elements), followed by n integers.",
-        outputFormat: "Single integer representing the sum.",
-        constraints: "1 ≤ n ≤ 1000, -1000 ≤ elements ≤ 1000",
-        examples: "Input: 3\n1 2 3\nOutput: 6",
-        testCases: [
-          { input: "3\n1 2 3", output: "6" },
-          { input: "4\n-1 0 1 2", output: "2" },
-          { input: "1\n5", output: "5" }
-        ],
+        ...topicProblems[difficulty],
         difficulty: difficulty,
         topic: topic
       };
     }
 
+    // Generic fallback
     return {
-      title: `${topic} Challenge - Echo Number`,
-      description: `A simple ${difficulty} level problem: Read a number and output the same number.`,
+      title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} Programming Challenge`,
+      description: `A ${difficulty} level programming problem focusing on ${topic}. Write a program that reads a number and outputs the same number. This is a template problem to test your basic input/output handling.`,
       inputFormat: "Single integer n",
       outputFormat: "Single integer n", 
       constraints: "1 ≤ n ≤ 100",
-      examples: "Input: 5\nOutput: 5",
-      testCases: testCases,
+      examples: "Input:\n5\n\nOutput:\n5\n\nExplanation: Simply echo the input number",
+      testCases: [
+        { 
+          input: "5", 
+          output: "5",
+          explanation: "Echo the input number"
+        },
+        { 
+          input: "10", 
+          output: "10",
+          explanation: "Output same as input"
+        },
+        { 
+          input: "1", 
+          output: "1",
+          explanation: "Basic input-output test"
+        },
+        { 
+          input: "42", 
+          output: "42",
+          explanation: "Another test case"
+        }
+      ],
       difficulty: difficulty,
-      topic: topic
+      topic: topic,
+      hints: "1. Read the input number\n2. Print the same number\n3. Handle input/output format correctly"
     };
   }
 }
