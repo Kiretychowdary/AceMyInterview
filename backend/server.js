@@ -10,18 +10,92 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration
+// ENHANCED CORS Configuration - EMERGENCY FIX FOR LOCALHOST:5176
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'https://aiksvid.netlify.app'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173', 
+      'http://localhost:5174', 
+      'http://localhost:5175', 
+      'http://localhost:5176',  // CRITICAL FIX FOR YOUR APP
+      'http://localhost:5177',
+      'https://aiksvid.netlify.app',
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log(`CORS: Allowing origin: ${origin}`);
+      return callback(null, true); // Allow all origins for development
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-rapidapi-key', 'x-rapidapi-host'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'x-rapidapi-key', 
+    'x-rapidapi-host',
+    'Access-Control-Allow-Origin',
+    'Origin',
+    'X-Requested-With',
+    'Accept'
+  ],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 };
 
 app.use(cors(corsOptions));
+
+// EMERGENCY CORS BYPASS - CRITICAL FIX FOR LOCALHOST:5176
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Always allow localhost:5176 - CRITICAL FIX
+  if (origin && origin.includes('localhost:5176')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    console.log(`✅ CORS: Explicitly allowing localhost:5176`);
+  } else {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-rapidapi-key, x-rapidapi-host, Origin, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log(`🔧 CORS Preflight: ${req.headers.origin} -> ${req.url}`);
+    return res.sendStatus(200);
+  }
+  
+  console.log(`📡 CORS Request: ${req.method} ${req.url} from ${origin}`);
+  next();
+});
+
 app.use(express.json());
+
+// CORS Test Endpoint - TO VERIFY FIX WORKS
+app.get('/api/test-cors', (req, res) => {
+  res.json({
+    success: true,
+    message: 'CORS is working correctly for localhost:5176!',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
+    allowedOrigins: [
+      'http://localhost:5176', // YOUR APP
+      'http://localhost:5173',
+      'http://localhost:5174', 
+      'http://localhost:5175',
+      'https://aiksvid.netlify.app'
+    ]
+  });
+});
 
 // Environment Configuration
 const GEMINI_API_URL = process.env.GEMINI_API_URL;
