@@ -314,7 +314,38 @@ const MCQInterview = () => {
       if (response.success && response.questions?.length > 0) {
         setQuestions(response.questions);
         setQuizStarted(true);
-        setTimeLeft(quizConfig.count * 120); // 2 minutes per question  
+        setTimeLeft(quizConfig.count * 120); // 2 minutes per question
+        
+        // Show appropriate notification based on source
+        if (response.source === 'local-service') {
+          toast.info('📚 Using local questions while backend connects', {
+            autoClose: 4000,
+            position: "top-center",
+            style: {
+              backgroundColor: '#dbeafe',
+              color: '#1e40af',
+              fontSize: '16px',
+              fontWeight: '600',
+            }
+          });
+        } else if (response.source === 'fallback') {
+          toast.warn('⚠️ Using offline questions - server temporarily unavailable', {
+            autoClose: 6000,
+            position: "top-center",
+            style: {
+              backgroundColor: '#fef3c7',
+              color: '#92400e',
+              fontSize: '16px',
+              fontWeight: '600',
+            }
+          });
+        } else {
+          // Success with live backend
+          toast.success('✅ Questions loaded from AI service', {
+            autoClose: 2000,
+            position: "top-center"
+          });
+        }
       } else {
         
         setQuestions(response.questions);

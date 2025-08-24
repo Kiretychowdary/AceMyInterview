@@ -10,28 +10,30 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ENHANCED CORS Configuration - EMERGENCY FIX FOR LOCALHOST:5176
+// PRODUCTION CORS Configuration - Netlify Frontend + Local Development
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // List of allowed origins
+    // Production and Development allowed origins
     const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173', 
-      'http://localhost:5174', 
-      'http://localhost:5175', 
-      'http://localhost:5176',  // CRITICAL FIX FOR YOUR APP
-      'http://localhost:5177',
-      'https://aiksvid.netlify.app',
+      'https://aiksvid.netlify.app',        // PRODUCTION FRONTEND
+      'https://aiksvid.netlify.app/',       // With trailing slash
+      'http://localhost:3000',              // Local development
+      'http://localhost:5173',              // Vite dev server
+      'http://localhost:5174',              // Vite dev server
+      'http://localhost:5175',              // Vite dev server  
+      'http://localhost:5176',              // Vite dev server
+      'http://localhost:5177',              // Vite dev server
     ];
     
     if (allowedOrigins.includes(origin)) {
+      console.log(`✅ CORS: Allowing origin: ${origin}`);
       return callback(null, true);
     } else {
-      console.log(`CORS: Allowing origin: ${origin}`);
-      return callback(null, true); // Allow all origins for development
+      console.log(`⚠️ CORS: Unknown origin: ${origin} - allowing for development`);
+      return callback(null, true); // Allow for development - can be restricted in production
     }
   },
   credentials: true,
@@ -52,16 +54,24 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// EMERGENCY CORS BYPASS - CRITICAL FIX FOR LOCALHOST:5176
+// PRODUCTION CORS MIDDLEWARE - Netlify + Development Support
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Always allow localhost:5176 - CRITICAL FIX
-  if (origin && origin.includes('localhost:5176')) {
+  // Explicitly handle Netlify production frontend
+  if (origin && origin.includes('aiksvid.netlify.app')) {
     res.header('Access-Control-Allow-Origin', origin);
-    console.log(`✅ CORS: Explicitly allowing localhost:5176`);
-  } else {
+    console.log(`🌐 CORS: Netlify production frontend: ${origin}`);
+  } 
+  // Handle local development
+  else if (origin && origin.includes('localhost')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    console.log(`🔧 CORS: Local development: ${origin}`);
+  } 
+  // Default fallback
+  else {
     res.header('Access-Control-Allow-Origin', origin || '*');
+    console.log(`📡 CORS: Other origin: ${origin}`);
   }
   
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -74,7 +84,7 @@ app.use((req, res, next) => {
     return res.sendStatus(200);
   }
   
-  console.log(`📡 CORS Request: ${req.method} ${req.url} from ${origin}`);
+  console.log(`� Request: ${req.method} ${req.url} from ${origin}`);
   next();
 });
 

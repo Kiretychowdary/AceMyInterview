@@ -106,7 +106,7 @@ const DashboardTest = () => {
   const testApiConnection = async () => {
     setLoading(true);
     try {
-      const API_URL = process.env.NODE_ENV === 'production' 
+      const API_URL = process.env.NODE_ENV === 'production'
         ? 'https://acemyinterview.onrender.com/api/health'
         : 'http://localhost:5000/api/health';
       const response = await fetch(API_URL);
@@ -122,7 +122,7 @@ const DashboardTest = () => {
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard Testing Panel</h1>
-      
+
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">System Status</h2>
         <div className="space-y-2">
@@ -143,7 +143,7 @@ const DashboardTest = () => {
           >
             {loading ? 'Testing...' : 'Test Backend Connection'}
           </button>
-          
+
           <button
             onClick={generateSampleData}
             disabled={loading || !user}
@@ -151,7 +151,7 @@ const DashboardTest = () => {
           >
             {loading ? 'Generating...' : 'Generate Sample Dashboard Data'}
           </button>
-          
+
           <a
             href="/dashboard"
             className="block w-full px-6 py-3 bg-purple-600 text-white text-center rounded-lg hover:bg-purple-700"
