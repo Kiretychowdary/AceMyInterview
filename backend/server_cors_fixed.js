@@ -1,7 +1,5 @@
 //nmkrspvlidata
 //radhakrishna
-// SIMPLE GEMINI-ONLY BACKEND - NO N8N COMPLEXITY
-// NMKRSPVLIDATAPERMANENT - Direct Gemini AI Integration
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -10,10 +8,8 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ENHANCED CORS Configuration - EMERGENCY FIX FOR LOCALHOST:5176
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     // List of allowed origins
@@ -22,17 +18,16 @@ const corsOptions = {
       'http://localhost:5173', 
       'http://localhost:5174', 
       'http://localhost:5175', 
-      'http://localhost:5176',  // CRITICAL FIX FOR YOUR APP
+      'http://localhost:5176',   
       'http://localhost:5177',
       'https://aiksvid.netlify.app',
-      // Add any other domains you need
     ];
     
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
       console.log(`CORS: Blocked origin: ${origin}`);
-      return callback(null, true); // Allow all origins for now - TEMPORARY
+      return callback(null, true); 
     }
   },
   credentials: true,
@@ -51,14 +46,11 @@ const corsOptions = {
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 };
 
-// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// EMERGENCY CORS BYPASS - CRITICAL FIX
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Always allow localhost:5176
   if (origin && origin.includes('localhost:5176')) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
@@ -69,7 +61,6 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-rapidapi-key, x-rapidapi-host, Origin, X-Requested-With, Accept');
   res.header('Access-Control-Allow-Credentials', 'true');
   
-  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     console.log(`CORS Preflight: ${req.headers.origin} -> ${req.url}`);
     return res.sendStatus(200);
@@ -82,7 +73,6 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Add a simple test endpoint to verify CORS
 app.get('/api/test-cors', (req, res) => {
   res.json({
     success: true,
@@ -92,12 +82,10 @@ app.get('/api/test-cors', (req, res) => {
   });
 });
 
-// Environment Configuration
 const GEMINI_API_URL = process.env.GEMINI_API_URL;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT) || 30000;
 
-// 💾 Q&A STORAGE SYSTEM
 let questionAnswerStorage = {
   sessions: new Map(),
   userResponses: new Map(),
@@ -110,11 +98,9 @@ let questionAnswerStorage = {
   }
 };
 
-// Store Q&A for analysis and learning
 function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorrect) {
   const timestamp = new Date().toISOString();
   
-  // Store in session
   if (!questionAnswerStorage.sessions.has(sessionId)) {
     questionAnswerStorage.sessions.set(sessionId, {
       userId,
@@ -137,7 +123,6 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     answeredAt: timestamp
   });
   
-  // Store user responses
   if (!questionAnswerStorage.userResponses.has(userId)) {
     questionAnswerStorage.userResponses.set(userId, []);
   }
@@ -149,7 +134,6 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     timestamp
   });
   
-  // Store in question bank for analysis
   const questionKey = `${questionData.topic}_${questionData.difficulty}_${questionData.question.substring(0, 50)}`;
   questionAnswerStorage.questionBank.set(questionKey, {
     ...questionData,
@@ -158,7 +142,6 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     lastUsed: timestamp
   });
   
-  // Update analytics
   questionAnswerStorage.analytics.totalQuestions++;
   
   const topicCount = questionAnswerStorage.analytics.topicDistribution.get(questionData.topic) || 0;
@@ -182,10 +165,7 @@ console.log('🚀 AceMyInterview Backend Server Starting...');
 console.log('🔧 CORS Configuration Applied for localhost:5176');
 console.log('📊 Q&A Storage System Initialized');
 
-// Rest of your existing server code would go here...
-// (I'm showing just the CORS fix part)
 
-// Start the server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 CORS enabled for localhost:5176`);

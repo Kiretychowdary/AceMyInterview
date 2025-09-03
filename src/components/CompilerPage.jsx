@@ -155,6 +155,55 @@ const difficulties = [
 ];
 
 function CompilerPage() {
+  // Resizable horizontal split for editor/console
+  const [editorHeight, setEditorHeight] = useState(65); // percent height for editor
+  const isDraggingY = useRef(false);
+
+  useEffect(() => {
+    const handleMouseMoveY = (e) => {
+      if (!isDraggingY.current) return;
+      const y = e.clientY;
+      const container = document.getElementById('editor-console-container');
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      let percent = Math.max(20, Math.min(80, ((y - rect.top) / rect.height) * 100));
+      setEditorHeight(percent);
+    };
+    const handleMouseUpY = () => {
+      isDraggingY.current = false;
+      document.body.style.cursor = '';
+    };
+    window.addEventListener('mousemove', handleMouseMoveY);
+    window.addEventListener('mouseup', handleMouseUpY);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveY);
+      window.removeEventListener('mouseup', handleMouseUpY);
+    };
+  }, []);
+  // Resizable split state
+  const [split, setSplit] = useState(50); // percent width for problem panel
+  const isDragging = useRef(false);
+
+  // Mouse event handlers for drag
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging.current) return;
+      const x = e.clientX;
+      const screenWidth = window.innerWidth;
+      let percent = Math.max(20, Math.min(80, (x / screenWidth) * 100));
+      setSplit(percent);
+    };
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = '';
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
   const location = useLocation();
 
   // Get selected topic from navigation state
@@ -239,7 +288,7 @@ function CompilerPage() {
     }
 
     // If not found in subtopics, check main topics
-    const mainTopic = codingTopics.find(topic => topic.value === topicValue);
+    const mainTopic = mainCodingTopics.find(topic => topic.value === topicValue);
     if (mainTopic) {
       return mainTopic.label;
     }
@@ -379,7 +428,6 @@ function CompilerPage() {
     setProblemDetails(null);
 
     try {
-
       const response = await GeminiService.getCodingProblem(
         problemConfig.topic,
         problemConfig.difficulty,
@@ -388,12 +436,8 @@ function CompilerPage() {
 
       if (response.success && response.problem) {
         setProblemDetails(response.problem);
-
-        // No success toast - keep interface clean when problem appears
       } else {
         setProblemDetails(response.problem);
-
-        // No toasts when content appears - keep interface clean
       }
     } catch (error) {
       console.error("Failed to generate problem:", error);
@@ -421,51 +465,43 @@ function CompilerPage() {
     const headers = getJudge0Headers();
 
     try {
-      // Rate limiting check
       const now = Date.now();
       const timeSinceLastRequest = now - lastRequestTime;
-      const minInterval = 2000; // Minimum 2 seconds between requests
-      
+      const minInterval = 2000;
+
       if (timeSinceLastRequest < minInterval) {
         const waitTime = minInterval - timeSinceLastRequest;
         console.log(`Rate limiting: waiting ${waitTime}ms before next request...`);
-        setOutput(`⏳ Rate limiting active... waiting ${Math.ceil(waitTime/1000)} seconds before execution...`);
+        setOutput(`⏳ Rate limiting active... waiting ${Math.ceil(waitTime / 1000)} seconds before execution...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
-      
-      // Update request tracking
+
       setLastRequestTime(Date.now());
       setRequestCount(prev => prev + 1);
-      
-      // Show warning if too many requests
+
       if (requestCount > 10) {
         console.warn('High request count detected, adding extra delay...');
         await new Promise(resolve => setTimeout(resolve, 3000));
       }
 
-      // Validate inputs
       if (!sourceCode || !sourceCode.trim()) {
         throw new Error('Source code cannot be empty');
       }
 
-      // Helper function to safely encode to base64
       const safeBtoa = (str) => {
         try {
           return btoa(str || '');
         } catch (e) {
           console.warn('Failed to encode to base64:', str);
-          // Fallback: encode as UTF-8 bytes first, then base64
           return btoa(unescape(encodeURIComponent(str || '')));
         }
       };
 
-      // Submit code for execution with rate limiting and retry logic
-      // Helper function to handle 429 rate limit errors
       const submitWithRetry = async (payload, maxRetries = 3) => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
           try {
             console.log(`Attempting submission (${attempt}/${maxRetries})...`);
-            
+
             const response = await axios.post(
               judge0Urls.submit,
               payload,
@@ -474,36 +510,26 @@ function CompilerPage() {
                 timeout: 10000
               }
             );
-            
-            return response; // Success!
-            
+            return response;
           } catch (error) {
-            // Check if it's a 429 rate limit error
             if (error.response && error.response.status === 429) {
               console.log(`Rate limit hit (429) on attempt ${attempt}`);
-              
               if (attempt < maxRetries) {
-                // Calculate exponential backoff delay
-                const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Max 10 seconds
+                const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
                 console.log(`Waiting ${delay}ms before retry...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
-                continue; // Try again
+                continue;
               } else {
                 throw new Error('Rate limit exceeded. Please wait a moment and try again.');
               }
             }
-            
-            // For other errors, throw immediately
             throw error;
           }
         }
       };
 
-      // Try both plain text and base64 approaches
       let submitResponse;
-
       try {
-        // First try: Plain text (some Judge0 versions expect this)
         const plainPayload = {
           source_code: sourceCode,
           language_id: languageId,
@@ -511,14 +537,10 @@ function CompilerPage() {
           cpu_time_limit: timeout,
           memory_limit: 128000,
         };
-
         console.log('Trying Judge0 submission with plain text...');
         submitResponse = await submitWithRetry(plainPayload);
-        
       } catch (plainError) {
         console.log('Plain text failed, trying base64...', plainError.message);
-
-        // Second try: Base64 encoded (official Judge0 CE format)
         const base64Payload = {
           source_code: safeBtoa(sourceCode),
           language_id: languageId,
@@ -526,7 +548,6 @@ function CompilerPage() {
           cpu_time_limit: timeout,
           memory_limit: 128000,
         };
-
         submitResponse = await submitWithRetry(base64Payload);
       }
 
@@ -538,90 +559,47 @@ function CompilerPage() {
         throw new Error('No token received from Judge0');
       }
 
-      // Poll for result with exponential backoff
       let attempts = 0;
       const maxAttempts = 20;
-      const pollInterval = 1000; // Start with 1 second
+      const pollInterval = 1000;
 
       const pollResult = async () => {
         attempts++;
-
         const resultResponse = await axios.get(
           judge0Urls.getResult(token),
           { headers, timeout: 5000 }
         );
-
         const result = resultResponse.data;
-        console.log('=== Full Judge0 Result ===');
-        console.log(JSON.stringify(result, null, 2));
-        console.log('=== Judge0 Result Analysis ===');
-        console.log('Status ID:', result.status?.id);
-        console.log('Status Description:', result.status?.description);
-        console.log('Raw stdout:', result.stdout);
-        console.log('Raw stdout type:', typeof result.stdout);
-        console.log('Raw stderr:', result.stderr);
-        console.log('Raw compile_output:', result.compile_output);
-
-        // Status IDs: 1=In Queue, 2=Processing, 3=Accepted, 4=Wrong Answer, 5=Time Limit Exceeded, etc.
         if (result.status.id <= 2) {
-          // Still processing
           if (attempts >= maxAttempts) {
             throw new Error('Execution timeout - taking too long to process');
           }
-
-          // Wait with exponential backoff
           const delay = Math.min(pollInterval * Math.pow(1.5, attempts), 5000);
           await new Promise(resolve => setTimeout(resolve, delay));
           return await pollResult();
         }
 
-        // Execution completed
-        // Helper function to safely decode base64
         const safeAtob = (str) => {
           if (!str) return '';
-          
-          // If it's already a string and not base64 encoded, return as is
           if (typeof str === 'string' && !str.match(/^[A-Za-z0-9+/]*={0,2}$/)) {
-            console.log('Returning non-base64 string as is:', str.substring(0, 50) + '...');
             return str;
           }
-          
-          // If it's an array, convert to string
           if (Array.isArray(str)) {
-            console.log('Converting array to string:', str);
             return str.join('\n');
           }
-          
-          // If it's an object, stringify it
           if (typeof str === 'object') {
-            console.log('Converting object to string:', str);
             return JSON.stringify(str, null, 2);
           }
-          
           try {
-            const decoded = atob(str);
-            console.log('Successfully decoded base64:', str.substring(0, 50) + '... -> ' + decoded.substring(0, 50) + '...');
-            return decoded;
+            return atob(str);
           } catch (e) {
-            console.warn('Failed to decode base64:', str.substring(0, 100) + '...');
-            console.warn('Using original string instead');
-            return str; // Return original string if decode fails
+            return str;
           }
         };
 
-        console.log('Raw Judge0 response fields:', {
-          stdout: result.stdout ? result.stdout.substring(0, 100) + '...' : 'null',
-          stderr: result.stderr ? result.stderr.substring(0, 100) + '...' : 'null',
-          compile_output: result.compile_output ? result.compile_output.substring(0, 100) + '...' : 'null'
-        });
-
         const finalOutput = safeAtob(result.stdout);
-        console.log('Final processed output:', finalOutput);
-        console.log('Final output type:', typeof finalOutput);
-        console.log('Final output length:', finalOutput ? finalOutput.length : 0);
-
         return {
-          success: result.status.id === 3, // 3 = Accepted
+          success: result.status.id === 3,
           output: finalOutput,
           error: safeAtob(result.stderr),
           status: result.status.description,
@@ -633,35 +611,26 @@ function CompilerPage() {
       };
 
       return await pollResult();
-
     } catch (error) {
       console.error('Judge0 execution error:', error);
       throw new Error(`Execution failed: ${error.message}`);
     }
   };
 
-  // Hybrid execution method - tries Judge0 first, falls back to local execution
   const executeCodeHybrid = async (sourceCode, languageId, input = "") => {
     try {
-      // First try Judge0
       console.log('🎯 Attempting Judge0 execution...');
       const result = await executeCodeWithJudge0(sourceCode, languageId, input);
       result.executionMethod = 'judge0';
       return result;
-      
     } catch (error) {
       console.log('⚠️ Judge0 failed:', error.message);
-      
-      // Check if it's a rate limit error and local execution is available
       if (error.message.includes('Rate limit exceeded') || error.message.includes('429')) {
         const languageName = language.name.toLowerCase();
-        
         if (localExecutionService.isLanguageSupported(languageName)) {
           console.log('🔄 Falling back to local execution...');
-          
           try {
             const localResult = await localExecutionService.executeCode(languageName, sourceCode, input);
-            
             return {
               success: localResult.success,
               output: localResult.output,
@@ -672,7 +641,6 @@ function CompilerPage() {
               memory: null,
               compileOutput: null
             };
-            
           } catch (localError) {
             throw new Error(`Both Judge0 and local execution failed. Judge0: ${error.message}, Local: ${localError.message}`);
           }
@@ -680,20 +648,17 @@ function CompilerPage() {
           throw new Error(`Rate limit exceeded and local execution not available for ${language.label}. ${error.message}`);
         }
       } else {
-        // Re-throw non-rate-limit errors
         throw error;
       }
     }
   };
 
-  // Enhanced run code with test case validation
   const runCode = async () => {
     if (!code.trim()) {
       toast.error('Please write some code first!');
       return;
     }
 
-    // Check if Judge0 is properly configured
     const judge0Status = validateJudge0Setup();
     if (!judge0Status.valid) {
       toast.error('Judge0 API key not configured');
@@ -705,7 +670,6 @@ function CompilerPage() {
     setOutput('🚀 Submitting code to Judge0...\n⏳ Waiting for execution...');
 
     try {
-      // If problem is loaded, run with first test case for validation
       let testInput = "";
       let expectedOutput = "";
       let hasTestCase = false;
@@ -718,11 +682,9 @@ function CompilerPage() {
       }
 
       const result = await executeCodeHybrid(code, language.id, testInput);
-
       let outputText = '';
 
       if (result.success) {
-        // Check if answer is correct when test case is available
         let isCorrect = false;
         if (hasTestCase && result.output) {
           const userOutput = result.output.trim();
@@ -731,7 +693,6 @@ function CompilerPage() {
         }
 
         if (hasTestCase) {
-          // Show result validation
           if (isCorrect) {
             outputText = `🎉 CORRECT ANSWER!\n`;
             outputText += `${'='.repeat(40)}\n\n`;
@@ -741,8 +702,6 @@ function CompilerPage() {
             outputText += `${'='.repeat(40)}\n\n`;
             outputText += `❌ Your solution produces incorrect output.\n\n`;
           }
-
-          // Show comparison
           outputText += `🔍 OUTPUT COMPARISON:\n`;
           outputText += `${'-'.repeat(30)}\n`;
           outputText += `📥 Input:\n${testInput || '(no input)'}\n\n`;
@@ -759,12 +718,11 @@ function CompilerPage() {
             outputText += `• Make sure output format matches exactly\n\n`;
           }
         } else {
-          // No test case available, show basic execution
           outputText = `✅ EXECUTION SUCCESSFUL\n`;
           outputText += `${'='.repeat(40)}\n\n`;
           outputText += `ℹ️ No test cases available for validation.\n`;
           outputText += `Code executed successfully, check output below.\n\n`;
-          
+
           if (result.output && result.output.trim()) {
             outputText += `📤 PROGRAM OUTPUT:\n`;
             outputText += `${'-'.repeat(20)}\n`;
@@ -774,7 +732,7 @@ function CompilerPage() {
             outputText += `📤 PROGRAM OUTPUT: (no output)\n\n`;
           }
         }
-        
+
         if (result.time || result.memory) {
           outputText += `📊 PERFORMANCE METRICS:\n`;
           outputText += `${'-'.repeat(20)}\n`;
@@ -786,8 +744,6 @@ function CompilerPage() {
           }
           outputText += `${'-'.repeat(20)}\n\n`;
         }
-        
-        // Show execution method
         outputText += `🔧 EXECUTION INFO:\n`;
         outputText += `${'-'.repeat(20)}\n`;
         if (result.executionMethod === 'local') {
@@ -801,21 +757,18 @@ function CompilerPage() {
         outputText = `❌ EXECUTION FAILED\n`;
         outputText += `${'='.repeat(40)}\n\n`;
         outputText += `📋 Status: ${result.status}\n\n`;
-        
         if (result.compileOutput && result.compileOutput.trim()) {
           outputText += `🔧 COMPILATION ERROR:\n`;
           outputText += `${'-'.repeat(20)}\n`;
           outputText += `${result.compileOutput}\n`;
           outputText += `${'-'.repeat(20)}\n\n`;
         }
-        
         if (result.error && result.error.trim()) {
           outputText += `🐛 RUNTIME ERROR:\n`;
           outputText += `${'-'.repeat(20)}\n`;
           outputText += `${result.error}\n`;
           outputText += `${'-'.repeat(20)}\n\n`;
         }
-        
         if (result.output && result.output.trim()) {
           outputText += `📤 PARTIAL OUTPUT:\n`;
           outputText += `${'-'.repeat(20)}\n`;
@@ -823,14 +776,10 @@ function CompilerPage() {
           outputText += `${'-'.repeat(20)}`;
         }
       }
-      
       setOutput(outputText);
-
     } catch (error) {
       console.error('Code execution error:', error);
-
       let errorMessage = '❌ Execution Error!\n\n';
-
       if (error.message.includes('Rate limit exceeded') || error.message.includes('429')) {
         errorMessage += '🚦 RATE LIMIT EXCEEDED\n';
         errorMessage += '═'.repeat(40) + '\n\n';
@@ -865,9 +814,7 @@ function CompilerPage() {
         errorMessage += '2. Judge0 API key configuration\n';
         errorMessage += '3. Code syntax\n\n';
       }
-
       errorMessage += `Technical Details: ${error.message}`;
-
       setOutput(errorMessage);
       toast.error('Failed to execute code');
     } finally {
@@ -875,14 +822,12 @@ function CompilerPage() {
     }
   };
 
-  // Reset code
   const resetCode = () => {
     setCode(language.template);
     setOutput('');
     setTestResults(null);
   };
 
-  // Submit and test code against all test cases
   const submitCode = async () => {
     if (!code.trim()) {
       toast.error('Please write some code first!');
@@ -894,7 +839,6 @@ function CompilerPage() {
       return;
     }
 
-    // Check if Judge0 is properly configured
     const judge0Status = validateJudge0Setup();
     if (!judge0Status.valid) {
       toast.error('Judge0 API key not configured');
@@ -917,32 +861,23 @@ function CompilerPage() {
 
     try {
       toast.info('🧪 Running test cases...', { duration: 3000 });
-
       const testCases = problemDetails.testCases;
       const results = [];
       let passedCount = 0;
-
-      // Execute each test case
       for (let i = 0; i < testCases.length; i++) {
         const testCase = testCases[i];
-
-        // Update progress
         setTestResults({
           passed: passedCount,
           total: testCases.length,
           details: results,
           currentTest: i + 1
         });
-
         try {
           const result = await executeCodeHybrid(code, language.id, testCase.input);
-
           const actualOutput = result.output ? result.output.trim() : '';
           const expectedOutput = testCase.output.trim();
           const passed = actualOutput === expectedOutput;
-
           if (passed) passedCount++;
-
           results.push({
             testCase: i + 1,
             passed: passed,
@@ -955,7 +890,6 @@ function CompilerPage() {
             executionMethod: result.executionMethod,
             error: result.success ? null : (result.error || result.compileOutput)
           });
-
         } catch (error) {
           results.push({
             testCase: i + 1,
@@ -967,14 +901,11 @@ function CompilerPage() {
             status: 'Execution Error'
           });
         }
-
-        // Small delay between test cases to avoid rate limiting
         if (i < testCases.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
-      // Final results
       const finalResults = {
         passed: passedCount,
         total: testCases.length,
@@ -983,8 +914,6 @@ function CompilerPage() {
       };
 
       setTestResults(finalResults);
-
-      // Add submission to history
       const newSubmission = {
         timestamp: new Date().toLocaleString(),
         status: passedCount === testCases.length ? 'Accepted' : 'Wrong Answer',
@@ -999,13 +928,10 @@ function CompilerPage() {
       };
 
       setSubmissions(prev => [newSubmission, ...prev]);
-
-      // Switch to submissions tab if all tests passed
       if (passedCount === testCases.length) {
         setActiveTab('submissions');
       }
 
-      // Update console output with test summary
       let consoleOutput = `🧪 TEST EXECUTION COMPLETED\n`;
       consoleOutput += `${'='.repeat(50)}\n\n`;
       consoleOutput += `📊 RESULTS SUMMARY:\n`;
@@ -1031,20 +957,14 @@ function CompilerPage() {
         }
         consoleOutput += `\n`;
       });
-
       setOutput(consoleOutput);
-
-      // Show completion message
       if (passedCount === testCases.length) {
         toast.success(`🎉 All ${testCases.length} test cases passed!`);
       } else {
         toast.warning(`${passedCount}/${testCases.length} test cases passed`);
       }
-
     } catch (error) {
       console.error('Submit code error:', error);
-      
-      // Update console with error information
       let errorOutput = `❌ TEST EXECUTION FAILED\n`;
       errorOutput += `${'='.repeat(50)}\n\n`;
       errorOutput += `🚨 ERROR DETAILS:\n`;
@@ -1057,10 +977,8 @@ function CompilerPage() {
       errorOutput += `• Ensure Judge0 API is configured\n`;
       errorOutput += `• Try running a simple test first\n\n`;
       errorOutput += `🔧 If the problem persists, contact support.`;
-      
       setOutput(errorOutput);
       toast.error('Failed to run test cases');
-      
       setTestResults({
         passed: 0,
         total: problemDetails.testCases.length,
@@ -1075,7 +993,6 @@ function CompilerPage() {
     }
   };
 
-  // Helper function to poll for result
   const pollForResult = async (token) => {
     const judge0Urls = getJudge0Urls();
     const headers = getJudge0Headers();
@@ -1102,7 +1019,51 @@ function CompilerPage() {
     });
   };
 
-  // Configuration Screen (when no problem is loaded)
+  // --- Perfect Adjust Bar & Responsive Console Patch ---
+  // 1. Ensure the vertical adjust bar (between problem and editor) is styled and works smoothly
+  // 2. Ensure the horizontal adjust bar (between editor and console) is styled and works smoothly
+  // 3. When dragging the horizontal bar, the console and editor heights adjust responsively
+  // 4. Use gradients, rounded corners, and shadows for a professional look
+
+  // Vertical Adjust Bar Example:
+  // <div
+  //   style={{ left: `calc(${split}% - 6px)` }}
+  //   className="absolute top-0 bottom-0 z-30 w-3 cursor-col-resize bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 shadow-lg hover:from-blue-700 hover:to-pink-700 transition-all duration-200 rounded-r-xl border-2 border-white"
+  //   onMouseDown={() => {
+  //     isDragging.current = true;
+  //     document.body.style.cursor = 'col-resize';
+  //   }}
+  // />
+
+  // Horizontal Adjust Bar Example:
+  // <div
+  //   style={{ top: `calc(${editorHeight}% - 6px)` }}
+  //   className="absolute left-0 right-0 z-30 h-3 cursor-row-resize bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 shadow-lg hover:from-green-700 hover:to-purple-700 transition-all duration-200 rounded-b-xl border-2 border-white"
+  //   onMouseDown={() => {
+  //     isDraggingY.current = true;
+  //     document.body.style.cursor = 'row-resize';
+  //   }}
+  // />
+
+  // Editor and Console Responsive Heights:
+  // <div className="flex-1 min-h-0">
+  //   <div style={{ height: `${editorHeight}%` }} className="w-full rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+  //     {/* Editor Component */}
+  //   </div>
+  //   {/* Horizontal Adjust Bar (see above) */}
+  //   <div
+  //     style={{ top: `calc(${editorHeight}% - 6px)` }}
+  //     className="absolute left-0 right-0 z-30 h-3 cursor-row-resize bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 shadow-lg hover:from-green-700 hover:to-purple-700 transition-all duration-200 rounded-b-xl border-2 border-white"
+  //     onMouseDown={() => {
+  //       isDraggingY.current = true;
+  //       document.body.style.cursor = 'row-resize';
+  //     }}
+  //   />
+  // </div>
+  // <div style={{ height: `${100 - editorHeight}%` }} className="bg-gray-800 border-t border-gray-700 p-3 sticky bottom-0 z-10 shadow-lg overflow-auto rounded-b-xl">
+  //   {/* Console Content */}
+  // </div>
+
   if (!problemDetails && !loadingProblem) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -1112,7 +1073,6 @@ function CompilerPage() {
             animate={{ opacity: 1, y: 0 }}
             className="max-w-4xl mx-auto"
           >
-            {/* Header */}
             <div className="text-center mb-8">
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -1148,7 +1108,6 @@ function CompilerPage() {
               </motion.div>
             </div>
 
-            {/* Configuration Card */}
             <motion.div
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1158,7 +1117,6 @@ function CompilerPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Configure Your Coding Challenge</h2>
 
               <div className="grid lg:grid-cols-3 gap-6">
-                {/* Topic Selection */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="block text-lg font-semibold text-gray-700">
@@ -1185,19 +1143,17 @@ function CompilerPage() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           if (!showSubTopics) {
-                            // Main topic selected - show subtopics
                             setSelectedMainTopic(topic.value);
                             setShowSubTopics(true);
                           } else {
-                            // Subtopic selected - set as problem topic
                             setProblemConfig(prev => ({ ...prev, topic: topic.value }));
                             setConfiguredTopic(topic.value);
                           }
                         }}
                         className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${(!showSubTopics && selectedMainTopic === topic.value) ||
-                            (showSubTopics && problemConfig.topic === topic.value)
-                            ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
-                            : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                          (showSubTopics && problemConfig.topic === topic.value)
+                          ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                       >
                         <div className="flex items-center space-x-3">
@@ -1210,17 +1166,15 @@ function CompilerPage() {
                     ))}
                   </div>
 
-                  {/* Selected Main Category Display */}
                   {selectedMainTopic && !showSubTopics && (
                     <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <div className="flex items-center gap-2 text-blue-800">
                         <span className="text-lg">📂</span>
-                        <span className="font-medium">Category Selected: {codingTopics.find(t => t.value === selectedMainTopic)?.label || selectedMainTopic}</span>
+                        <span className="font-medium">Category Selected: {mainCodingTopics.find(t => t.value === selectedMainTopic)?.label || selectedMainTopic}</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Selected Topic Display */}
                   {showSubTopics && configuredTopic && (
                     <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2 text-green-800">
@@ -1231,9 +1185,7 @@ function CompilerPage() {
                   )}
                 </div>
 
-                {/* Difficulty & Language */}
                 <div className="space-y-4">
-                  {/* Difficulty */}
                   <div>
                     <label className="block text-lg font-semibold text-gray-700 mb-3">Difficulty Level</label>
                     <div className="space-y-2">
@@ -1244,8 +1196,8 @@ function CompilerPage() {
                           whileTap={{ scale: 0.98 }}
                           onClick={() => setProblemConfig(prev => ({ ...prev, difficulty: diff.value }))}
                           className={`w-full p-3 rounded-lg border-2 transition-all duration-200 ${problemConfig.difficulty === diff.value
-                              ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
-                              : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
+                            ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700'
                             }`}
                         >
                           <span className="font-medium">{diff.label}</span>
@@ -1255,7 +1207,6 @@ function CompilerPage() {
                   </div>
                 </div>
 
-                {/* Language Selection */}
                 <div className="space-y-3">
                   <label className="block text-lg font-semibold text-gray-700 mb-3">Programming Language</label>
                   <div className="space-y-2">
@@ -1269,8 +1220,8 @@ function CompilerPage() {
                           setLanguage(lang);
                         }}
                         className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${problemConfig.language === lang.name
-                            ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
-                            : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
+                          ? 'border-blue-700 bg-blue-50 text-blue-900 shadow-sm'
+                          : 'border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50'
                           }`}
                       >
                         <div className="flex items-center space-x-3">
@@ -1283,15 +1234,14 @@ function CompilerPage() {
                 </div>
               </div>
 
-              {/* Generate Button */}
               <motion.button
                 whileHover={{ scale: showSubTopics && configuredTopic ? 1.02 : 1 }}
                 whileTap={{ scale: showSubTopics && configuredTopic ? 0.98 : 1 }}
                 onClick={generateNewProblem}
                 disabled={loadingProblem || !showSubTopics || !configuredTopic}
                 className={`w-full mt-8 py-3 px-6 font-bold rounded-xl shadow-lg transition-all duration-300 text-lg ${showSubTopics && configuredTopic && !loadingProblem
-                    ? 'bg-blue-700 text-white hover:bg-blue-800 cursor-pointer'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-blue-700 text-white hover:bg-blue-800 cursor-pointer'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
               >
                 {loadingProblem ? (
@@ -1323,11 +1273,10 @@ function CompilerPage() {
     );
   }
 
-  // 🌟 SPECTACULAR CODING PROBLEM LOADING SCREEN
+  // Loading Screen
   if (loadingProblem) {
     return (
       <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black flex items-center justify-center z-50">
-        {/* Animated Code Background */}
         <div className="absolute inset-0 overflow-hidden opacity-10">
           <div className="absolute top-20 left-20 text-green-400 font-mono text-sm animate-pulse">
             {'function generateProblem() {'}
@@ -1343,22 +1292,19 @@ function CompilerPage() {
           </div>
         </div>
 
-        {/* Main Loading Content */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative z-10 text-center max-w-lg mx-auto px-6"
         >
-          {/* Code Brackets Animation */}
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
             className="text-8xl mb-6 font-mono text-green-400"
           >
-            {'{ }'}
+            {'{}'}
           </motion.div>
 
-          {/* Rotating Gear */}
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
@@ -1367,7 +1313,6 @@ function CompilerPage() {
             <div className="w-20 h-20 border-4 border-green-400 border-t-transparent rounded-full"></div>
           </motion.div>
 
-          {/* Loading Title */}
           <motion.h2
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1377,7 +1322,6 @@ function CompilerPage() {
             Compiling Challenge...
           </motion.h2>
 
-          {/* Dynamic Coding Messages */}
           <AnimatePresence mode="wait">
             <motion.div
               key={messageIndex}
@@ -1391,7 +1335,6 @@ function CompilerPage() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Code Block Animation */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: [0, 1, 0] }}
@@ -1409,7 +1352,6 @@ function CompilerPage() {
             </div>
           </motion.div>
 
-          {/* Progress Binary */}
           <div className="flex justify-center space-x-1 mb-8 font-mono text-green-400">
             {[0, 1, 0, 1, 1, 0, 1, 0].map((bit, index) => (
               <motion.span
@@ -1427,7 +1369,6 @@ function CompilerPage() {
             ))}
           </div>
 
-          {/* Encouraging Message */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1439,7 +1380,6 @@ function CompilerPage() {
             that will enhance your programming skills!
           </motion.p>
 
-          {/* Terminal Loading Bar */}
           <motion.div
             className="mt-8 mx-auto max-w-md bg-black p-3 rounded font-mono text-green-400 text-sm"
           >
@@ -1460,46 +1400,29 @@ function CompilerPage() {
     );
   }
 
-  // Main Coding Interface - OPTIMIZED HEIGHT
+  // Main Coding Interface
   return (
     <div className="h-screen bg-gray-900 flex flex-col max-h-screen overflow-hidden">
-      {/* Optimized Compact Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex-shrink-0">
+      <div className="bg-gradient-to-r from-blue-900 via-purple-900 to-pink-900 border-b border-gray-700 px-6 py-4 flex-shrink-0 shadow-lg">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-lg font-bold text-white flex items-center space-x-2">
-              <span>💻</span>
-              <span>AceMyInterview - Coding Challenge</span>
-            </h1>
-            
-            {problemDetails && (
-              <div className="flex items-center space-x-3 text-sm">
-                <span className="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold">
-                  ⭐ MEDIUM
-                </span>
-                <span className="text-gray-300 font-medium">
-                  {problemDetails.title?.substring(0, 40)}...
-                </span>
-              </div>
-            )}
-          </div>
+          <h1 className="text-2xl font-extrabold text-white tracking-wide flex items-center gap-3">
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full text-lg font-bold shadow">💻</span>
+            AceMyInterview - Coding Challenge
+          </h1>
 
           <div className="flex items-center space-x-3">
-            {/* Problem Panel Toggle */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowProblemPanel(!showProblemPanel)}
-              className={`px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${
-                showProblemPanel 
-                  ? 'bg-green-700 hover:bg-green-800 text-white' 
-                  : 'bg-gray-600 hover:bg-gray-700 text-gray-200'
-              }`}
+              className={`px-3 py-2 rounded-lg transition-all duration-200 text-sm font-medium ${showProblemPanel
+                ? 'bg-green-700 hover:bg-green-800 text-white'
+                : 'bg-gray-600 hover:bg-gray-700 text-gray-200'
+                }`}
             >
               {showProblemPanel ? '📖 Hide Problem' : '📖 Show Problem'}
             </motion.button>
 
-            {/* Language Selector Dropdown */}
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-400">Language:</span>
               <select
@@ -1522,9 +1445,7 @@ function CompilerPage() {
               </select>
             </div>
 
-            {/* Editor Controls */}
             <div className="flex items-center space-x-2">
-              {/* Theme Toggle */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -1535,7 +1456,6 @@ function CompilerPage() {
                 {editorTheme === 'vs-dark' ? '☀️' : '🌙'}
               </motion.button>
 
-              {/* Font Size */}
               <select
                 value={fontSize}
                 onChange={(e) => setFontSize(Number(e.target.value))}
@@ -1553,9 +1473,7 @@ function CompilerPage() {
         </div>
       </div>
 
-      {/* Main Content - Optimized Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* LeetCode-Style Problem Panel */}
+      <div className="flex-1 flex overflow-hidden w-full relative">
         <AnimatePresence>
           {showProblemPanel && (
             <motion.div
@@ -1563,28 +1481,30 @@ function CompilerPage() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -400, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="w-1/2 bg-white border-r border-gray-200 overflow-hidden flex flex-col"
+              className="min-w-0 border-r border-gray-200 overflow-hidden flex flex-col"
+              style={{
+                width: `${split}%`,
+                boxShadow: '0 2px 16px 0 rgba(0,0,0,0.08)',
+                background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)' // Soft white to light blue
+              }}
             >
-              {/* Problem Header with Tabs - Only Description and Submissions */}
               <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center space-x-6">
-                  <button 
+                  <button
                     onClick={() => setActiveTab('description')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
-                      activeTab === 'description' 
-                        ? 'text-blue-600 border-blue-500' 
-                        : 'text-gray-500 hover:text-gray-700 border-transparent'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${activeTab === 'description'
+                      ? 'text-blue-600 border-blue-500'
+                      : 'text-gray-500 hover:text-gray-700 border-transparent'
+                      }`}
                   >
                     📚 Description
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveTab('submissions')}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
-                      activeTab === 'submissions' 
-                        ? 'text-blue-600 border-blue-500' 
-                        : 'text-gray-500 hover:text-gray-700 border-transparent'
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${activeTab === 'submissions'
+                      ? 'text-blue-600 border-blue-500'
+                      : 'text-gray-500 hover:text-gray-700 border-transparent'
+                      }`}
                   >
                     📊 Submissions
                     {submissions.length > 0 && (
@@ -1605,14 +1525,11 @@ function CompilerPage() {
                 </motion.button>
               </div>
 
-              {/* Problem Content - Optimized for Full Screen */}
-              <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
+              <div className="flex-1 overflow-y-auto bg-gray-50 p-6" style={{ boxShadow: '0 1px 8px 0 rgba(0,0,0,0.04)' }}>
                 {problemDetails && (
                   <div className="space-y-6">
-                    {/* Tab Content */}
                     {activeTab === 'description' && (
                       <div className="space-y-6">
-                        {/* Problem Title Card */}
                         <div className="bg-white rounded-lg p-6 shadow-sm border">
                           <div className="flex items-center space-x-3 mb-4">
                             <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1.5 rounded-full text-xs font-bold">
@@ -1630,7 +1547,6 @@ function CompilerPage() {
                           </div>
                         </div>
 
-                        {/* Description Card */}
                         <div className="bg-white rounded-lg p-6 shadow-sm border">
                           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                             <span className="mr-2">📝</span>
@@ -1638,14 +1554,13 @@ function CompilerPage() {
                           </h2>
                           <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
                             <p className="text-gray-700 leading-relaxed">
-                              {typeof problemDetails.description === 'object' 
-                                ? JSON.stringify(problemDetails.description, null, 2) 
+                              {typeof problemDetails.description === 'object'
+                                ? JSON.stringify(problemDetails.description, null, 2)
                                 : (problemDetails.description || 'No description available')}
                             </p>
                           </div>
                         </div>
 
-                        {/* Examples Card */}
                         {problemDetails.testCases && problemDetails.testCases.length > 0 && (
                           <div className="space-y-4">
                             <h2 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -1659,7 +1574,6 @@ function CompilerPage() {
                                     Example {index + 1}
                                   </span>
                                 </h3>
-                                
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
                                     <div className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
@@ -1667,21 +1581,21 @@ function CompilerPage() {
                                     </div>
                                     <div className="bg-gray-900 text-green-400 rounded-lg p-3 border">
                                       <code className="text-sm font-mono whitespace-pre-wrap">
-                                        {typeof testCase.input === 'object' 
-                                          ? JSON.stringify(testCase.input, null, 2) 
+                                        {typeof testCase.input === 'object'
+                                          ? JSON.stringify(testCase.input, null, 2)
                                           : (testCase.input || 'No input')}
                                       </code>
                                     </div>
                                   </div>
-                                  
+
                                   <div>
                                     <div className="text-sm font-semibold text-gray-900 mb-2 flex items-center">
                                       <span className="mr-1">📤</span> Output:
                                     </div>
                                     <div className="bg-gray-900 text-blue-400 rounded-lg p-3 border">
                                       <code className="text-sm font-mono whitespace-pre-wrap">
-                                        {typeof testCase.output === 'object' 
-                                          ? JSON.stringify(testCase.output, null, 2) 
+                                        {typeof testCase.output === 'object'
+                                          ? JSON.stringify(testCase.output, null, 2)
                                           : (testCase.output || 'No output')}
                                       </code>
                                     </div>
@@ -1692,7 +1606,6 @@ function CompilerPage() {
                           </div>
                         )}
 
-                        {/* Constraints Card */}
                         <div className="bg-white rounded-lg p-6 shadow-sm border">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                             <span className="mr-2">⚡</span>
@@ -1747,23 +1660,18 @@ function CompilerPage() {
                         ) : (
                           <div className="space-y-4">
                             {submissions.map((submission, index) => (
-                              <div 
-                                key={index} 
-                                className={`border-2 rounded-xl p-5 transition-all duration-300 ${
-                                  submission.status === 'Accepted' 
-                                    ? 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50' 
-                                    : 'border-red-200 bg-gradient-to-r from-red-50 to-pink-50'
-                                }`}
+                              <div
+                                key={index}
+                                className={`border-2 rounded-xl p-5 transition-all duration-300 ${submission.status === 'Accepted' ? 'border-green-200 bg-gradient-to-r from-green-50 to-emerald-50' : 'border-red-200 bg-gradient-to-r from-red-50 to-pink-50'
+                                  }`}
                               >
                                 <div className="flex items-center justify-between mb-4">
                                   <div className="flex items-center space-x-4">
-                                    <div className={`text-2xl ${
-                                      submission.status === 'Accepted' ? '🎉' : '⚠️'
-                                    }`}></div>
+                                    <div className={`text-2xl ${submission.status === 'Accepted' ? '🎉' : '⚠️'
+                                      }`}></div>
                                     <div>
-                                      <div className={`font-bold text-base ${
-                                        submission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
-                                      }`}>
+                                      <div className={`font-bold text-base ${submission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
+                                        }`}>
                                         {submission.status}
                                         {submission.status === 'Accepted' && <span className="ml-2">🏆</span>}
                                       </div>
@@ -1773,9 +1681,8 @@ function CompilerPage() {
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <div className={`text-lg font-bold ${
-                                      submission.status === 'Accepted' ? 'text-green-700' : 'text-red-700'
-                                    }`}>
+                                    <div className={`text-lg font-bold ${submission.status === 'Accepted' ? 'text-green-700' : 'text-red-700'
+                                      }`}>
                                       {submission.passedTests}/{submission.totalTests}
                                     </div>
                                     <div className="text-xs text-gray-600">
@@ -1786,12 +1693,13 @@ function CompilerPage() {
 
                                 <div className="bg-gray-900 rounded-lg p-4 border">
                                   <div className="flex items-center justify-between mb-2">
+
                                     <span className="text-gray-400 text-xs font-medium">💻 CODE PREVIEW</span>
                                     <span className="text-gray-400 text-xs">{submission.code.length} chars</span>
                                   </div>
                                   <pre className="text-green-400 text-xs font-mono leading-relaxed overflow-hidden">
-                                    {submission.code.length > 200 
-                                      ? submission.code.substring(0, 200) + '...' 
+                                    {submission.code.length > 200
+                                      ? submission.code.substring(0, 200) + '...'
                                       : submission.code
                                     }
                                   </pre>
@@ -1809,294 +1717,311 @@ function CompilerPage() {
           )}
         </AnimatePresence>
 
-        {/* Code Editor & Output - Fixed Height */}
+        {/* Vertical Resizer Bar */}
+        {showProblemPanel && (
+          <div
+            style={{ left: `calc(${split}% - 6px)` }}
+            className="absolute top-0 bottom-0 z-30 w-3 cursor-col-resize bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 shadow-lg hover:from-blue-700 hover:to-pink-700 transition-all duration-200 rounded-r-xl border-2 border-white"
+            onMouseDown={() => {
+              isDragging.current = true;
+              document.body.style.cursor = 'col-resize';
+            }}
+          />
+        )}
+        
+        {/* Code Editor & Output */}
         <motion.div
           layout
-          className="flex-1 flex flex-col overflow-hidden"
+          className="flex-1 min-w-0 flex flex-col overflow-hidden"
+          style={{
+            width: showProblemPanel ? `calc(${100 - split}%)` : '100%',
+            background: 'linear-gradient(135deg, #312e81 0%, #1e293b 100%)' // Indigo to dark slate
+          }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          {/* Editor - Main Area */}
-          <div className="flex-1 min-h-0">
-            <Editor
-              height="100%"
-              language={language.name}
-              value={code}
-              onChange={(value) => setCode(value || '')}
-              theme={editorTheme}
-              options={{
-                fontSize: fontSize,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: 'on',
-                lineNumbers: 'on',
-                glyphMargin: false,
-                folding: true,
-                lineDecorationsWidth: 10,
-                lineNumbersMinChars: 3,
-                padding: { top: 10, bottom: 10 },
-              }}
-              onMount={(editor) => {
-                editorRef.current = editor;
-              }}
-            />
-          </div>
-
-          {/* Controls - Compact */}
-          <div className="bg-gray-800 border-t border-gray-700 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex space-x-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={runCode}
-                  disabled={isRunning}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isRunning ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      <span>Running...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>▶️</span>
-                      <span>{problemDetails ? 'Test Sample' : 'Run Code'}</span>
-                    </>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={submitCode}
-                  disabled={isSubmitting || !problemDetails}
-                  className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      <span>Testing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>🧪</span>
-                      <span>Submit All Tests</span>
-                    </>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={resetCode}
-                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-all duration-200"
-                >
-                  🔄 Reset
-                </motion.button>
-              </div>
-
-              <div className="text-gray-400 text-sm">
-                {problemDetails 
-                  ? 'Press Ctrl+Enter to test sample • Ctrl+Shift+Enter to submit all tests'
-                  : 'Press Ctrl+Enter to run • Ctrl+Shift+Enter to submit'
-                }
-              </div>
-            </div>
-          </div>
-
-          {/* Enhanced Console with Tabs */}
-          <div className="bg-gray-900 border-t border-gray-700 p-4 h-80 overflow-hidden flex flex-col">
-            {/* Console Header with Tabs */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-4">
-                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span>📟</span> Console
-                </h3>
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => setConsoleTab('output')}
-                    className={`px-3 py-1 text-xs rounded transition-all duration-200 ${
-                      consoleTab === 'output' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    Output
-                  </button>
-                  <button
-                    onClick={() => setConsoleTab('tests')}
-                    className={`px-3 py-1 text-xs rounded transition-all duration-200 ${
-                      consoleTab === 'tests' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    Test Results
-                    {testResults && (
-                      <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
-                        testResults.passed === testResults.total ? 'bg-green-500' : 'bg-red-500'
-                      }`}>
-                        {testResults.passed}/{testResults.total}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setConsoleTab('debug')}
-                    className={`px-3 py-1 text-xs rounded transition-all duration-200 ${
-                      consoleTab === 'debug' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    Debug
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setOutput('')}
-                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md transition-all duration-200"
-                >
-                  Clear
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = output;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    toast.success('Output copied to clipboard!');
-                  }}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-all duration-200"
-                >
-                  Copy
-                </motion.button>
-              </div>
+          <div id="editor-console-container" className="flex-1 flex flex-col h-full w-full relative">
+            <div style={{ height: `${editorHeight}%` }} className="w-full rounded-lg shadow-lg border border-gray-800 overflow-hidden">
+              <Editor
+                height="100%"
+                language={language.name}
+                value={code}
+                onChange={(value) => setCode(value || '')}
+                theme={editorTheme}
+                options={{
+                  fontSize: fontSize,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  wordWrap: 'on',
+                  lineNumbers: 'on',
+                  glyphMargin: false,
+                  folding: true,
+                  lineDecorationsWidth: 10,
+                  lineNumbersMinChars: 3,
+                  padding: { top: 10, bottom: 10 },
+                }}
+                onMount={(editor) => {
+                  editorRef.current = editor;
+                }}
+              />
             </div>
             
-            {/* Tab Content */}
-            <div className="flex-1 bg-black rounded-lg border border-gray-700 overflow-hidden flex flex-col">
-              {consoleTab === 'output' && (
-                <div className="flex-1 p-4 overflow-y-auto">
-                  <div className="text-blue-400 text-xs uppercase font-semibold mb-2 flex items-center gap-2">
-                    <span>🖥️</span> Your Program Output:
-                  </div>
-                  <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap leading-relaxed">
-                    {output ? output : (
-                      <span className="text-gray-500 italic">
-                        {problemDetails 
-                          ? '💡 Click "Test Sample" to validate your solution against the first test case...'
-                          : '💡 Click "Run Code" to execute your program and see output here...'
-                        }
-                      </span>
-                    )}
-                  </pre>
-                </div>
-              )}
+            {/* Horizontal Resizer Bar */}
+            <div
+              style={{ top: `calc(${editorHeight}% - 6px)` }}
+              className="absolute left-0 right-0 z-30 h-3 cursor-row-resize bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 shadow-lg hover:from-green-700 hover:to-purple-700 transition-all duration-200 rounded-b-xl border-2 border-white"
+              onMouseDown={() => {
+                isDraggingY.current = true;
+                document.body.style.cursor = 'row-resize';
+              }}
+            />
 
-              {consoleTab === 'tests' && (
-                <div className="flex-1 p-4 overflow-y-auto">
-                  {testResults && testResults.details && testResults.details.length > 0 ? (
-                    <div className="space-y-3">
-                      <div className="text-yellow-400 text-xs uppercase font-semibold mb-3 flex items-center gap-2">
-                        <span>🎯</span> Test Results ({testResults.passed}/{testResults.total} passed):
-                      </div>
-                      {testResults.details.map((result, index) => (
-                        <div key={index} className={`p-3 rounded border-l-4 ${
-                          result.passed ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20'
-                        }`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs text-gray-400">
-                              Test Case {result.testCase}: {result.passed ? '✅ PASSED' : '❌ FAILED'}
+            <div style={{ height: `${100 - editorHeight}%` }} className="bg-gray-800 border-t border-gray-700 p-3 sticky bottom-0 z-10 shadow-lg overflow-auto rounded-b-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex space-x-3">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={runCode}
+                    disabled={isRunning}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isRunning ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span>Running...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>▶️</span>
+                        <span>{problemDetails ? 'Test Sample' : 'Run Code'}</span>
+                      </>
+                    )}
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={submitCode}
+                    disabled={isSubmitting || !problemDetails}
+                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        <span>Testing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🧪</span>
+                        <span>Submit All Tests</span>
+                      </>
+                    )}
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={resetCode}
+                    className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg transition-all duration-200"
+                  >
+                    🔄 Reset
+                  </motion.button>
+                </div>
+
+                <div className="text-gray-400 text-sm">
+                  {problemDetails
+                    ? 'Press Ctrl+Enter to test sample • Ctrl+Shift+Enter to submit all tests'
+                    : 'Press Ctrl+Enter to run • Ctrl+Shift+Enter to submit'
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-900 border-t border-gray-700 p-4 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-4">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <span>📟</span> Console
+                  </h3>
+                  <div className="flex space-x-1">
+                    <button
+                      onClick={() => setConsoleTab('output')}
+                      className={`px-3 py-1 text-xs rounded transition-all duration-200 ${consoleTab === 'output'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                      Output
+                    </button>
+                    <button
+                      onClick={() => setConsoleTab('tests')}
+                      className={`px-3 py-1 text-xs rounded transition-all duration-200 ${consoleTab === 'tests'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                      Test Results
+                      {testResults && (
+                        <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${testResults.passed === testResults.total ? 'bg-green-500' : 'bg-red-500'
+                          }`}>
+                          {testResults.passed}/{testResults.total}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setConsoleTab('debug')}
+                      className={`px-3 py-1 text-xs rounded transition-all duration-200 ${consoleTab === 'debug'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                      Debug
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setOutput('')}
+                    className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-md transition-all duration-200"
+                  >
+                    Clear
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      const textarea = document.createElement('textarea');
+                      textarea.value = output;
+                      document.body.appendChild(textarea);
+                      textarea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textarea);
+                      toast.success('Output copied to clipboard!');
+                    }}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-md transition-all duration-200"
+                  >
+                    Copy
+                  </motion.button>
+                </div>
+              </div>
+
+              <div className="flex-1 bg-black rounded-lg border border-gray-700 overflow-hidden flex flex-col">
+                {consoleTab === 'output' && (
+                  <div className="flex-1 p-4 overflow-y-auto">
+                    <div className="text-blue-400 text-xs uppercase font-semibold mb-2 flex items-center gap-2">
+                      <span>🖥️</span> Your Program Output:
+                    </div>
+                    <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap leading-relaxed">
+                      {output ? output : (
+                        <span className="text-gray-500 italic">
+                          {problemDetails
+                            ? '💡 Click "Test Sample" to validate your solution against the first test case...'
+                            : '💡 Click "Run Code" to execute your program and see output here...'
+                          }
+                        </span>
+                      )}
+                    </pre>
+                  </div>
+                )}
+
+                {consoleTab === 'tests' && (
+                  <div className="flex-1 p-4 overflow-y-auto">
+                    {testResults && testResults.details && testResults.details.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="text-yellow-400 text-xs uppercase font-semibold mb-3 flex items-center gap-2">
+                          <span>🎯</span> Test Results ({testResults.passed}/{testResults.total} passed):
+                        </div>
+                        {testResults.details.map((result, index) => (
+                          <div key={index} className={`p-3 rounded border-l-4 ${result.passed ? 'border-green-500 bg-green-900/20' : 'border-red-500 bg-red-900/20'
+                            }`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs text-gray-400">
+                                Test Case {result.testCase}: {result.passed ? '✅ PASSED' : '❌ FAILED'}
+                              </div>
+                              {result.executionTime && (
+                                <div className="text-xs text-gray-500">
+                                  {result.executionTime}s
+                                </div>
+                              )}
                             </div>
-                            {result.executionTime && (
-                              <div className="text-xs text-gray-500">
-                                {result.executionTime}s
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <span className="text-yellow-300">Expected:</span>
+                                <pre className="text-yellow-100 mt-1 font-mono whitespace-pre-wrap bg-black/30 p-2 rounded">
+                                  {typeof result.expected === 'object'
+                                    ? JSON.stringify(result.expected, null, 2)
+                                    : (result.expected || '(no output expected)')}
+                                </pre>
+                              </div>
+                              <div>
+                                <span className={result.passed ? 'text-green-300' : 'text-red-300'}>
+                                  Your Output:
+                                </span>
+                                <pre className={`mt-1 font-mono whitespace-pre-wrap bg-black/30 p-2 rounded ${result.passed ? 'text-green-100' : 'text-red-100'
+                                  }`}>
+                                  {typeof result.actual === 'object'
+                                    ? JSON.stringify(result.actual, null, 2)
+                                    : (result.actual || '(no output)')}
+                                </pre>
+                              </div>
+                            </div>
+
+                            {result.error && (
+                              <div className="mt-2 p-2 bg-red-800/30 rounded">
+                                <span className="text-red-300 text-xs">Error:</span>
+                                <pre className="text-red-100 text-xs mt-1 font-mono whitespace-pre-wrap">
+                                  {result.error}
+                                </pre>
                               </div>
                             )}
                           </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                            <div>
-                              <span className="text-yellow-300">Expected:</span>
-                              <pre className="text-yellow-100 mt-1 font-mono whitespace-pre-wrap bg-black/30 p-2 rounded">
-                                {typeof result.expected === 'object' 
-                                  ? JSON.stringify(result.expected, null, 2) 
-                                  : (result.expected || '(no output expected)')}
-                              </pre>
-                            </div>
-                            <div>
-                              <span className={result.passed ? 'text-green-300' : 'text-red-300'}>
-                                Your Output:
-                              </span>
-                              <pre className={`mt-1 font-mono whitespace-pre-wrap bg-black/30 p-2 rounded ${
-                                result.passed ? 'text-green-100' : 'text-red-100'
-                              }`}>
-                                {typeof result.actual === 'object' 
-                                  ? JSON.stringify(result.actual, null, 2) 
-                                  : (result.actual || '(no output)')}
-                              </pre>
-                            </div>
-                          </div>
-                          
-                          {result.error && (
-                            <div className="mt-2 p-2 bg-red-800/30 rounded">
-                              <span className="text-red-300 text-xs">Error:</span>
-                              <pre className="text-red-100 text-xs mt-1 font-mono whitespace-pre-wrap">
-                                {result.error}
-                              </pre>
-                            </div>
-                          )}
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-2">🧪</div>
+                        <div className="text-gray-400 text-sm">
+                          No test results yet. Click "Submit All Tests" to see detailed test results here.
                         </div>
-                      ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {consoleTab === 'debug' && (
+                  <div className="flex-1 p-4 overflow-y-auto">
+                    <div className="text-purple-400 text-xs uppercase font-semibold mb-2 flex items-center gap-2">
+                      <span>🐛</span> Debug Information:
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-2">🧪</div>
-                      <div className="text-gray-400 text-sm">
-                        No test results yet. Click "Submit All Tests" to see detailed test results here.
+                    <div className="space-y-2 text-xs text-gray-300">
+                      <div>Language: <span className="text-blue-400">{language.label}</span></div>
+                      <div>Language ID: <span className="text-blue-400">{language.id}</span></div>
+                      <div>Editor Theme: <span className="text-blue-400">{editorTheme}</span></div>
+                      <div>Font Size: <span className="text-blue-400">{fontSize}px</span></div>
+                      <div>Problem Loaded: <span className="text-blue-400">{problemDetails ? 'Yes' : 'No'}</span></div>
+                      {problemDetails && (
+                        <>
+                          <div>Test Cases: <span className="text-blue-400">{problemDetails.testCases?.length || 0}</span></div>
+                          <div>Problem Title: <span className="text-blue-400">{problemDetails.title}</span></div>
+                        </>
+                      )}
+                      <div>Total Submissions: <span className="text-blue-400">{submissions.length}</span></div>
+                      <div className="pt-2 border-t border-gray-700">
+                        <div className="text-yellow-400 mb-1">Keyboard Shortcuts:</div>
+                        <div>Ctrl+Enter: Test Sample</div>
+                        <div>Ctrl+Shift+Enter: Submit All Tests</div>
+                        <div>Ctrl+/: Toggle Comment</div>
+                        <div>Ctrl+Z: Undo</div>
+                        <div>Ctrl+Y: Redo</div>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {consoleTab === 'debug' && (
-                <div className="flex-1 p-4 overflow-y-auto">
-                  <div className="text-purple-400 text-xs uppercase font-semibold mb-2 flex items-center gap-2">
-                    <span>🐛</span> Debug Information:
                   </div>
-                  <div className="space-y-2 text-xs text-gray-300">
-                    <div>Language: <span className="text-blue-400">{language.label}</span></div>
-                    <div>Language ID: <span className="text-blue-400">{language.id}</span></div>
-                    <div>Editor Theme: <span className="text-blue-400">{editorTheme}</span></div>
-                    <div>Font Size: <span className="text-blue-400">{fontSize}px</span></div>
-                    <div>Problem Loaded: <span className="text-blue-400">{problemDetails ? 'Yes' : 'No'}</span></div>
-                    {problemDetails && (
-                      <>
-                        <div>Test Cases: <span className="text-blue-400">{problemDetails.testCases?.length || 0}</span></div>
-                        <div>Problem Title: <span className="text-blue-400">{problemDetails.title}</span></div>
-                      </>
-                    )}
-                    <div>Total Submissions: <span className="text-blue-400">{submissions.length}</span></div>
-                    <div className="pt-2 border-t border-gray-700">
-                      <div className="text-yellow-400 mb-1">Keyboard Shortcuts:</div>
-                      <div>Ctrl+Enter: Test Sample</div>
-                      <div>Ctrl+Shift+Enter: Submit All Tests</div>
-                      <div>Ctrl+/: Toggle Comment</div>
-                      <div>Ctrl+Z: Undo</div>
-                      <div>Ctrl+Y: Redo</div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -2119,21 +2044,17 @@ function CompilerPage() {
               className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div className={`px-6 py-4 border-b ${
-                selectedSubmission.status === 'Accepted' 
-                  ? 'bg-green-50 border-green-200' 
-                  : 'bg-red-50 border-red-200'
-              }`}>
+              <div className={`px-6 py-4 border-b ${selectedSubmission.status === 'Accepted'
+                ? 'bg-green-50 border-green-200'
+                : 'bg-red-50 border-red-200'
+                }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <span className={`text-2xl ${
-                      selectedSubmission.status === 'Accepted' ? '✅' : '❌'
-                    }`}></span>
+                    <span className={`text-2xl ${selectedSubmission.status === 'Accepted' ? '✅' : '❌'
+                      }`}></span>
                     <div>
-                      <h2 className={`text-xl font-bold ${
-                        selectedSubmission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
-                      }`}>
+                      <h2 className={`text-xl font-bold ${selectedSubmission.status === 'Accepted' ? 'text-green-800' : 'text-red-800'
+                        }`}>
                         {selectedSubmission.status}
                       </h2>
                       <p className="text-sm text-gray-600">
@@ -2152,13 +2073,10 @@ function CompilerPage() {
                 </div>
               </div>
 
-              {/* Modal Content */}
               <div className="flex-1 overflow-y-auto p-6">
-                {/* Test Results Summary */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className={`text-center p-4 rounded-lg ${
-                    selectedSubmission.status === 'Accepted' ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
+                  <div className={`text-center p-4 rounded-lg ${selectedSubmission.status === 'Accepted' ? 'bg-green-100' : 'bg-red-100'
+                    }`}>
                     <div className="text-sm text-gray-600 uppercase tracking-wide">Test Results</div>
                     <div className="text-lg font-bold text-gray-900">
                       {selectedSubmission.passedTests}/{selectedSubmission.totalTests}
@@ -2178,7 +2096,6 @@ function CompilerPage() {
                   </div>
                 </div>
 
-                {/* Language and Submission Info */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Submission Details</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -2196,16 +2113,14 @@ function CompilerPage() {
                     </div>
                     <div>
                       <span className="text-gray-600">Status:</span>
-                      <span className={`ml-2 font-medium ${
-                        selectedSubmission.status === 'Accepted' ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span className={`ml-2 font-medium ${selectedSubmission.status === 'Accepted' ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {selectedSubmission.status}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Full Code Display */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-semibold text-gray-900">Complete Code Solution</h3>
@@ -2228,7 +2143,6 @@ function CompilerPage() {
                   </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="flex justify-end space-x-3">
                   <motion.button
                     whileHover={{ scale: 1.05 }}
