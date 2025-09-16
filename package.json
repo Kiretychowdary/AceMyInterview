@@ -22,6 +22,7 @@
     "face-api.js": "^0.22.2",
     "firebase": "^11.10.0",
     "framer-motion": "^12.19.2",
+    "lucide-react": "^0.544.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
