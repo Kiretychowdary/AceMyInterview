@@ -36,53 +36,20 @@ if __name__ == "__main__":
     id: 54,
     name: "cpp",
     label: "C++",
-    icon: "⚡",
+    icon: "🔵",
     version: "17",
     color: "from-blue-400 to-purple-500",
     template: `#include <iostream>
-#include <vector>
-#include <algorithm>
 using namespace std;
 
-class Solution {
-public:
-    // Write your solution here
-    // Time Complexity: O(?)
-    // Space Complexity: O(?)
-    void solve() {
-        cout << "Hello World!" << endl;
-    }
-};
+void solution() {
+    // Your code here
+    cout << "Hello World!" << endl;
+}
 
 int main() {
-    Solution sol;
-    sol.solve();
+    solution();
     return 0;
-}`
-  },
-  {
-    id: 62,
-    name: "java",
-    label: "Java",
-    icon: "☕",
-    version: "11",
-    color: "from-orange-400 to-red-500",
-    template: `import java.util.*;
-
-class Solution {
-    /**
-     * Write your solution here
-     * Time Complexity: O(?)
-     * Space Complexity: O(?)
-     */
-    public void solve() {
-        System.out.println("Hello World!");
-    }
-    
-    public static void main(String[] args) {
-        Solution sol = new Solution();
-        sol.solve();
-    }
 }`
   },
   {
@@ -124,7 +91,8 @@ function CompilerPageEnhanced() {
   const [language, setLanguage] = useState(languages[0]);
   const [theme, setTheme] = useState('vs-dark');
   const [fontSize, setFontSize] = useState(14);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // Always full-screen, no toggle needed
+  const isFullscreen = true; // Using constant instead of state
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState(null);
@@ -133,6 +101,7 @@ function CompilerPageEnhanced() {
   const [submissions, setSubmissions] = useState([]);
   const [problemDetails, setProblemDetails] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+                {/* Always in Full Screen mode */}
   const [executionTime, setExecutionTime] = useState(0);
   const [memoryUsage, setMemoryUsage] = useState(0);
   const [codeStats, setCodeStats] = useState({ lines: 0, chars: 0 });
@@ -195,7 +164,7 @@ function CompilerPageEnhanced() {
             break;
           case 'f':
             e.preventDefault();
-            setIsFullscreen(!isFullscreen);
+            // Full-screen is always on
             break;
           case '=':
             e.preventDefault();
@@ -241,12 +210,8 @@ function CompilerPageEnhanced() {
       
       setOutput(`✅ Code executed successfully!
 Time: ${((Date.now() - startTime) / 1000).toFixed(2)}s
-Memory: ${Math.floor(Math.random() * 50 + 10)}MB
-
-Output:
-Hello World!`);
+Memory: ${Math.floor(Math.random() * 50 + 10)}MB`);
       
-      setMemoryUsage(Math.floor(Math.random() * 50 + 10));
       toast.success('Code executed successfully!');
     } catch (error) {
       setOutput(`❌ Execution failed: ${error.message}`);
@@ -276,12 +241,11 @@ Hello World!`);
       if (isPassed) passed++;
       
       results.push({
-        id: i + 1,
         passed: isPassed,
         input: testCase.input,
         expected: testCase.output,
         actual: isPassed ? testCase.output : "Wrong output",
-        time: `${(Math.random() * 100).toFixed(0)}ms`
+        time: `${(Math.random() * 100).toFixed(0)}ms`,
       });
     }
 
@@ -299,7 +263,7 @@ Hello World!`);
       language: language.label,
       runtime: `${(Math.random() * 100).toFixed(0)}ms`,
       memory: `${Math.floor(Math.random() * 20 + 10)}MB`,
-      code
+      code: code
     };
 
     setSubmissions(prev => [submission, ...prev]);
@@ -376,9 +340,9 @@ Hello World!`);
   }, [isDraggingHorizontal, isDraggingVertical]);
 
   return (
-    <div className={`h-screen bg-white text-black flex flex-col ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className="h-screen w-full bg-white text-black flex flex-col fixed inset-0 z-50">
       {/* Enhanced Header */}
-      <div className="bg-white border-b border-blue-200 px-6 py-4 shadow-sm">
+      <div className="w-full bg-white border-b border-blue-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <motion.div 
@@ -396,7 +360,7 @@ Hello World!`);
                 <p className="text-sm text-gray-600">Professional Coding Platform</p>
               </div>
             </motion.div>
-            
+          
             {problemDetails && (
               <div className="flex items-center space-x-3 ml-8">
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -447,14 +411,7 @@ Hello World!`);
                 <Settings className="w-4 h-4" />
               </motion.button>
               
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border border-blue-300"
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </motion.button>
+              {/* Full-screen button removed - always in full-screen mode */}
             </div>
           </div>
         </div>
@@ -501,7 +458,7 @@ Hello World!`);
       </div>
 
       {/* Main Content */}
-      <div id="main-content" className="flex-1 flex overflow-hidden">
+      <div id="main-content" className="flex-1 flex w-full overflow-hidden">
         {/* Left Panel - Problem Description with home page theme */}
         <div 
           className="border-r border-blue-200 flex flex-col shadow-lg bg-white"
