@@ -1,6 +1,7 @@
 //nmkrspvlidata
 //radhakrishna
- 
+// SIMPLE GEMINI-ONLY BACKEND - NO N8N COMPLEXITY
+// NMKRSPVLIDATAPERMANENT - Direct Gemini AI Integration
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -8,101 +9,19 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
- 
-const corsOptions = {
-  origin: function (origin, callback) {
-    
-    if (!origin) return callback(null, true);
- 
-    const allowedOrigins = [
-      'https://aiksvid.netlify.app',         
-      'https://aiksvid.netlify.app/',     
-      'http://localhost:3000',              
-      'http://localhost:5173',            
-      'http://localhost:5174',            
-      'http://localhost:5175',              
-      'http://localhost:5176',            
-      'http://localhost:5177',            
-    ];
 
-    if (allowedOrigins.includes(origin)) {
-      console.log(`✅ CORS: Allowing origin: ${origin}`);
-      return callback(null, true);
-    } else {
-      console.log(`⚠️ CORS: Unknown origin: ${origin} - allowing for development`);
-      return callback(null, true);  
-    }
-  },
+// CORS Configuration
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'x-rapidapi-key',
-    'x-rapidapi-host',
-    'Access-Control-Allow-Origin',
-    'Origin',
-    'X-Requested-With',
-    'Accept'
-  ],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 };
 
 app.use(cors(corsOptions));
-
-// PRODUCTION CORS MIDDLEWARE - Netlify + Development Support
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  // Explicitly handle Netlify production frontend
-  if (origin && origin.includes('aiksvid.netlify.app')) {
-    res.header('Access-Control-Allow-Origin', origin);
-    console.log(`🌐 CORS: Netlify production frontend: ${origin}`);
-  }
-  // Handle local development
-  else if (origin && origin.includes('localhost')) {
-    res.header('Access-Control-Allow-Origin', origin);
-    console.log(`🔧 CORS: Local development: ${origin}`);
-  }
-  // Default fallback
-  else {
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    console.log(`📡 CORS: Other origin: ${origin}`);
-  }
-
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-rapidapi-key, x-rapidapi-host, Origin, X-Requested-With, Accept');
-  res.header('Access-Control-Allow-Credentials', 'true');
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log(`🔧 CORS Preflight: ${req.headers.origin} -> ${req.url}`);
-    return res.sendStatus(200);
-  }
-
-  console.log(`� Request: ${req.method} ${req.url} from ${origin}`);
-  next();
-});
-
 app.use(express.json());
-
-// CORS Test Endpoint - TO VERIFY FIX WORKS
-app.get('/api/test-cors', (req, res) => {
-  res.json({
-    success: true,
-    message: 'CORS is working correctly for localhost:5176!',
-    origin: req.headers.origin,
-    timestamp: new Date().toISOString(),
-    allowedOrigins: [
-      'http://localhost:5176', // YOUR APP
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'https://aiksvid.netlify.app'
-    ]
-  });
-});
 
 // Environment Configuration
 const GEMINI_API_URL = process.env.GEMINI_API_URL;
@@ -125,7 +44,7 @@ let questionAnswerStorage = {
 // Store Q&A for analysis and learning
 function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorrect) {
   const timestamp = new Date().toISOString();
-
+  
   // Store in session
   if (!questionAnswerStorage.sessions.has(sessionId)) {
     questionAnswerStorage.sessions.set(sessionId, {
@@ -137,7 +56,7 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     });
     questionAnswerStorage.analytics.totalSessions++;
   }
-
+  
   const sessionData = questionAnswerStorage.sessions.get(sessionId);
   sessionData.questions.push({
     question: questionData.question,
@@ -148,7 +67,7 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     explanation: questionData.explanation,
     answeredAt: timestamp
   });
-
+  
   // Store user responses
   if (!questionAnswerStorage.userResponses.has(userId)) {
     questionAnswerStorage.userResponses.set(userId, []);
@@ -160,7 +79,7 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     isCorrect,
     timestamp
   });
-
+  
   // Store in question bank for analysis
   const questionKey = `${questionData.topic}_${questionData.difficulty}_${questionData.question.substring(0, 50)}`;
   questionAnswerStorage.questionBank.set(questionKey, {
@@ -169,7 +88,7 @@ function storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorr
     correctRate: calculateCorrectRate(questionKey, isCorrect),
     lastUsed: timestamp
   });
-
+  
   // Update analytics
   questionAnswerStorage.analytics.totalQuestions++;
   const topicCount = questionAnswerStorage.analytics.topicDistribution.get(questionData.topic) || 0;
@@ -182,11 +101,11 @@ function calculateCorrectRate(questionKey, isCorrect) {
   // Simple implementation - can be enhanced
   const existing = questionAnswerStorage.questionBank.get(questionKey);
   if (!existing) return isCorrect ? 1.0 : 0.0;
-
+  
   const totalAnswers = existing.timesAsked || 1;
   const currentCorrectRate = existing.correctRate || 0;
   const correctAnswers = Math.round(currentCorrectRate * (totalAnswers - 1)) + (isCorrect ? 1 : 0);
-
+  
   return correctAnswers / totalAnswers;
 }
 
@@ -532,167 +451,13 @@ CRITICAL REQUIREMENTS:
     console.error('❌ Error:', error.message);
     console.log('🎯 ===============================================');
 
-    // Return a well-structured fallback problem instead of error
-    const fallbackProblem = generateFallbackProblem(topic, difficulty, language);
-
-    res.json({
-      success: true, // Mark as success so frontend can display the problem
-      problem: fallbackProblem,
-      metadata: {
-        topic,
-        difficulty,
-        language,
-        source: 'backend-fallback',
-        generatedAt: new Date().toISOString(),
-        note: 'Generated from fallback due to API issues'
-      }
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate coding problem',
+      details: error.message
     });
   }
 });
-
-// Fallback problem generator
-function generateFallbackProblem(topic, difficulty, language) {
-  const problems = {
-    'arrays': {
-      title: "Array Sum Calculator",
-      description: "Given an array of integers, calculate and return the sum of all elements. This fundamental problem tests your ability to iterate through arrays and perform arithmetic operations.",
-      inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
-      outputFormat: "Single integer representing the sum of all array elements",
-      constraints: "1 ≤ n ≤ 1000\n-1000 ≤ each element ≤ 1000",
-      examples: "Input:\n3\n1 2 3\n\nOutput:\n6\n\nExplanation: 1 + 2 + 3 = 6",
-      testCases: [
-        {
-          input: "3\n1 2 3",
-          output: "6",
-          explanation: "Sum: 1 + 2 + 3 = 6"
-        },
-        {
-          input: "4\n-1 0 1 2",
-          output: "2",
-          explanation: "Sum: (-1) + 0 + 1 + 2 = 2"
-        },
-        {
-          input: "1\n5",
-          output: "5",
-          explanation: "Sum: 5 = 5"
-        },
-        {
-          input: "5\n10 -5 3 -2 4",
-          output: "10",
-          explanation: "Sum: 10 + (-5) + 3 + (-2) + 4 = 10"
-        }
-      ],
-      hints: "1. Use a loop to iterate through all elements\n2. Keep a running sum variable\n3. Handle negative numbers correctly"
-    },
-    'sorting': {
-      title: "Array Sorting Challenge",
-      description: "Given an array of integers, sort the array in ascending order and return the sorted result. You can use any sorting algorithm or built-in functions.",
-      inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
-      outputFormat: "Single line with n space-separated integers in ascending order",
-      constraints: "1 ≤ n ≤ 1000\n-1000 ≤ each element ≤ 1000",
-      examples: "Input:\n5\n3 1 4 1 5\n\nOutput:\n1 1 3 4 5\n\nExplanation: Elements arranged in ascending order",
-      testCases: [
-        {
-          input: "5\n3 1 4 1 5",
-          output: "1 1 3 4 5",
-          explanation: "Elements sorted in ascending order"
-        },
-        {
-          input: "3\n-1 0 1",
-          output: "-1 0 1",
-          explanation: "Already sorted array"
-        },
-        {
-          input: "1\n42",
-          output: "42",
-          explanation: "Single element array"
-        },
-        {
-          input: "4\n10 5 2 8",
-          output: "2 5 8 10",
-          explanation: "Sort: [10,5,2,8] → [2,5,8,10]"
-        }
-      ],
-      hints: "1. Use built-in sort or implement your own\n2. Handle negative numbers properly\n3. Output space-separated values"
-    },
-    'strings': {
-      title: "String Reversal",
-      description: "Given a string, return the string with its characters in reverse order. This tests basic string manipulation skills.",
-      inputFormat: "Single line containing a string (may include spaces)",
-      outputFormat: "Single line containing the reversed string",
-      constraints: "1 ≤ string length ≤ 1000\nString may contain letters, digits, spaces, and punctuation",
-      examples: "Input:\nhello world\n\nOutput:\ndlrow olleh\n\nExplanation: Characters are reversed position by position",
-      testCases: [
-        {
-          input: "hello",
-          output: "olleh",
-          explanation: "Reverse each character: h-e-l-l-o → o-l-l-e-h"
-        },
-        {
-          input: "abc 123",
-          output: "321 cba",
-          explanation: "Reverse including spaces: 'abc 123' → '321 cba'"
-        },
-        {
-          input: "a",
-          output: "a",
-          explanation: "Single character remains the same"
-        },
-        {
-          input: "Programming",
-          output: "gnimmargorP",
-          explanation: "Reverse: Programming → gnimmargorP"
-        }
-      ],
-      hints: "1. Iterate from end to beginning\n2. Build result character by character\n3. Preserve all characters including spaces"
-    }
-  };
-
-  // Get topic-specific problem or create generic one
-  const specificProblem = problems[topic];
-  if (specificProblem) {
-    return {
-      ...specificProblem,
-      difficulty: difficulty,
-      topic: topic
-    };
-  }
-
-  // Generic fallback
-  return {
-    title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} Programming Challenge`,
-    description: `A ${difficulty} level programming problem focusing on ${topic}. Read a number from input and output the same number to test basic input/output handling.`,
-    inputFormat: "Single integer n",
-    outputFormat: "Single integer n",
-    constraints: "1 ≤ n ≤ 100",
-    examples: "Input:\n5\n\nOutput:\n5\n\nExplanation: Echo the input number",
-    testCases: [
-      {
-        input: "5",
-        output: "5",
-        explanation: "Echo the input number as output"
-      },
-      {
-        input: "10",
-        output: "10",
-        explanation: "Output the same value as input"
-      },
-      {
-        input: "1",
-        output: "1",
-        explanation: "Simple input-output test"
-      },
-      {
-        input: "42",
-        output: "42",
-        explanation: "Test with a different number"
-      }
-    ],
-    difficulty: difficulty,
-    topic: topic,
-    hints: "1. Read the input carefully\n2. Output the exact same value\n3. Check input/output format requirements"
-  };
-}
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -1153,12 +918,12 @@ app.get('/fetchProblem', async (req, res) => {
 // Store user's question response
 app.post('/api/store-qa', async (req, res) => {
   const { sessionId, userId, questionData, userAnswer, isCorrect } = req.body;
-
+  
   console.log(`💾 Storing Q&A: Session ${sessionId}, User ${userId}, Correct: ${isCorrect}`);
-
+  
   try {
     storeQuestionAnswer(sessionId, userId, questionData, userAnswer, isCorrect);
-
+    
     res.json({
       success: true,
       message: 'Q&A stored successfully',
@@ -1180,13 +945,13 @@ app.post('/api/store-qa', async (req, res) => {
 app.get('/api/qa-history/:userId', (req, res) => {
   const { userId } = req.params;
   const { limit = 50 } = req.query;
-
+  
   console.log(`📚 Fetching Q&A history for user: ${userId}`);
-
+  
   try {
     const userHistory = questionAnswerStorage.userResponses.get(userId) || [];
     const limitedHistory = userHistory.slice(-parseInt(limit));
-
+    
     res.json({
       success: true,
       history: limitedHistory,
@@ -1205,19 +970,19 @@ app.get('/api/qa-history/:userId', (req, res) => {
 // Get session details
 app.get('/api/session/:sessionId', (req, res) => {
   const { sessionId } = req.params;
-
+  
   console.log(`🔍 Fetching session details: ${sessionId}`);
-
+  
   try {
     const sessionData = questionAnswerStorage.sessions.get(sessionId);
-
+    
     if (!sessionData) {
       return res.status(404).json({
         success: false,
         error: 'Session not found'
       });
     }
-
+    
     res.json({
       success: true,
       session: sessionData,
@@ -1235,7 +1000,7 @@ app.get('/api/session/:sessionId', (req, res) => {
 // Get Q&A analytics
 app.get('/api/qa-analytics', (req, res) => {
   console.log('📊 Fetching Q&A analytics');
-
+  
   try {
     const analytics = {
       ...questionAnswerStorage.analytics,
@@ -1246,7 +1011,7 @@ app.get('/api/qa-analytics', (req, res) => {
         averageCorrectRate: calculateAverageCorrectRate()
       }
     };
-
+    
     res.json({
       success: true,
       analytics
@@ -1263,7 +1028,7 @@ app.get('/api/qa-analytics', (req, res) => {
 function calculateUserAccuracy(userId) {
   const userHistory = questionAnswerStorage.userResponses.get(userId) || [];
   if (userHistory.length === 0) return 0;
-
+  
   const correctAnswers = userHistory.filter(response => response.isCorrect).length;
   return (correctAnswers / userHistory.length) * 100;
 }
@@ -1272,7 +1037,7 @@ function calculateSessionAnalytics(sessionData) {
   const totalQuestions = sessionData.questions.length;
   const correctAnswers = sessionData.questions.filter(q => q.isCorrect).length;
   const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-
+  
   return {
     totalQuestions,
     correctAnswers,
@@ -1285,17 +1050,17 @@ function calculateSessionAnalytics(sessionData) {
 
 function calculateSessionDuration(sessionData) {
   if (sessionData.questions.length === 0) return 0;
-
+  
   const startTime = new Date(sessionData.startTime);
   const lastAnswerTime = new Date(sessionData.questions[sessionData.questions.length - 1].answeredAt);
-
+  
   return Math.round((lastAnswerTime - startTime) / 1000); // Duration in seconds
 }
 
 function calculateAverageCorrectRate() {
   const allQuestions = Array.from(questionAnswerStorage.questionBank.values());
   if (allQuestions.length === 0) return 0;
-
+  
   const totalCorrectRate = allQuestions.reduce((sum, q) => sum + (q.correctRate || 0), 0);
   return (totalCorrectRate / allQuestions.length) * 100;
 }

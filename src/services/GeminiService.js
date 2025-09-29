@@ -1,17 +1,13 @@
 //nmkrspvlidata
 //radhakrishna
-// RAPIDAPI INTEGRATION - AI SERVICE API CALLS
-// NMKRSPVLIDATAPERMANENT - RapidAPI Integration
-import LocalMCQService from './LocalMCQService.js';
+// SIMPLE GEMINI SERVICE - DIRECT API CALLS
+// NMKRSPVLIDATAPERMANENT - No more n8n complexity!
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL + '/api' ||
   (process.env.NODE_ENV === 'production' 
-    ? '/api'  // Use proxy in development
-    : '/api');
-
-const RAPIDAPI_KEY = import.meta.env.VITE_RAPIDAPI_KEY || 'li690033ea2mshd19e1cbf16ab7e6p15099ajsnb73c9a715dc5';
-const RAPIDAPI_HOST = import.meta.env.VITE_RAPIDAPI_HOST || 'acemyinterview.onrender.com';
+    ? 'https://acemyinterview.onrender.com/api'  // Render Backend URL
+    : 'http://localhost:5000/api');
 
 class GeminiService {
   // 🌟 MOTIVATIONAL QUOTES FOR LOADING STATES
@@ -120,16 +116,14 @@ class GeminiService {
   }
 
   static async getMCQQuestions(topic, difficulty = 'medium', count = 5) {
-    console.log('🎯 GeminiService: Generating MCQ Questions via RapidAPI');
-    console.log(`📚 Topic: ${typeof topic === 'object' ? JSON.stringify(topic) : topic}, Difficulty: ${difficulty}, Count: ${count}`);
+    console.log('🎯 GeminiService: Generating MCQ Questions');
+    console.log(`📚 Topic: ${topic}, Difficulty: ${difficulty}, Count: ${count}`);
 
     try {
       const response = await fetch(`${API_BASE_URL}/mcq-questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': RAPIDAPI_HOST
         },
         body: JSON.stringify({
           topic,
@@ -137,10 +131,6 @@ class GeminiService {
           count
         })
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
 
       const data = await response.json();
       console.log('✅ MCQ Response:', data);
@@ -157,36 +147,19 @@ class GeminiService {
     } catch (error) {
       console.error('❌ MCQ Generation Error:', error);
       
-      // Enhanced error handling for CORS and network issues
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch') || error.message.includes('ERR_FAILED')) {
-        console.log('🔄 CORS/Network error detected, using local MCQ service');
-        
-        // Use local service for immediate functionality
-        try {
-          const localResponse = await LocalMCQService.generateMCQQuestions(topic, difficulty, count);
-          return {
-            ...localResponse,
-            note: 'Using local questions due to server connectivity issues'
-          };
-        } catch (localError) {
-          console.error('Local service also failed:', localError);
-        }
-      }
-      
-      // Fallback to static questions if everything else fails
-      const fallbackQuestions = this.getFallbackMCQs(topic, count);
+      // Simple fallback questions
       return {
-        success: true, // Changed to true so app continues working
-        questions: fallbackQuestions,
-        source: 'fallback',
-        note: 'Using offline questions due to server connectivity'
+        success: false,
+        error: error.message,
+        questions: this.getFallbackMCQs(topic, count),
+        source: 'fallback'
       };
     }
   }
 
   static async generateInterviewQuestions(topic, difficulty = 'medium', count = 5) {
     console.log('🎯 GeminiService: Generating Interview Questions');
-    console.log(`📚 Topic: ${typeof topic === 'object' ? JSON.stringify(topic) : topic}, Difficulty: ${difficulty}, Count: ${count}`);
+    console.log(`📚 Topic: ${topic}, Difficulty: ${difficulty}, Count: ${count}`);
 
     try {
       // For Face-to-Face interviews, we can reuse the MCQ generation
@@ -208,43 +181,20 @@ class GeminiService {
     } catch (error) {
       console.error('❌ Interview Questions Error:', error);
       
-      // Enhanced error handling for CORS and network issues  
-      if (error.message.includes('CORS') || error.message.includes('Failed to fetch') || error.message.includes('ERR_FAILED')) {
-        console.log('🔄 CORS/Network error detected, using local MCQ service for interview questions');
-        
-        // Use local service for immediate functionality
-        try {
-          const localResponse = await LocalMCQService.generateMCQQuestions(topic, difficulty, count);
-          return {
-            success: true,
-            questions: localResponse.questions.map(q => ({
-              ...q,
-              type: 'face-to-face',
-              expectedDuration: '2-3 minutes'
-            })),
-            source: 'local-service',
-            note: 'Using local questions due to server connectivity issues'
-          };
-        } catch (localError) {
-          console.error('Local service also failed:', localError);
-        }
-      }
-      
       // Fallback interview questions
       return {
-        success: true, // Changed to true to keep app working
+        success: false,
+        error: error.message,
         questions: this.getFallbackInterviewQuestions(topic, count),
-        source: 'fallback',
-        note: 'Using offline questions due to server connectivity'
+        source: 'fallback'
       };
     }
   }
 
   static async getCodingProblem(topic, difficulty = 'medium', language = 'javascript') {
-    console.log('🎯 GeminiService: Generating Coding Problem via RapidAPI');
+    console.log('🎯 GeminiService: Generating Coding Problem');
     console.log(`💻 Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
     console.log(`🌐 API Base URL: ${API_BASE_URL}`);
-    console.log(`🔑 RapidAPI Key: ${RAPIDAPI_KEY ? 'SET' : 'NOT SET'}`);
 
     try {
       // Create an AbortController for timeout control
@@ -255,8 +205,6 @@ class GeminiService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': RAPIDAPI_HOST
         },
         body: JSON.stringify({
           topic,
@@ -440,182 +388,40 @@ class GeminiService {
 
   // Simple fallback coding problem
   static getFallbackCodingProblem(topic, difficulty) {
-    const problems = {
-      'arrays': {
-        easy: {
-          title: "Sum of Array Elements",
-          description: "Given an array of integers, calculate and return the sum of all elements in the array. This is a fundamental array operation that tests your ability to iterate through arrays and perform basic arithmetic operations.",
-          inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
-          outputFormat: "Single integer representing the sum of all elements",
-          constraints: "1 ≤ n ≤ 1000\n-1000 ≤ elements ≤ 1000",
-          examples: "Input:\n3\n1 2 3\n\nOutput:\n6\n\nExplanation: 1 + 2 + 3 = 6",
-          testCases: [
-            { 
-              input: "3\n1 2 3", 
-              output: "6",
-              explanation: "Sum: 1 + 2 + 3 = 6"
-            },
-            { 
-              input: "4\n-1 0 1 2", 
-              output: "2",
-              explanation: "Sum: (-1) + 0 + 1 + 2 = 2"
-            },
-            { 
-              input: "1\n5", 
-              output: "5",
-              explanation: "Sum of single element: 5"
-            },
-            { 
-              input: "5\n10 -5 3 -2 4", 
-              output: "10",
-              explanation: "Sum: 10 + (-5) + 3 + (-2) + 4 = 10"
-            }
-          ],
-          hints: "1. Use a loop to iterate through all elements\n2. Keep a running sum variable\n3. Handle negative numbers correctly"
-        },
-        medium: {
-          title: "Maximum Subarray Sum",
-          description: "Find the contiguous subarray within a one-dimensional array of numbers that has the largest sum. This classic problem tests your understanding of dynamic programming and optimal substructure.",
-          inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
-          outputFormat: "Single integer representing the maximum sum of any contiguous subarray",
-          constraints: "1 ≤ n ≤ 10000\n-1000 ≤ elements ≤ 1000",
-          examples: "Input:\n6\n-2 1 -3 4 5 -1\n\nOutput:\n8\n\nExplanation: The subarray [4, 5] has the largest sum = 8",
-          testCases: [
-            { 
-              input: "6\n-2 1 -3 4 5 -1", 
-              output: "8",
-              explanation: "Maximum subarray [4, 5] has sum = 8"
-            },
-            { 
-              input: "4\n1 2 3 4", 
-              output: "10",
-              explanation: "All positive numbers: [1, 2, 3, 4] sum = 10"
-            },
-            { 
-              input: "3\n-1 -2 -3", 
-              output: "-1",
-              explanation: "All negative: best single element is -1"
-            },
-            { 
-              input: "1\n5", 
-              output: "5",
-              explanation: "Single element array"
-            }
-          ],
-          hints: "1. Consider Kadane's algorithm\n2. Track both current and maximum sum\n3. Handle all negative numbers case"
-        }
-      },
-      'sorting': {
-        easy: {
-          title: "Sort Array in Ascending Order",
-          description: "Given an array of integers, sort the array in ascending order and return the sorted array. You can use any sorting algorithm of your choice.",
-          inputFormat: "First line contains n (number of elements)\nSecond line contains n space-separated integers",
-          outputFormat: "Single line with n space-separated integers in ascending order",
-          constraints: "1 ≤ n ≤ 1000\n-1000 ≤ elements ≤ 1000",
-          examples: "Input:\n5\n3 1 4 1 5\n\nOutput:\n1 1 3 4 5\n\nExplanation: Elements arranged in ascending order",
-          testCases: [
-            { 
-              input: "5\n3 1 4 1 5", 
-              output: "1 1 3 4 5",
-              explanation: "Sorted in ascending order"
-            },
-            { 
-              input: "3\n-1 0 1", 
-              output: "-1 0 1",
-              explanation: "Already sorted array"
-            },
-            { 
-              input: "1\n42", 
-              output: "42",
-              explanation: "Single element"
-            },
-            { 
-              input: "4\n10 5 2 8", 
-              output: "2 5 8 10",
-              explanation: "Sort [10,5,2,8] → [2,5,8,10]"
-            }
-          ],
-          hints: "1. Use built-in sort function or implement bubble/selection sort\n2. Remember to handle negative numbers\n3. Output space-separated values"
-        }
-      },
-      'strings': {
-        easy: {
-          title: "Reverse a String",
-          description: "Given a string, return the string with its characters reversed. This tests basic string manipulation and iteration skills.",
-          inputFormat: "Single line containing a string (may contain spaces)",
-          outputFormat: "Single line containing the reversed string",
-          constraints: "1 ≤ string length ≤ 1000\nString may contain letters, digits, and spaces",
-          examples: "Input:\nhello world\n\nOutput:\ndlrow olleh\n\nExplanation: Each character position is reversed",
-          testCases: [
-            { 
-              input: "hello", 
-              output: "olleh",
-              explanation: "Reverse: h-e-l-l-o → o-l-l-e-h"
-            },
-            { 
-              input: "abc 123", 
-              output: "321 cba",
-              explanation: "Reverse with spaces: 'abc 123' → '321 cba'"
-            },
-            { 
-              input: "a", 
-              output: "a",
-              explanation: "Single character"
-            },
-            { 
-              input: "racecar", 
-              output: "racecar",
-              explanation: "Palindrome remains same when reversed"
-            }
-          ],
-          hints: "1. Iterate from end to beginning\n2. Build result string character by character\n3. Handle spaces and special characters"
-        }
-      }
-    };
+    const testCases = [
+      { input: "5", output: "5" },
+      { input: "10", output: "10" },
+      { input: "1", output: "1" }
+    ];
 
-    // Get specific problem or default
-    const topicProblems = problems[topic];
-    if (topicProblems && topicProblems[difficulty]) {
+    if (topic === 'arrays') {
       return {
-        ...topicProblems[difficulty],
+        title: "Sum of Array Elements",
+        description: "Write a function that takes an array of integers and returns the sum of all elements.",
+        inputFormat: "First line contains n (number of elements), followed by n integers.",
+        outputFormat: "Single integer representing the sum.",
+        constraints: "1 ≤ n ≤ 1000, -1000 ≤ elements ≤ 1000",
+        examples: "Input: 3\n1 2 3\nOutput: 6",
+        testCases: [
+          { input: "3\n1 2 3", output: "6" },
+          { input: "4\n-1 0 1 2", output: "2" },
+          { input: "1\n5", output: "5" }
+        ],
         difficulty: difficulty,
         topic: topic
       };
     }
 
-    // Generic fallback
     return {
-      title: `${topic.charAt(0).toUpperCase() + topic.slice(1)} Programming Challenge`,
-      description: `A ${difficulty} level programming problem focusing on ${topic}. Write a program that reads a number and outputs the same number. This is a template problem to test your basic input/output handling.`,
+      title: `${topic} Challenge - Echo Number`,
+      description: `A simple ${difficulty} level problem: Read a number and output the same number.`,
       inputFormat: "Single integer n",
       outputFormat: "Single integer n", 
       constraints: "1 ≤ n ≤ 100",
-      examples: "Input:\n5\n\nOutput:\n5\n\nExplanation: Simply echo the input number",
-      testCases: [
-        { 
-          input: "5", 
-          output: "5",
-          explanation: "Echo the input number"
-        },
-        { 
-          input: "10", 
-          output: "10",
-          explanation: "Output same as input"
-        },
-        { 
-          input: "1", 
-          output: "1",
-          explanation: "Basic input-output test"
-        },
-        { 
-          input: "42", 
-          output: "42",
-          explanation: "Another test case"
-        }
-      ],
+      examples: "Input: 5\nOutput: 5",
+      testCases: testCases,
       difficulty: difficulty,
-      topic: topic,
-      hints: "1. Read the input number\n2. Print the same number\n3. Handle input/output format correctly"
+      topic: topic
     };
   }
 }

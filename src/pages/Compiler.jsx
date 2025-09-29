@@ -1,10 +1,10 @@
 // NMKRSPVLIDATAPERMAENENT
 // AMMANANNAPERMANENENT
 import React from 'react';
-import CompilerPageEnhanced from '../components/CompilerPageEnhanced.jsx';
+import CompilerPage from '../components/CompilerPage.jsx';
 
 const Compiler = () => {
-  return <CompilerPageEnhanced />;
+  return <CompilerPage />;
 };
 
 export default Compiler;

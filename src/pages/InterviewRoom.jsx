@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import { toast } from "react-toastify";
 import { useAuth } from '../components/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -458,18 +459,90 @@ const InterviewRoom = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-1 py-2 md:py-6 md:px-4">
-      {/* Top Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-4 py-2 md:py-4 bg-black border-b border-gray-700" style={{maxWidth:'100vw'}}>
+    <motion.div 
+      className="min-h-screen bg-gradient-to-br from-white via-blue-50/30 to-white text-black px-1 py-2 md:py-6 md:px-4 flex flex-col items-center justify-center relative overflow-hidden"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Professional Background Decorations with Floating Animations */}
+      <motion.div 
+        className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-100/40 to-transparent rounded-full blur-3xl -translate-x-48 -translate-y-48"
+        animate={{ 
+          x: [-48, -30, -48],
+          y: [-48, -30, -48],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ 
+          duration: 20, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      />
+      <motion.div 
+        className="absolute top-1/3 right-0 w-80 h-80 bg-gradient-to-bl from-blue-200/30 to-transparent rounded-full blur-3xl translate-x-40"
+        animate={{ 
+          x: [40, -20, 40],
+          y: [-30, 30, -30],
+          scale: [1, 1.2, 1]
+        }}
+        transition={{ 
+          duration: 25, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 5
+        }}
+      />
+      <motion.div 
+        className="absolute bottom-0 left-1/3 w-72 h-72 bg-gradient-to-tr from-purple-200/25 to-transparent rounded-full blur-3xl translate-y-36"
+        animate={{ 
+          x: [-30, 30, -30],
+          y: [36, 10, 36],
+          scale: [1, 1.15, 1]
+        }}
+        transition={{ 
+          duration: 18, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 10
+        }}
+      />
+      {/* Professional Top Bar */}
+      <motion.div 
+        className="fixed top-0 left-0 right-0 z-50 w-full flex items-center justify-between px-4 py-2 md:py-4 bg-white/90 backdrop-blur-sm border-b border-blue-200/50 shadow-lg" 
+        style={{maxWidth:'100vw'}}
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <div className="flex items-center gap-3">
-          <img src="/src/assets/Logo.jpg" alt="Logo" className="w-8 h-8 rounded" />
-          {/* Fix: topic is always a string */}
-          <span className="text-lg md:text-xl font-bold text-white">{topic}</span>
+          <motion.img 
+            src="/src/assets/Logo.jpg" 
+            alt="Logo" 
+            className="w-8 h-8 rounded-lg shadow-md" 
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            transition={{ duration: 0.2 }}
+          />
+          <motion.span 
+            className="text-lg md:text-xl font-bold text-blue-700"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            {topic}
+          </motion.span>
         </div>
         <div className="flex-1 flex justify-center">
-          <span className="bg-green-600 text-white font-bold px-4 py-1 rounded-full text-sm md:text-base">
+          <motion.span 
+            className="bg-gradient-to-r from-green-500 to-green-600 text-white font-bold px-6 py-2 rounded-full text-sm md:text-base shadow-lg"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+            whileHover={{ scale: 1.05 }}
+          >
             {`${String(Math.floor(timer / 60)).padStart(2, '0')}:${String(timer % 60).padStart(2, '0')}`}
-          </span>
+          </motion.span>
         </div>
         <div className="flex items-center gap-3">
           {/* Network Status Indicator */}
@@ -482,36 +555,80 @@ const InterviewRoom = () => {
             {isOnline ? 'Online' : 'Offline'}
           </div>
           
-          <button
+          <motion.button
             onClick={() => setShowVoiceSettings(!showVoiceSettings)}
-            className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
+            className="p-2 bg-blue-600/20 hover:bg-blue-600/30 rounded-full transition-colors border border-blue-300/50"
             title="Voice Settings"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 14.142M9 12a1 1 0 011-1h4a1 1 0 011 1v0a1 1 0 01-1 1h-4a1 1 0 01-1-1v0z" />
             </svg>
-          </button>
+          </motion.button>
           <div className="text-right">
-            <p className="font-semibold text-white">{user?.displayName || 'User'}</p>
-            <p className="text-xs text-gray-300">{user?.email || ''}</p>
+            <p className="font-semibold text-blue-700">{user?.displayName || 'User'}</p>
+            <p className="text-xs text-gray-600">{user?.email || ''}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center">
+          <motion.div 
+            className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center shadow-lg"
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            transition={{ duration: 0.2 }}
+          >
             <img src="https://cdn-icons-png.flaticon.com/512/9203/9203764.png" alt="User" className="w-8 h-8 rounded" />
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
       {/* Main Area */}
-      <div className="w-full max-w-6xl flex flex-col md:flex-row gap-4 bg-black rounded-b-3xl pb-4 md:pb-8 px-2 md:px-8 mt-20">
+      <motion.div 
+        className="w-full max-w-6xl flex flex-col md:flex-row gap-4 bg-white/80 backdrop-blur-sm rounded-3xl pb-4 md:pb-8 px-2 md:px-8 mt-20 shadow-2xl border border-blue-200/50 relative z-10"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
+      >
         {/* Center: AI & User Video */}
-        <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-6 py-4">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-32 h-32 md:w-40 md:h-40 bg-[#2d2233] rounded-full flex items-center justify-center border-4 border-white shadow-lg">
-              <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="AI" className="w-24 h-24 md:w-32 md:h-32" />
-            </div>
-            <span className="text-white font-semibold mt-2">AI Interviewer</span>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-lg">
+        <div className="flex-1 flex flex-col md:flex-row items-center justify-center gap-8 py-6">
+          <motion.div 
+            className="flex flex-col items-center gap-3"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+          >
+            <motion.div 
+              className="w-36 h-36 md:w-44 md:h-44 bg-gradient-to-br from-blue-600 to-purple-700 rounded-full flex items-center justify-center border-4 border-white shadow-2xl relative overflow-hidden"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/30 to-purple-600/30 animate-pulse"></div>
+              <motion.img 
+                src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" 
+                alt="AI" 
+                className="w-28 h-28 md:w-36 md:h-36 relative z-10" 
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </motion.div>
+            <motion.span 
+              className="text-blue-700 font-bold text-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+            >
+              AI Interviewer
+            </motion.span>
+          </motion.div>
+          
+          <motion.div 
+            className="flex flex-col items-center gap-3"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
+          >
+            <motion.div 
+              className="w-36 h-36 md:w-44 md:h-44 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full overflow-hidden flex items-center justify-center border-4 border-white shadow-2xl relative"
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.3 }}
+            >
               {camera ? (
                 <Webcam
                   key={camera}
@@ -520,13 +637,16 @@ const InterviewRoom = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-black">User live video</span>
+                <span className="text-gray-700 font-semibold text-center px-2">User Live Video</span>
               )}
-            </div>
-            <select
+              <div className="absolute inset-0 border-2 border-blue-400/50 rounded-full animate-pulse"></div>
+            </motion.div>
+            <motion.select
               value={camera}
               onChange={(e) => setCamera(e.target.value)}
-              className="w-32 px-2 py-1 rounded-lg bg-white text-gray-800 font-semibold shadow focus:outline-none text-xs md:text-base mt-1"
+              className="w-40 px-3 py-2 rounded-xl bg-white/90 backdrop-blur-sm text-gray-800 font-semibold shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-400/50 text-sm border border-blue-200/50"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
             >
               {cameras.length === 0 && <option>No camera found</option>}
               {cameras.map((c) => (
@@ -534,163 +654,365 @@ const InterviewRoom = () => {
                   {c.label || `Camera ${c.deviceId.slice(-4)}`}
                 </option>
               ))}
-            </select>
-          </div>
+            </motion.select>
+          </motion.div>
         </div>
         {/* Right: Transcript/Chat */}
-        <div className="w-full md:w-1/3 bg-[#231f24] rounded-2xl p-3 md:p-5 flex flex-col min-h-[300px] max-h-[420px] overflow-y-auto border border-gray-700">
-          <h2 className="text-white text-lg font-bold mb-2">Interview Transcript</h2>
-          <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-1">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}>
-                <div className={`px-3 py-2 rounded-xl max-w-[90%] text-xs md:text-sm shadow ${msg.role === 'ai' ? 'bg-[#3a2c4d] text-green-300' : 'bg-[#e9d5ff] text-black'}`}>
-                  <span className="block font-semibold mb-1">{msg.role === 'ai' ? 'AI' : 'You'}</span>
-                  <span>{msg.text}</span>
-                </div>
-              </div>
-            ))}
+        <motion.div 
+          className="w-full md:w-1/3 bg-white/70 backdrop-blur-sm rounded-2xl p-4 md:p-6 flex flex-col min-h-[350px] max-h-[450px] overflow-y-auto border border-blue-200/50 shadow-xl"
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1, duration: 0.6 }}
+        >
+          <motion.h2 
+            className="text-blue-700 text-xl font-bold mb-4 flex items-center gap-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.5 }}
+          >
+            <span className="text-2xl">💬</span>
+            Interview Transcript
+          </motion.h2>
+          <div className="flex-1 flex flex-col gap-3 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-transparent">
+            <AnimatePresence>
+              {messages.map((msg, idx) => (
+                <motion.div 
+                  key={idx} 
+                  className={`flex ${msg.role === 'ai' ? 'justify-start' : 'justify-end'}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <div className={`px-4 py-3 rounded-2xl max-w-[88%] text-sm shadow-lg ${
+                    msg.role === 'ai' 
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
+                      : 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
+                  }`}>
+                    <span className="block font-bold mb-1 text-xs opacity-90">
+                      {msg.role === 'ai' ? '🤖 AI' : '👤 You'}
+                    </span>
+                    <span className="leading-relaxed">{msg.text}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
             {loading && (
-              <div className="flex justify-start">
-                <div className="px-3 py-2 rounded-xl bg-[#3a2c4d] text-green-300 max-w-[90%] text-xs md:text-sm shadow">
-                  <span className="block font-semibold mb-1">AI</span>
-                  <span>Typing...</span>
+              <motion.div 
+                className="flex justify-start"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="px-4 py-3 rounded-2xl bg-gradient-to-r from-blue-400 to-blue-500 text-white max-w-[88%] text-sm shadow-lg">
+                  <span className="block font-bold mb-1 text-xs opacity-90">🤖 AI</span>
+                  <span className="flex items-center gap-2">
+                    Typing
+                    <motion.span
+                      animate={{ opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      ...
+                    </motion.span>
+                  </span>
                 </div>
-              </div>
+              </motion.div>
             )}
             <div ref={chatEndRef} />
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
       {/* Bottom Bar */}
-      <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-4 mt-4 px-2">
-        <button
-          className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow transition"
+      <motion.div 
+        className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-6 mt-6 px-2"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.4, duration: 0.6 }}
+      >
+        <motion.button
+          className="group relative w-full md:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-10 rounded-2xl text-lg shadow-xl border-none focus:outline-none focus:ring-4 focus:ring-blue-300/50 overflow-hidden"
           onClick={() => setShowInput(true)}
           disabled={loading || !canAnswer}
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.2 }}
         >
-          {isOnline ? 'Click to answer' : 'Type answer (Offline)'}
-        </button>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <span className="relative z-10 flex items-center gap-3">
+            <span className="text-xl">💭</span>
+            {isOnline ? 'Click to Answer' : 'Type Answer (Offline)'}
+          </span>
+          <motion.div
+            className="absolute top-0 left-0 h-full w-8 bg-white opacity-20 transform -skew-x-12"
+            animate={{ x: [-50, 350] }}
+            transition={{ 
+              duration: 2.5, 
+              repeat: Infinity, 
+              repeatDelay: 4,
+              ease: "easeInOut" 
+            }}
+          />
+        </motion.button>
         
         {/* Voice Recording Button with status indicator */}
-        <div className="flex flex-col items-center gap-2">
-          <button
-            className={`w-full md:w-auto font-bold py-3 px-8 rounded-full text-lg shadow transition ${
+        <div className="flex flex-col items-center gap-3">
+          <motion.button
+            className={`group relative w-full md:w-auto font-bold py-4 px-10 rounded-2xl text-lg shadow-xl border-none focus:outline-none focus:ring-4 overflow-hidden transition-all duration-300 ${
               !isOnline 
-                ? 'bg-gray-500 text-white cursor-not-allowed' 
+                ? 'bg-gray-400 text-white cursor-not-allowed focus:ring-gray-300/50' 
                 : speechFailures >= 3
-                  ? 'bg-yellow-600 text-white cursor-not-allowed'
+                  ? 'bg-yellow-500 text-white cursor-not-allowed focus:ring-yellow-300/50'
                 : isRecording 
-                  ? 'bg-red-600 hover:bg-red-700 text-white' 
-                  : 'bg-green-600 hover:bg-green-700 text-white'
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white focus:ring-red-300/50' 
+                  : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white focus:ring-green-300/50'
             }`}
             onClick={!isOnline || speechFailures >= 3 ? null : (isRecording ? stopRecording : startRecording)}
             disabled={loading || !canAnswer || !isOnline || speechFailures >= 3}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
           >
-            {!isOnline ? 'Voice Unavailable (Offline)' : 
-             speechFailures >= 3 ? '⚠️ Voice Service Issues' :
-             isRecording ? '🔴 Stop Recording' : '🎤 Record Voice'}
-          </button>
+            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+              isRecording 
+                ? 'bg-gradient-to-r from-red-400 to-red-500' 
+                : 'bg-gradient-to-r from-green-400 to-green-500'
+            }`}></div>
+            <span className="relative z-10 flex items-center gap-3">
+              {!isOnline ? (
+                <>🚫 Voice Unavailable (Offline)</>
+              ) : speechFailures >= 3 ? (
+                <>⚠️ Voice Service Issues</>
+              ) : isRecording ? (
+                <>🔴 Stop Recording</>
+              ) : (
+                <>🎤 Record Voice</>
+              )}
+            </span>
+          </motion.button>
           
           {/* Connection/Service status indicator */}
-          {!isOnline ? (
-            <span className="text-xs text-red-400 text-center">
-              Internet required for voice recognition
-            </span>
-          ) : speechFailures >= 3 ? (
-            <span className="text-xs text-yellow-400 text-center">
-              Multiple speech errors detected. Use text input.
-            </span>
-          ) : speechFailures > 0 ? (
-            <span className="text-xs text-orange-400 text-center">
-              Speech service having issues. Try text input.
-            </span>
-          ) : null}
+          <AnimatePresence>
+            {!isOnline ? (
+              <motion.span 
+                className="text-xs text-red-500 text-center px-3 py-1 bg-red-50 rounded-full"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                Internet required for voice recognition
+              </motion.span>
+            ) : speechFailures >= 3 ? (
+              <motion.span 
+                className="text-xs text-yellow-600 text-center px-3 py-1 bg-yellow-50 rounded-full"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                Multiple speech errors detected. Use text input.
+              </motion.span>
+            ) : speechFailures > 0 ? (
+              <motion.span 
+                className="text-xs text-orange-600 text-center px-3 py-1 bg-orange-50 rounded-full"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                Speech service having issues. Try text input.
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
         </div>
         
-        <button
-          className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow transition"
+        <motion.button
+          className="group relative w-full md:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-4 px-10 rounded-2xl text-lg shadow-xl border-none focus:outline-none focus:ring-4 focus:ring-red-300/50 overflow-hidden"
           onClick={() => {
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             navigate('/mock-interviews');
           }}
+          whileHover={{ scale: 1.02, y: -2 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.2 }}
         >
-          End Interview
-        </button>
-      </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          <span className="relative z-10 flex items-center gap-3">
+            <span className="text-xl">🏁</span>
+            End Interview
+          </span>
+        </motion.button>
+      </motion.div>
       {/* Answer Input Modal */}
-      {showInput && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" style={{ backdropFilter: 'blur(2px)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-4">
-            <h3 className="text-xl font-bold text-center text-gray-800 mb-2">Your Answer</h3>
-            <textarea
-              className="w-full min-h-[80px] rounded-lg border border-gray-300 p-3 text-gray-800 focus:outline-none focus:border-blue-400"
-              placeholder="Type your answer or use Record..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => { handleSend(input); setShowInput(false); }}
-                disabled={loading || !input.trim()}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg shadow transition disabled:opacity-60"
+      <AnimatePresence>
+        {showInput && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowInput(false)}
+          >
+            <motion.div 
+              className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-lg mx-4 flex flex-col gap-6 border border-blue-200/50 relative overflow-hidden"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/30 to-blue-200/30 rounded-full opacity-50 transform translate-x-16 -translate-y-16"></div>
+              <motion.h3 
+                className="text-2xl font-bold text-center text-blue-700 mb-2"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
               >
-                Send
-              </button>
-              <button
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={loading}
-                className={`flex-1 ${isRecording ? 'bg-red-500' : 'bg-green-500'} text-white font-bold py-2 rounded-lg shadow transition`}
-              >
-                {isRecording ? 'Stop' : 'Record'}
-              </button>
-              <button
-                onClick={() => setShowInput(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded-lg shadow transition"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                💭 Your Answer
+              </motion.h3>
+              <motion.textarea
+                className="w-full min-h-[100px] rounded-xl border-2 border-blue-200/50 p-4 text-gray-800 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 backdrop-blur-sm bg-white/80 resize-none"
+                placeholder="Type your answer or use Record..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                autoFocus
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+              />
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={() => { handleSend(input); setShowInput(false); }}
+                  disabled={loading || !input.trim()}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-xl shadow-lg transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.4 }}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <span>📤</span>
+                    Send
+                  </span>
+                </motion.button>
+                <motion.button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={loading}
+                  className={`flex-1 font-bold py-3 rounded-xl shadow-lg transition-all duration-300 ${
+                    isRecording 
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white' 
+                      : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {isRecording ? (
+                      <>⏹️ Stop</>
+                    ) : (
+                      <>🎤 Record</>
+                    )}
+                  </span>
+                </motion.button>
+                <motion.button
+                  onClick={() => setShowInput(false)}
+                  className="flex-1 bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-gray-800 font-bold py-3 rounded-xl shadow-lg transition-all duration-300"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                >
+                  ❌ Cancel
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Voice Settings Modal */}
-      {showVoiceSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60" style={{ backdropFilter: 'blur(2px)' }}>
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800">AI Voice Settings</h3>
-              <button
-                onClick={() => setShowVoiceSettings(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+      <AnimatePresence>
+        {showVoiceSettings && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowVoiceSettings(false)}
+          >
+            <motion.div 
+              className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-8 w-full max-w-lg mx-4 flex flex-col gap-6 border border-blue-200/50 relative overflow-hidden max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/30 to-blue-200/30 rounded-full opacity-50 transform translate-x-16 -translate-y-16"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-purple-100/30 to-purple-200/30 rounded-full opacity-50 transform -translate-x-12 translate-y-12"></div>
+              
+              <div className="flex items-center justify-between relative z-10">
+                <motion.h3 
+                  className="text-2xl font-bold text-blue-700 flex items-center gap-3"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                >
+                  <span className="text-3xl">🎛️</span>
+                  AI Voice Settings
+                </motion.h3>
+                <motion.button
+                  onClick={() => setShowVoiceSettings(false)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100/80 hover:bg-red-100/80 text-gray-600 hover:text-red-600 transition-all duration-200"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  initial={{ opacity: 0, rotate: -90 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </motion.button>
+              </div>
             
-            <div className="space-y-4">
+            <motion.div 
+              className="space-y-6 relative z-10"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
               {/* Voice Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Voice</label>
-                <select
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+              >
+                <label className="flex text-sm font-semibold text-blue-700 mb-3 items-center gap-2">
+                  <span className="text-lg">🎤</span>
+                  Voice Selection
+                </label>
+                <motion.select
                   value={voiceSettings.selectedVoiceName}
                   onChange={(e) => setVoiceSettings({...voiceSettings, selectedVoiceName: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-400"
+                  className="w-full p-3 border-2 border-blue-200/50 rounded-xl focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 bg-white/80 backdrop-blur-sm text-gray-800 font-medium"
+                  whileHover={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <option value="">Auto (Best Available)</option>
+                  <option value="">🔄 Auto (Best Available)</option>
                   {availableVoices
                     .filter(voice => voice.lang.startsWith('en-'))
                     .map(voice => (
                       <option key={voice.name} value={voice.name}>
-                        {voice.name} ({voice.lang})
+                        🔊 {voice.name} ({voice.lang})
                       </option>
                     ))
                   }
-                </select>
-              </div>
+                </motion.select>
+              </motion.div>
 
               {/* Speech Rate */}
               <div>
@@ -759,22 +1081,28 @@ const InterviewRoom = () => {
               </button>
 
               {/* Reset to Defaults */}
-              <button
+              <motion.button
                 onClick={() => setVoiceSettings({
                   rate: 0.9,
                   pitch: 1.0,
                   volume: 0.8,
                   selectedVoiceName: ''
                 })}
-                className="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors"
+                className="w-full bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 text-gray-800 font-bold py-3 rounded-xl shadow-lg transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8, duration: 0.4 }}
               >
-                Reset to Defaults
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                🔄 Reset to Defaults
+              </motion.button>
+            </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

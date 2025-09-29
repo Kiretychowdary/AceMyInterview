@@ -1,321 +1,489 @@
-// RADHAKRISHNALOVEPERMANENT
-// AMMALOVEBLESSINGSONRECURSION
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import image from '../assets/image.png';
+import RoundRoadmapModal from '../components/RoundRoadmapModal';
+import { getRoundsForTrack, rounds } from '../config/roundsConfig';
 
-const mockData = [
+const MockInterviews = () => {
+  const [showModeSelection, setShowModeSelection] = useState(false);
+  const [showSubTopics, setShowSubTopics] = useState(false);
+  const [selectedMock, setSelectedMock] = useState(null);
+  const [selectedMode, setSelectedMode] = useState(null);
+  const [selectedSubTopic, setSelectedSubTopic] = useState(null); // NEW: chosen subtopic before mode
+  const [selectedCategory, setSelectedCategory] = useState(null); // 'tech' | 'nonTech' | null
+  const [showRoadmap, setShowRoadmap] = useState(false);
+  const [selectedTrackKey, setSelectedTrackKey] = useState(null);
+  const navigate = useNavigate();
+
+  // Interview modes
+  const interviewModes = [
     {
-        title: 'Software Developer',
-        desc: 'Land top dev jobs with AI-powered software mock interview',
-        category: 'Tech',
-        img: "https://www.simplilearn.com/ice9/free_resources_article_thumb/What_is_System_Software.jpg",
-        subTopics: [
-            { name: 'DSA', desc: 'Data Structures & Algorithms' },
-            { name: 'OOPS', desc: 'Object Oriented Programming' },
-            { name: 'System Design', desc: 'System Design Concepts' },
-        ],
+      name: 'MCQ',
+      desc: 'Multiple Choice Questions',
+      icon: '📝',
+      route: '/mcq-interview'
     },
     {
+      name: 'Coding Compiler',
+      desc: 'Live Coding Practice',
+      icon: '💻',
+      route: '/compiler'
+    },
+    {
+      name: 'Interview Person to Person',
+      desc: 'AI Face-to-Face Interview',
+      icon: '🎭',
+      route: '/interview-room'
+    }
+  ];
+
+  // New unified tracks data replacing previous arrays
+  const tracks = {
+    tech: [
+      {
+        key: 'software-engineering',
+        title: 'Software Engineering',
+        desc: 'Coding, system design & problem solving',
+        category: 'Tech',
+        img: 'https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=400',
+        subTopics: [
+          { name: 'DSA', desc: 'Data Structures & Algorithms' },
+          { name: 'System Design', desc: 'High-level architecture' },
+          { name: 'OOP', desc: 'Object oriented principles' },
+          { name: 'Concurrency', desc: 'Threads, locks & scalability' },
+          { name: 'Testing', desc: 'Unit, integration & best practices' },
+          { name: 'Databases', desc: 'SQL vs NoSQL & indexing' },
+          { name: 'APIs & REST', desc: 'Designing robust APIs' },
+          { name: 'DevOps Basics', desc: 'CI/CD & deployment concepts' }
+        ]
+      },
+      {
+        key: 'cybersecurity',
         title: 'Cybersecurity',
-        desc: 'Ace cybersecurity interviews with AI-powered practice',
+        desc: 'Security fundamentals & threat analysis',
         category: 'Tech',
-        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_jvKBZOrTRmCR-BkOoZCVHuBm6UWhuOgFXg&s",
+        // Replaced previous low-resolution/unstable image with an HD Unsplash image
+        img: 'https://images.unsplash.com/photo-1605902711622-cfb43c4437b5',
         subTopics: [
-            { name: 'Network Security', desc: 'Network Security Fundamentals' },
-            { name: 'Ethical Hacking', desc: 'Ethical Hacking Concepts' },
-            { name: 'Cryptography', desc: 'Cryptography Basics' },
-        ],
-    },
-    {
-        title: 'Data Analyst',
-        desc: 'Nail your data analyst job with AI-powered mock interview',
+          { name: 'Network Security', desc: 'Protocols & defense' },
+          { name: 'Threat Modeling', desc: 'Vulnerabilities & risks' },
+            { name: 'Cryptography', desc: 'Encryption basics' },
+          { name: 'Incident Response', desc: 'Detection & mitigation' },
+          { name: 'Authentication', desc: 'Identity & access control' },
+          { name: 'Web App Security', desc: 'OWASP & exploitation patterns' }
+        ]
+      },
+      {
+        key: 'data-science',
+        title: 'Data Science',
+        desc: 'ML, analytics & data pipelines',
         category: 'Tech',
-        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6EHMWSFxexj_Gh4nFO6gRciVeQ7fvPnNVgg&s",
+        img: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400',
         subTopics: [
-            { name: 'Statistics', desc: 'Statistical Analysis & Data Interpretation' },
-            { name: 'SQL', desc: 'Database Queries & Management' },
-            { name: 'Python/R', desc: 'Programming for Data Analysis' },
-            { name: 'Data Visualization', desc: 'Charts, Graphs & Dashboards' },
-        ],
-    },
-    {
-        title: 'Product Manager',
-        desc: 'Practice Product Manager interview, get job-ready with AI',
-        category: 'Management',
-        img: "https://www.thebalancemoney.com/thmb/L1afcW7tPZ63D1xMRKfTTWPBUBQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/manager-interview-questions-and-best-answers-2061211-edit-088ce7c034524e5cbdc0ad763a46f5b4.jpg",
+          { name: 'SQL', desc: 'Queries & optimization' },
+          { name: 'Statistics', desc: 'Inference & probability' },
+          { name: 'ML Models', desc: 'Core algorithms' },
+          { name: 'Feature Engineering', desc: 'Data cleaning & prep' },
+          { name: 'Python/R', desc: 'Data manipulation' },
+          { name: 'Visualization', desc: 'Insights & storytelling' }
+        ]
+      }
+    ],
+    nonTech: [
+      {
+        key: 'product-management',
+        title: 'Product Management',
+        desc: 'Strategy, prioritization & delivery',
+        category: 'Non-Tech',
+        img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400',
         subTopics: [
-            { name: 'Product Strategy', desc: 'Product Vision & Roadmap Planning' },
-            { name: 'Market Research', desc: 'User Research & Market Analysis' },
-            { name: 'Analytics', desc: 'Product Metrics & Data Analysis' },
-            { name: 'Leadership', desc: 'Team Management & Communication' },
-        ],
-    },
-    {
-        title: 'HR Interview',
-        desc: 'Crack general HR interviews with mock practice',
-        category: 'General',
-        img: "data:image/jpeg;base64,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",
+          { name: 'Product Strategy', desc: 'Vision & roadmap' },
+          { name: 'User Research', desc: 'Feedback & insights' },
+          { name: 'Metrics', desc: 'KPIs & analytics' },
+          { name: 'Prioritization', desc: 'Frameworks & trade-offs' },
+          { name: 'Go-To-Market', desc: 'Launch planning' }
+        ]
+      },
+      {
+        key: 'ui-ux-design',
+        title: 'UI/UX Design',
+        desc: 'User-centered creative design',
+        category: 'Non-Tech',
+        img: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400',
         subTopics: [
-            { name: 'General HR', desc: 'Common HR Questions' },
-            { name: 'Behavioral', desc: 'Behavioral & Situational' },
-            { name: 'Strengths/Weaknesses', desc: 'Self-Assessment' },
-            { name: 'Career Goals', desc: 'Aspirations & Motivation' },
-            { name: 'Company Fit', desc: 'Culture & Values' },
-        ],
-    },
-    {
-        title: 'Project Coordinator',
-        desc: 'Practice project-based management interview with AI',
-        category: 'Management',
-        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_HuYeAwQFJpPVLrczDUWbgV-SqCv8MJooxA&s",
+          { name: 'Design Systems', desc: 'Consistency & components' },
+          { name: 'User Research', desc: 'Testing & validation' },
+          { name: 'Prototyping', desc: 'Wireframes & flows' },
+          { name: 'Accessibility', desc: 'Inclusive design' },
+          { name: 'Interaction Design', desc: 'Micro-interactions & feedback' }
+        ]
+      },
+      {
+        key: 'leadership',
+        title: 'Management & Leadership',
+        desc: 'Team dynamics, communication & growth',
+        category: 'Non-Tech',
+        img: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=400',
         subTopics: [
-            { name: 'Project Planning', desc: 'Planning & Resource Management' },
-            { name: 'Team Coordination', desc: 'Team Communication & Collaboration' },
-            { name: 'Risk Management', desc: 'Identifying & Mitigating Project Risks' },
-            { name: 'Stakeholder Management', desc: 'Managing Client & Stakeholder Relations' },
-        ],
-    },
-    {
-        title: 'System Admin',
-        desc: 'System admin AI mock interview to secure infra jobs',
-        category: 'Tech',
-        img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThyjZhmghu7ywaP2RLS1OJWqkN-OwG2hKW8A&s",
-        subTopics: [
-            { name: 'Linux Administration', desc: 'Linux Server Management & Configuration' },
-            { name: 'Network Administration', desc: 'Network Setup & Troubleshooting' },
-            { name: 'Security Management', desc: 'System Security & Access Control' },
-            { name: 'Cloud Platforms', desc: 'AWS, Azure, Google Cloud Services' },
-        ],
-    },
-    {
-        title: 'Add Course',
-        desc: 'Practice any course subject with AI-powered mock interview',
-        category: 'Education',
-        img: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80",
-        subTopics: [
-            { name: 'Computer Science', desc: 'Programming, Algorithms & Data Structures' },
-            { name: 'Mathematics', desc: 'Calculus, Statistics & Linear Algebra' },
-            { name: 'Business Studies', desc: 'Marketing, Finance & Management' },
-            { name: 'Engineering', desc: 'Mechanical, Electrical & Civil Engineering' },
-            { name: 'Medical Science', desc: 'Anatomy, Physiology & Medical Concepts' },
-            { name: 'Science', desc: 'Physics, Chemistry & Biology' },
-        ],
-    },
-];
+          { name: 'Team Building', desc: 'Hiring & culture' },
+          { name: 'Conflict Resolution', desc: 'Healthy collaboration' },
+          { name: 'Performance', desc: 'Goals & reviews' },
+          { name: 'Stakeholder Management', desc: 'Alignment & communication' },
+          { name: 'Leadership Styles', desc: 'Coaching & empowerment' }
+        ]
+      }
+    ]
+  };
 
-// Helper to show only 2 cards per category on main grid
-function getLimitedMockData(data, limitPerCategory = 2) {
-    const grouped = {};
-    data.forEach(item => {
-        if (!grouped[item.category]) grouped[item.category] = [];
-        if (grouped[item.category].length < limitPerCategory) {
-            grouped[item.category].push(item);
-        }
-    });
-    return Object.values(grouped).flat();
-}
-const cardVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.95 },
-};
+  const codingEligibleTopics = new Set([
+    'DSA','System Design','OOP','Concurrency','Testing','Databases','APIs & REST','SQL','ML Models','Feature Engineering','Python/R','Python','Statistics'
+  ]);
 
-const categories = ['All', 'Tech', 'Management', 'General', 'Education']; const MockInterviews = () => {
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [showSubTopics, setShowSubTopics] = useState(false);
-    const [selectedMock, setSelectedMock] = useState(null);
-    const [selectedSubTopic, setSelectedSubTopic] = useState(null);
-    const [showCustomSubject, setShowCustomSubject] = useState(false);
-    const [customSubject, setCustomSubject] = useState('');
-    const navigate = useNavigate();
+  const getModesForSubTopic = (topicName) => {
+    if (!topicName) return interviewModes.filter(m => m.name !== 'Coding Compiler');
+    const includeCoding = codingEligibleTopics.has(topicName);
+    return interviewModes.filter(m => includeCoding ? true : m.name !== 'Coding Compiler');
+  };
 
-    const limitedData =
-        selectedCategory === 'All'
-            ? getLimitedMockData(mockData)
-            : mockData.filter((mock) => mock.category === selectedCategory);
+  // Start Practice now opens subtopics first
+  const handleStartPractice = (track) => {
+    setSelectedMock(track);
+    setSelectedSubTopic(null);
+    setShowSubTopics(true);
+    setShowModeSelection(false);
+    setSelectedTrackKey(track.key);
+  };
 
-    return (
-        <div className="min-h-screen bg-white text-black px-4 sm:px-10 md:px-16 py-10">
-            {/* HEADER */}
-            <motion.div
-                className="max-w-3xl mb-10 mx-auto text-center"
-                initial={{ opacity: 0, y: -30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-            >
-                <h2 className="text-4xl font-extrabold mb-2 tracking-tight text-blue-700">AI-Powered Mock Interview</h2>
-                <p className="mt-2 text-gray-700 text-lg">
-                    Master your concepts with AI-Powered full-length mock tests for 360
-                    <sup>o</sup> preparation!
+  const handleSubTopicSelect = (topic) => {
+    setSelectedSubTopic(topic);
+    setShowSubTopics(false);
+    // Show roadmap instead of mode selection
+    setShowModeSelection(false);
+    setShowRoadmap(true);
+  };
+
+  const handleModeSelect = (mode) => {
+    setSelectedMode(mode);
+    setShowModeSelection(false);
+    // Navigate with full context
+    const state = {
+      jobRole: selectedMock?.title,
+      subject: selectedSubTopic?.name,
+      subTopicDescription: selectedSubTopic?.desc,
+      mode: mode.name
+    };
+    navigate(mode.route, { state });
+  };
+
+  // Map round selection to route
+  const routeForMode = (mode) => {
+    switch(mode){
+      case 'MCQ': return '/mcq-interview';
+      case 'Coding Compiler': return '/compiler';
+      case 'Person-to-Person': return '/interview-room';
+      default: return null; // unimplemented
+    }
+  };
+
+  const handleRoundSelect = (round) => {
+    const route = routeForMode(round.mode);
+    if(!route){
+      return; // future placeholder
+    }
+    setShowRoadmap(false);
+    const state = {
+      jobRole: selectedMock?.title,
+      subject: selectedSubTopic?.name,
+      subTopicDescription: selectedSubTopic?.desc,
+      roundId: round.id,
+      mode: round.mode
+    };
+    navigate(route, { state });
+  };
+
+  return (
+    <div className="min-h-screen bg-blue-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {!selectedCategory && (
+          <motion.div
+            className="flex flex-col items-center justify-center min-h-[60vh] space-y-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="text-center max-w-3xl mx-auto">
+              <h1 className="text-4xl md:text-5xl font-bold text-blue-700 mb-4">
+                Choose Your Path
+              </h1>
+              <p className="text-gray-600 text-lg">
+                Start with a broad category. You can explore interview modes and deep-dive topics after selecting a track.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+              <motion.button
+                className="group relative bg-white rounded-2xl p-10 shadow-lg border border-blue-100 hover:shadow-xl transition-all text-left"
+                whileHover={{ y: -6 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedCategory('tech')}
+              >
+                <div className="absolute inset-0 rounded-2xl pointer-events-none" />
+                <h2 className="text-2xl font-bold text-blue-700 mb-3 flex items-center gap-2">
+                  <span className="text-3xl">💻</span> Tech Tracks
+                </h2>
+                <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                  Software engineering, cybersecurity, data science — build technical excellence with structured preparation.
                 </p>
-            </motion.div>
-
-            {/* TAG FILTERS */}
-            <div className="flex flex-wrap gap-3 mb-10 justify-center">
-                {categories.map((tag) => (
-                    <button
-                        key={tag}
-                        onClick={() => setSelectedCategory(tag)}
-                        className={`px-5 py-2 rounded-full font-semibold transition-all duration-200 shadow 
-                            ${selectedCategory === tag
-                                ? 'bg-blue-700 text-white'
-                                : 'bg-white text-black hover:bg-blue-50 border border-blue-700'}`}
-                    >
-                        {tag}
-                    </button>
-                ))}
-            </div>
-
-            {/* MOCK CARD GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                <AnimatePresence>
-                    {limitedData.map((mock, idx) => (
-                        <motion.div
-                            key={mock.title + idx}
-                            layout
-                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 30 }}
-                            transition={{ duration: 0.5, ease: "easeOut" }}
-                            className="bg-white border border-blue-700 text-black p-7 rounded-2xl shadow-lg hover:scale-105 transition min-h-[320px] flex flex-col justify-between hover:shadow-blue-200"
-                        >
-                            <img
-                                src={mock.img}
-                                alt={mock.title}
-                                className="rounded-lg h-32 w-full object-cover mb-4 border border-blue-100 bg-blue-50"
-                            />
-                            <div className="flex-1 flex flex-col items-center justify-center">
-                                <h3 className="text-xl font-bold mb-2 text-center text-blue-700">{mock.title}</h3>
-                                <p className="text-base text-gray-700 text-center">{mock.desc}</p>
-                            </div>
-                            <div className="mt-6 text-center">
-                                <button
-                                    className="group relative bg-blue-700 border-none rounded-full px-6 py-2 text-white font-semibold shadow-lg hover:bg-blue-800 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                    onClick={() => {
-                                        setSelectedMock(mock);
-                                        setShowSubTopics(true);
-                                    }}
-                                >
-                                    Start Interview
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
-
-            {/* SUB-TOPIC MODAL */}
-            {showSubTopics && selectedMock && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
-                    style={{ backdropFilter: 'blur(2px)' }}
-                >
-                    <motion.div
-                        initial={{ scale: 0.8, opacity: 0, y: 40 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.8, opacity: 0, y: 40 }}
-                        transition={{ duration: 0.35, type: 'spring' }}
-                        className="relative rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 bg-white border border-blue-700"
-                        style={{
-                            minHeight: '340px',
-                        }}
-                    >
-                        <button
-                            className="absolute top-3 right-4 text-3xl text-gray-400 hover:text-red-500 transition"
-                            onClick={() => {
-                                setShowSubTopics(false);
-                                setShowCustomSubject(false);
-                                setCustomSubject('');
-                            }}
-                            aria-label="Close"
-                            style={{ fontWeight: 700, lineHeight: 1 }}
-                        >
-                            &times;
-                        </button>
-                        <div className="mb-4">
-                            <h2 className="text-2xl font-extrabold text-center text-gray-800 mb-2">
-                                Select Sub-Topic for {selectedMock.title}
-                            </h2>
-                            <p className="text-center text-gray-600 text-base">
-                                Choose a sub-topic to start your personalized AI interview.
-                            </p>
-                        </div>
-                        {/* SUB-TOPIC MODAL BUTTONS */}
-                        <div className="flex flex-col gap-3">
-                            {selectedMock.subTopics ? (
-                                <>
-                                    {selectedMock.subTopics.map((sub) => (
-                                        <button
-                                            key={sub.name}
-                                            className="w-full px-4 py-2 rounded-lg bg-blue-700 text-white font-semibold shadow hover:bg-blue-800 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                            onClick={() => {
-                                                setShowSubTopics(false);
-                                                // Navigate to InterviewModeSelect page, passing subject/sub-topic
-                                                navigate('/interview-mode', { state: { subject: sub.name } });
-                                            }}
-                                        >
-                                            {sub.name} <span className="text-xs text-blue-100">({sub.desc})</span>
-                                        </button>
-                                    ))}
-
-                                    {/* Custom Subject Section */}
-                                    <div className="mt-4 pt-4 border-t border-gray-200">
-                                        <button
-                                            className="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-400"
-                                            onClick={() => setShowCustomSubject(!showCustomSubject)}
-                                        >
-                                            ➕ Add Custom Subject
-                                        </button>
-
-                                        {showCustomSubject && (
-                                            <div className="mt-3 space-y-3">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Enter your custom subject (e.g., Machine Learning, React.js, etc.)"
-                                                    value={customSubject}
-                                                    onChange={(e) => setCustomSubject(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-gray-700"
-                                                />
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        className="flex-1 px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold shadow hover:bg-purple-700 transition focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        disabled={!customSubject.trim()}
-                                                        onClick={() => {
-                                                            if (customSubject.trim()) {
-                                                                setShowSubTopics(false);
-                                                                setShowCustomSubject(false);
-                                                                navigate('/interview-mode', { state: { subject: customSubject.trim() } });
-                                                                setCustomSubject('');
-                                                            }
-                                                        }}
-                                                    >
-                                                        Start Custom Interview
-                                                    </button>
-                                                    <button
-                                                        className="px-4 py-2 rounded-lg bg-gray-500 text-white font-semibold shadow hover:bg-gray-600 transition focus:outline-none focus:ring-2 focus:ring-gray-400"
-                                                        onClick={() => {
-                                                            setShowCustomSubject(false);
-                                                            setCustomSubject('');
-                                                        }}
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            ) : (
-                                <p className="text-center text-gray-500">No sub-topics available.</p>
-                            )}
-                        </div>
-                    </motion.div>
+                <div className="flex flex-wrap gap-2">
+                  {tracks.tech.slice(0,3).map(t => (
+                    <span key={t.key} className="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-100">
+                      {t.title}
+                    </span>
+                  ))}
                 </div>
-            )}
-        </div>
-    );
+                <div className="mt-6">
+                  <span className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold group-hover:bg-blue-700 transition-colors">Explore Tech →</span>
+                </div>
+              </motion.button>
+
+              <motion.button
+                className="group relative bg-white rounded-2xl p-10 shadow-lg border border-blue-100 hover:shadow-xl transition-all text-left"
+                whileHover={{ y: -6 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedCategory('nonTech')}
+              >
+                <h2 className="text-2xl font-bold text-blue-700 mb-3 flex items-center gap-2">
+                  <span className="text-3xl">🧠</span> Non-Tech Tracks
+                </h2>
+                <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                  Product, design, leadership & communication — prepare for strategic and people-focused roles.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {tracks.nonTech.slice(0,3).map(t => (
+                    <span key={t.key} className="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-100">
+                      {t.title}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-6">
+                  <span className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold group-hover:bg-blue-700 transition-colors">Explore Non-Tech →</span>
+                </div>
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+
+        {selectedCategory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.35 }}
+            className="space-y-10"
+          >
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-3xl font-bold text-blue-700 mb-1">
+                  {selectedCategory === 'tech' ? 'Tech Tracks' : 'Non-Tech Tracks'}
+                </h2>
+                <p className="text-gray-600 text-sm">
+                  {selectedCategory === 'tech' ? 'Choose a specialization to begin structured interview preparation.' : 'Select a non-technical domain to start focused practice.'}
+                </p>
+              </div>
+              <button
+                onClick={() => { setSelectedCategory(null); setSelectedMock(null); }}
+                className="px-4 py-2 rounded-lg bg-white border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-colors"
+              >
+                ← Back to Categories
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {tracks[selectedCategory].map((track, index) => (
+                <motion.div
+                  key={track.key}
+                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-blue-100/60 flex flex-col"
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06, duration: 0.35 }}
+                  whileHover={{ y: -5 }}
+                >
+                  <div className="h-44 md:h-48 lg:h-52 overflow-hidden relative bg-blue-100">
+                    {(() => {
+                      const isUnsplash = track.img.includes('images.unsplash.com');
+                      const base = track.img.split('?')[0];
+                      const src400 = isUnsplash ? `${base}?auto=format&fit=crop&w=400&q=60` : track.img;
+                      const src800 = isUnsplash ? `${base}?auto=format&fit=crop&w=800&q=70` : track.img;
+                      const src1200 = isUnsplash ? `${base}?auto=format&fit=crop&w=1200&q=75` : track.img;
+                      return (
+                        <img
+                          src={src800}
+                          srcSet={isUnsplash ? `${src400} 400w, ${src800} 800w, ${src1200} 1200w` : undefined}
+                          sizes="(min-width:1280px) 30vw, (min-width:1024px) 33vw, (min-width:768px) 50vw, 100vw"
+                          loading="lazy"
+                          decoding="async"
+                          alt={track.title + ' cover image'}
+                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 select-none"
+                          draggable={false}
+                        />
+                      );
+                    })()}
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/10 via-black/0 to-black/10" />
+                  </div>
+                  <div className="p-6 flex flex-col flex-1">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">{track.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4 flex-1">{track.desc}</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {track.subTopics.slice(0,3).map(s => (
+                        <span key={s.name} className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">
+                          {s.name}
+                        </span>
+                      ))}
+                    </div>
+                    <motion.button
+                      className="w-full mt-auto bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                      onClick={() => { handleStartPractice(track); }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      Start Practice
+                    </motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </div> {/* close max-w container before modals */}
+
+        {/* Mode Selection Modal */}
+        <AnimatePresence>
+          {showModeSelection && selectedMock && selectedSubTopic && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setShowModeSelection(false)}
+            >
+              <motion.div
+                className="bg-white/95 backdrop-blur-md rounded-2xl p-8 w-full max-w-lg mx-4 shadow-2xl border border-white/20"
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-blue-700">Choose Interview Mode</h3>
+                  <button
+                    onClick={() => setShowModeSelection(false)}
+                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors duration-150 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="mb-6 p-4 rounded-xl border border-blue-100 bg-blue-50/60">
+                  <div className="text-xs uppercase tracking-wide text-blue-600 font-semibold mb-1">Selected Topic</div>
+                  <div className="font-semibold text-blue-700">{selectedMock.title} / {selectedSubTopic.name}</div>
+                  <div className="text-xs text-gray-600 mt-1">{selectedSubTopic.desc}</div>
+                </div>
+
+                <p className="text-gray-600 text-sm mb-4">How would you like to practice?</p>
+
+                <div className="space-y-4">
+                  {getModesForSubTopic(selectedSubTopic.name).map((mode, index) => (
+                    <motion.button
+                      key={mode.name}
+                      className="w-full p-4 bg-blue-50 hover:bg-blue-100 rounded-xl text-left transition-all duration-150 border border-blue-100 flex items-center space-x-4"
+                      onClick={() => handleModeSelect(mode)}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05, duration: 0.2 }}
+                      whileHover={{ scale: 1.01, x: 2 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="text-3xl">{mode.icon}</div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-blue-700">{mode.name}</div>
+                        <div className="text-sm text-gray-600 mt-1">{mode.desc}</div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Sub Topics Modal - Only for Interview Person to Person */}
+        <AnimatePresence>
+          {showSubTopics && selectedMock && (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setShowSubTopics(false)}
+            >
+              <motion.div
+                className={`bg-white/95 backdrop-blur-md rounded-2xl p-8 w-full mx-4 shadow-2xl border border-white/20 ${selectedMock.subTopics.length > 6 ? 'max-w-4xl' : 'max-w-md'}`}
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-blue-700">
+                    {selectedMock.title}
+                  </h3>
+                  <button
+                    onClick={() => setShowSubTopics(false)}
+                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors duration-150 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <p className="text-gray-600 text-sm mb-6">{selectedMock.desc}</p>
+                
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-800 mb-3">Choose a topic:</h4>
+                  <div className={`grid gap-4 ${selectedMock.subTopics.length > 10 ? 'md:grid-cols-3' : 'md:grid-cols-2'} max-h-[60vh] overflow-y-auto pr-1 custom-scroll`}>
+                    {selectedMock.subTopics.map((topic, index) => (
+                      <motion.button
+                        key={index}
+                        className="p-4 bg-blue-50 hover:bg-blue-100 rounded-xl text-left transition-all duration-150 border border-blue-100"
+                        onClick={() => {
+                          handleSubTopicSelect(topic);
+                        }}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03, duration: 0.18 }}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="font-semibold text-blue-700 truncate" title={topic.name}>{topic.name}</div>
+                        <div className="text-xs text-gray-600 mt-1 line-clamp-2" title={topic.desc}>{topic.desc}</div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <RoundRoadmapModal
+          open={showRoadmap && !!selectedTrackKey}
+          onClose={() => setShowRoadmap(false)}
+          trackKey={selectedTrackKey}
+          onSelectRound={handleRoundSelect}
+        />
+    </div>
+  );
 };
 
 export default MockInterviews;
