@@ -1,10 +1,18 @@
 // Judge0 API Utility
 // Centralized configuration for Judge0 CE API calls
+// Now supports environment variable overrides so deployment (self-hosted, remote, RapidAPI) can be switched
+// without code changes.
+
+// Vite exposes env vars as import.meta.env.VITE_*
+// Fallback order: explicit env -> localhost default
+const ENV_BASE = import.meta?.env?.VITE_JUDGE0_BASE_URL || import.meta?.env?.VITE_JUDGE0_URL;
+const DEFAULT_BASE = 'http://localhost:2358';
 
 const JUDGE0_CONFIG = {
-  baseUrl: 'http://localhost:2358',
-  apiKey: null, // Local Judge0 doesn't need API key
-  host: 'localhost'
+  baseUrl: (ENV_BASE || DEFAULT_BASE).replace(/\/$/, ''),
+  apiKey: import.meta?.env?.VITE_JUDGE0_API_KEY || import.meta?.env?.VITE_RAPIDAPI_KEY || null,
+  host: import.meta?.env?.VITE_JUDGE0_HOST || 'localhost',
+  requestTimeoutMs: Number(import.meta?.env?.VITE_JUDGE0_TIMEOUT_MS || 15000)
 };
 
 export const isJudge0Configured = () => {
@@ -12,9 +20,17 @@ export const isJudge0Configured = () => {
 };
 
 export const getJudge0Headers = () => {
-  return {
-    'Content-Type': 'application/json',
-  };
+  const headers = { 'Content-Type': 'application/json' };
+  if (JUDGE0_CONFIG.apiKey) {
+    // Support both RapidAPI and direct Judge0 deployments. RapidAPI requires specific headers.
+    if (JUDGE0_CONFIG.baseUrl.includes('rapidapi')) {
+      headers['X-RapidAPI-Key'] = JUDGE0_CONFIG.apiKey;
+      headers['X-RapidAPI-Host'] = 'judge0-ce.p.rapidapi.com';
+    } else {
+      headers['X-API-Key'] = JUDGE0_CONFIG.apiKey; // self-hosted Enterprise variant or custom proxy
+    }
+  }
+  return headers;
 };
 
 export const getJudge0Urls = () => ({
@@ -23,25 +39,12 @@ export const getJudge0Urls = () => ({
 });
 
 export const validateJudge0Setup = () => {
-  if (!isJudge0Configured()) {
-    return {
-      valid: false,
-      message: `🔑 Judge0 API Key Required
-      
-To use the code compilation feature:
-1. Get a FREE RapidAPI key for Judge0 CE
-2. Add it to your .env file as VITE_RAPIDAPI_KEY
-3. Restart the development server
-
-See JUDGE0_SETUP.md for detailed instructions.`,
-      instructions: 'Check JUDGE0_SETUP.md for setup instructions'
-    };
+  // For self-hosted local default we treat absence of apiKey as fine.
+  const ok = !!JUDGE0_CONFIG.baseUrl;
+  if (!ok) {
+    return { valid: false, message: 'Judge0 base URL missing: set VITE_JUDGE0_BASE_URL in .env' };
   }
-  
-  return {
-    valid: true,
-    message: 'Judge0 API configured successfully'
-  };
+  return { valid: true, message: 'Judge0 configuration loaded' };
 };
 
 // Language configurations for Judge0

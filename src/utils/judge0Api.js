@@ -1,3 +1,9 @@
+// DEPRECATED: Legacy Judge0 API Wrapper
+// This file is retained temporarily for reference and will be removed after migration is stable.
+// New code should use services/judge0Client.js which supports batching, metrics and throttling.
+// DO NOT import this module in new components.
+// --------------------------------------------------------------------------------------------
+// (Original header preserved below)
 // Judge0 API Wrapper for AceMyInterview
 // This utility file provides functions for interacting with either
 // the self-hosted Judge0 instance or the RapidAPI version

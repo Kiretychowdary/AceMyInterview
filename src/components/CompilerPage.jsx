@@ -6,7 +6,10 @@ import axios from "axios";
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
-import { validateJudge0Setup, getJudge0Headers, getJudge0Urls } from '../utils/judge0Config';
+import { validateJudge0Setup } from '../utils/judge0Config';
+import judge0Client from '../services/judge0Client';
+import { markRoundComplete } from '../config/roundsConfig';
+import { useAuth } from './AuthContext';
 
 const languages = [
   {
@@ -155,6 +158,7 @@ const difficulties = [
 
 function CompilerPage() {
   const location = useLocation();
+  const { user } = useAuth();
 
   // Get selected topic from navigation state
   const selectedTopic = location.state?.subject || 'algorithms';
@@ -248,15 +252,22 @@ function CompilerPage() {
     return mainCodingTopics;
   };
 
-  const [code, setCode] = useState(languages[3].template); // Default to Python
-  const [language, setLanguage] = useState(languages[3]);
+  // Editor preference persistence
+  const PREF_KEY = 'ami_editor_prefs_v1';
+  const loadPrefs = () => {
+    try { return JSON.parse(localStorage.getItem(PREF_KEY)) || {}; } catch { return {}; }
+  };
+  const initialPrefs = loadPrefs();
+  const defaultLang = languages.find(l => l.name === (initialPrefs.languageName)) || languages[3];
+  const [code, setCode] = useState(defaultLang.template); // Default to Python (or stored)
+  const [language, setLanguage] = useState(defaultLang);
   const [problemDetails, setProblemDetails] = useState(null);
   const [loadingProblem, setLoadingProblem] = useState(false);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [showProblemPanel, setShowProblemPanel] = useState(true);
-  const [editorTheme, setEditorTheme] = useState('vs-dark');
-  const [fontSize, setFontSize] = useState(14);
+  const [editorTheme, setEditorTheme] = useState(initialPrefs.theme || 'vs-dark');
+  const [fontSize, setFontSize] = useState(initialPrefs.fontSize || 14);
   const [testResults, setTestResults] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const editorRef = useRef(null);
@@ -409,6 +420,12 @@ function CompilerPage() {
   };
 
   // Handle language change
+  // Persist preferences when changed
+  useEffect(() => {
+    const prefs = { languageName: language.name, fontSize, theme: editorTheme };
+    try { localStorage.setItem(PREF_KEY, JSON.stringify(prefs)); } catch {}
+  }, [language, fontSize, editorTheme]);
+
   const handleLanguageChange = (newLanguage) => {
     setLanguage(newLanguage);
     setCode(newLanguage.template);
@@ -421,59 +438,28 @@ function CompilerPage() {
       toast.error('Please write some code first!');
       return;
     }
-
-    // Check if Judge0 is properly configured
     const judge0Status = validateJudge0Setup();
     if (!judge0Status.valid) {
-      toast.error('Judge0 API key not configured');
+      toast.error('Judge0 not configured');
       setOutput(judge0Status.message);
       return;
     }
-
     setIsRunning(true);
     setOutput('Running code...');
-
     try {
-      const judge0Urls = getJudge0Urls();
-      const headers = getJudge0Headers();
-
-      const response = await axios.post(
-        judge0Urls.submit,
-        {
-          source_code: btoa(code),
-          language_id: language.id,
-          stdin: btoa(""),
-        },
-        { headers }
-      );
-
-      const token = response.data.token;
-
-      // Poll for result
-      const checkResult = async () => {
-        const result = await axios.get(
-          judge0Urls.getResult(token),
-          { headers }
-        );
-
-        if (result.data.status.id <= 2) {
-          setTimeout(checkResult, 1000);
-        } else {
-          const output = result.data.stdout
-            ? atob(result.data.stdout)
-            : result.data.stderr
-              ? atob(result.data.stderr)
-              : "No output";
-          setOutput(output);
-          setIsRunning(false);
-        }
-      };
-
-      setTimeout(checkResult, 1000);
-    } catch (error) {
-      setOutput('Error: Unable to run code. Please check your internet connection.');
-      setIsRunning(false);
+      const res = await judge0Client.runOnce({ code, languageId: language.id, stdin: '' });
+      if (res.compile_output) {
+        setOutput(res.compile_output);
+      } else if (res.stderr) {
+        setOutput(res.stderr);
+      } else {
+        setOutput(res.stdout || 'No output');
+      }
+    } catch (e) {
+      setOutput('Error: ' + e.message);
       toast.error('Failed to execute code');
+    } finally {
+      setIsRunning(false);
     }
   };
 
@@ -486,119 +472,33 @@ function CompilerPage() {
 
   // Submit and test code
   const submitCode = async () => {
-    if (!code.trim()) {
-      toast.error('Please write some code first!');
-      return;
-    }
-
-    if (!problemDetails || !problemDetails.testCases) {
-      toast.error('No test cases available for this problem!');
-      return;
-    }
-
-    // Check if Judge0 is properly configured
+    if (!code.trim()) { toast.error('Please write some code first!'); return; }
+    if (!problemDetails || !problemDetails.testCases) { toast.error('No test cases available for this problem!'); return; }
     const judge0Status = validateJudge0Setup();
     if (!judge0Status.valid) {
-      toast.error('Judge0 API key not configured');
-      setTestResults({
-        passed: 0,
-        total: 1,
-        details: [{
-          passed: false,
-          input: 'Configuration Error',
-          expected: '',
-          actual: judge0Status.message,
-          error: 'Please check JUDGE0_SETUP.md for setup instructions'
-        }]
-      });
+      toast.error('Judge0 not configured');
+      setTestResults({ passed:0,total:0,details:[{input:'',expected:'',actual:judge0Status.message,passed:false,error:'Configuration'}]});
       return;
     }
-
     setIsSubmitting(true);
-    setTestResults({ passed: 0, total: 0, details: [] });
-
+    setTestResults({ passed:0,total:0,details:[] });
     try {
-      toast.info('🧪 Running test cases...', { duration: 3000 });
-
-      const testCases = problemDetails.testCases;
-      const results = [];
-      let passedCount = 0;
-
-      const judge0Urls = getJudge0Urls();
-      const headers = getJudge0Headers();
-
-      for (let i = 0; i < testCases.length; i++) {
-        const testCase = testCases[i];
-
-        try {
-          const response = await axios.post(
-            judge0Urls.submit,
-            {
-              source_code: btoa(code),
-              language_id: language.id,
-              stdin: btoa(testCase.input || ""),
-            },
-            { headers }
-          );
-
-          const token = response.data.token;
-
-          // Poll for result
-          const result = await pollForResult(token);
-
-          const actualOutput = result.stdout
-            ? atob(result.stdout).trim()
-            : result.stderr
-              ? atob(result.stderr).trim()
-              : "";
-
-          const expectedOutput = testCase.output.trim();
-          const passed = actualOutput === expectedOutput;
-
-          if (passed) passedCount++;
-
-          results.push({
-            testCase: i + 1,
-            input: testCase.input || "No input",
-            expected: expectedOutput,
-            actual: actualOutput,
-            passed: passed,
-            error: result.stderr ? atob(result.stderr) : null
-          });
-
-        } catch (error) {
-          results.push({
-            testCase: i + 1,
-            input: testCase.input || "No input",
-            expected: testCase.output,
-            actual: "Error executing code",
-            passed: false,
-            error: error.message
-          });
+      toast.info('🧪 Running test cases...', { autoClose:1500 });
+      const batch = await judge0Client.runBatch({ code, languageId: language.id, testCases: problemDetails.testCases });
+      setTestResults(batch);
+      if (batch.passed === batch.total) {
+        toast.success(`🎉 All ${batch.passed}/${batch.total} test cases passed! Great job!`);
+        // Persist round completion if we navigated here from a round
+        const roundId = location.state?.roundId;
+        if (roundId) {
+          try { markRoundComplete(user?.uid || 'anonymous', roundId); } catch {}
         }
-      }
-
-      setTestResults({
-        passed: passedCount,
-        total: testCases.length,
-        details: results
-      });
-
-      if (passedCount === testCases.length) {
-        toast.success(`🎉 All ${passedCount}/${testCases.length} test cases passed! Great job!`);
       } else {
-        toast.error(`❌ ${passedCount}/${testCases.length} test cases passed. Keep trying!`);
+        toast.error(`❌ ${batch.passed}/${batch.total} test cases passed. Keep trying!`);
       }
-
-    } catch (error) {
-      console.error("Submit error:", error);
-      toast.error('Failed to submit code for testing');
-      setTestResults({
-        passed: 0,
-        total: 0,
-        details: [],
-        error: error.message
-      });
+    } catch (e) {
+      toast.error('Failed to run tests: ' + e.message);
+      setTestResults({ passed:0,total:0,details:[],error:e.message });
     } finally {
       setIsSubmitting(false);
     }
@@ -1199,7 +1099,14 @@ function CompilerPage() {
                 onChange={(e) => setFontSize(Number(e.target.value))}
                 className="text-sm border border-blue-200 rounded-lg px-2 py-1 bg-white text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                {[14, 16, 18].map(sz => <option key={sz} value={sz}>{sz}px</option>)}
+                {[14, 16, 18, 20].map(sz => <option key={sz} value={sz}>{sz}px</option>)}
+              </select>
+              <select
+                value={editorTheme}
+                onChange={(e) => setEditorTheme(e.target.value)}
+                className="text-sm border border-blue-200 rounded-lg px-2 py-1 bg-white text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                {['vs-dark','light','hc-black'].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -1262,21 +1169,47 @@ function CompilerPage() {
               {testResults && (
                 <div className="bg-white border-t border-blue-200 p-3 flex flex-col max-h-[45%] overflow-hidden">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-semibold text-blue-700">Test Results</h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xs font-semibold text-blue-700">Test Results</h3>
+                      {testResults.metrics && (
+                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                          <span className="bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">Avg Time: {Number(testResults.metrics.avgTime).toFixed(3)}s</span>
+                          <span className="bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">Max Memory: {testResults.metrics.maxMemory} KB</span>
+                        </div>
+                      )}
+                    </div>
                     <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${testResults.passed === testResults.total ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>{testResults.passed}/{testResults.total}</span>
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-2">
-                    {testResults.details?.map((r, i) => (
-                      <div key={i} className={`p-2 rounded border ${r.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <div className="text-[11px] font-medium mb-1">Case {r.testCase}: {r.passed ? '✅ Passed' : '❌ Failed'}</div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px]">
-                          <div><span className="font-medium">Input:</span> {typeof r.input === 'string' ? r.input : JSON.stringify(r.input)}</div>
-                          <div><span className="font-medium">Expected:</span> {typeof r.expected === 'string' ? r.expected : JSON.stringify(r.expected)}</div>
-                          <div className="col-span-2"><span className="font-medium">Your Output:</span> {typeof r.actual === 'string' ? r.actual : JSON.stringify(r.actual)}</div>
-                          {r.error && <div className="col-span-2 text-red-600"><span className="font-medium">Error:</span> {typeof r.error === 'string' ? r.error : JSON.stringify(r.error)}</div>}
+                    {testResults.details?.map((r, i) => {
+                      return (
+                        <div key={i} className={`p-2 rounded border ${r.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="text-[11px] font-medium">Case {i + 1}</div>
+                            <div className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${r.passed ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{r.passed ? 'PASS' : 'FAIL'}</div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className="col-span-2"><span className="font-medium">Input:</span> {r.input !== undefined ? (typeof r.input === 'string' ? r.input : JSON.stringify(r.input)) : '—'}</div>
+                            <div><span className="font-medium">Expected:</span> {r.expected !== undefined ? (typeof r.expected === 'string' ? r.expected : JSON.stringify(r.expected)) : '—'}</div>
+                            <div><span className="font-medium">Actual:</span> {r.actual !== undefined ? (typeof r.actual === 'string' ? r.actual : JSON.stringify(r.actual)) : '—'}</div>
+                            <div><span className="font-medium">Time:</span> {r.time || '—'}s</div>
+                            <div><span className="font-medium">Memory:</span> {r.memory || '—'} KB</div>
+                            {r.classification && (
+                              <div className="col-span-2 text-[10px] inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">{r.classification}</div>
+                            )}
+                            {r.compile_output && (
+                              <div className="col-span-2 text-amber-700 bg-amber-50 border border-amber-200 rounded p-1"><span className="font-medium">Compile:</span> {r.compile_output}</div>
+                            )}
+                            {r.stderr && !r.compile_output && (
+                              <div className="col-span-2 text-red-700 bg-red-50 border border-red-200 rounded p-1"><span className="font-medium">Stderr:</span> {r.stderr}</div>
+                            )}
+                            {r.error && (
+                              <div className="col-span-2 text-red-700 bg-red-50 border border-red-200 rounded p-1"><span className="font-medium">Error:</span> {r.error}</div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
