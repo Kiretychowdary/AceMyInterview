@@ -20,6 +20,7 @@ import Compiler from './pages/Compiler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
 import DashboardTest from './pages/DashboardTest.jsx';
+import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 
 // ProtectedRoute component to check authentication
@@ -82,6 +83,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/mock-interviews" element={<MockInterviews />} />
+          <Route path="/interview-preparation" element={<InterviewPreparation />} />
           
           {/* Protected Routes - Require Authentication */}
           <Route 
