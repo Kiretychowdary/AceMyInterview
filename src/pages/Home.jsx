@@ -56,7 +56,9 @@ const Home = () => {
           
           <p className="text-base xs:text-lg lg:text-xl text-gray-600 mt-4 mb-8 max-w-xs xs:max-w-sm sm:max-w-lg lg:max-w-xl leading-relaxed">
             Practice with AI-powered mock interviews, get instant feedback, and access curated learning resources. 
-            <span className="text-blue-600 font-semibold"> Join 10,000+ successful candidates</span> who aced their interviews.
+            {/* <span className="text-blue-600 font-semibold"> Join 10,000+ successful candidates</span> who aced their interviews.
+             */}
+             <span className="text-blue-600 font-semibold"> Join 100+ successful candidates</span> who aced their interviews.
           </p>
 
           {/* CTA BUTTONS */}
@@ -100,7 +102,7 @@ const Home = () => {
             transition={{ delay: 0.7 }}
           >
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">10K+</div>
+              <div className="text-2xl font-bold text-blue-600">100+</div>
               <div className="text-sm text-gray-600">Success Stories</div>
             </div>
             <div className="text-center">
@@ -142,12 +144,290 @@ const Home = () => {
         </motion.div>
       </div>
       
+      {/* COMPANY LOGOS SECTION */}
+      {/* <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-gray-600 text-lg mb-8">Trusted by candidates from top companies worldwide</p>
+            <div className="flex flex-wrap justify-center items-center gap-8 lg:gap-12 opacity-60">
+              {['Google', 'Microsoft', 'Amazon', 'Meta', 'Netflix', 'Apple'].map((company, idx) => (
+                <motion.div
+                  key={company}
+                  className="text-2xl font-bold text-gray-400"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 0.6, y: 0 }}
+                  transition={{ duration: 0.6, delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  {company}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section> */}
+
+      {/* TESTIMONIALS SECTION */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Success Stories from Our Community
+            </h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Hear from candidates who landed their dream jobs using @AceMyInterview
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Sarah Chen",
+                role: "Software Engineer at Google",
+                image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+                quote: "The AI mock interviews helped me practice behavioral questions. Got my Google offer in 3 weeks!",
+                rating: 5
+              },
+              {
+                name: "Raj Patel",
+                role: "Product Manager at Microsoft", 
+                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+                quote: "Amazing platform! The system design practice was exactly what I needed for my Microsoft interview.",
+                rating: 5
+              },
+              {
+                name: "Emily Rodriguez",
+                role: "Data Scientist at Netflix",
+                image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face", 
+                quote: "Boosted my confidence tremendously. The feedback feature is incredibly detailed and helpful.",
+                rating: 5
+              }
+            ].map((testimonial, idx) => (
+              <motion.div
+                key={idx}
+                className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: idx * 0.2 }}
+                viewport={{ once: true }}
+              >
+                <div className="flex items-center mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <svg key={i} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-gray-600 mb-6 leading-relaxed">"{testimonial.quote}"</p>
+                <div className="flex items-center">
+                  <img
+                    src={testimonial.image}
+                    alt={testimonial.name}
+                    className="w-12 h-12 rounded-full mr-4 object-cover"
+                  />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{testimonial.name}</h4>
+                    <p className="text-sm text-blue-600">{testimonial.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* INTERACTIVE DEMO SECTION */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-12">
+            <motion.div
+              className="lg:w-1/2"
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">
+                See It In Action
+              </h2>
+              <p className="text-lg text-gray-600 mb-8">
+                Experience how our AI-powered interview simulator works. Get real-time feedback and improve your performance instantly.
+              </p>
+              <div className="space-y-4">
+                {[
+                  "🎯 Real-time AI feedback on your answers",
+                  "📊 Performance analytics and scoring",
+                  "🗣️ Speech pattern analysis and suggestions",
+                  "💡 Personalized improvement recommendations"
+                ].map((feature, idx) => (
+                  <motion.div
+                    key={idx}
+                    className="flex items-center gap-3"
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: idx * 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <span className="text-lg">{feature}</span>
+                  </motion.div>
+                ))}
+              </div>
+              <Link
+                to="/mock-interviews"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-4 rounded-2xl mt-8 transition-all duration-300 transform hover:scale-105"
+              >
+                Try Demo Interview
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-6a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </Link>
+            </motion.div>
+            
+            <motion.div
+              className="lg:w-1/2"
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <div className="relative">
+                <div className="bg-white rounded-2xl p-6 shadow-2xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <p className="text-blue-900 font-medium">AI Interviewer:</p>
+                      <p className="text-blue-800">"Tell me about a challenging project you worked on."</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-gray-700">🎤 Recording your response...</p>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <motion.div
+                          className="bg-blue-600 h-2 rounded-full"
+                          initial={{ width: "0%" }}
+                          animate={{ width: "70%" }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        ></motion.div>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <p className="text-green-900 font-medium">✅ AI Feedback:</p>
+                      <p className="text-green-800 text-sm">Great structure! Consider adding more specific metrics.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* PROFESSIONAL RESOURCES SECTION */}
       <div id="resources">
         <ExploreSolutions />
       </div>
       
       <PageFeatures/>
+
+      {/* FAQ SECTION */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-gray-600">
+              Everything you need to know about @AceMyInterview
+            </p>
+          </motion.div>
+
+          <div className="space-y-6">
+            {[
+              {
+                question: "How does the AI interviewer work?",
+                answer: "Our AI uses advanced natural language processing to conduct realistic interviews. It asks relevant questions based on your field and provides instant feedback on your responses, body language, and communication skills."
+              },
+              {
+                question: "Is it really free to start?",
+                answer: "Yes! You can start with our free tier that includes 3 mock interviews per month, basic feedback, and access to our question bank. Upgrade anytime for unlimited access and advanced features."
+              },
+              {
+                question: "What types of interviews can I practice?",
+                answer: "We support technical coding interviews, system design, behavioral questions, case studies, and industry-specific scenarios for roles in tech, finance, consulting, and more."
+              },
+              {
+                question: "How accurate is the AI feedback?",
+                answer: "Our AI is trained on thousands of successful interview patterns and provides 95% accuracy in feedback. It's constantly learning and improving from user interactions and expert input."
+              }
+            ].map((faq, idx) => (
+              <motion.div
+                key={idx}
+                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                viewport={{ once: true }}
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
+                <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* NEWSLETTER SECTION */}
+      <section className="py-20 bg-blue-600">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Stay Updated with Interview Tips
+            </h2>
+            <p className="text-xl text-blue-100 mb-8">
+              Get weekly insights, new questions, and success strategies delivered to your inbox
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-blue-300 outline-none text-gray-900"
+              />
+              <button className="bg-white text-blue-600 font-semibold px-8 py-4 rounded-2xl hover:bg-blue-50 transition-all duration-300 transform hover:scale-105">
+                Subscribe
+              </button>
+            </div>
+            <p className="text-sm text-blue-200 mt-4">
+              Join 25,000+ subscribers. No spam, unsubscribe anytime.
+            </p>
+          </motion.div>
+        </div>
+      </section>
     </div>
   );
 };
