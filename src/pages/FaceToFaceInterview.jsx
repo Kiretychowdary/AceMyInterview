@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../components/AuthContext';
 import geminiService from '../services/GeminiService';
 import progressService from '../services/ProgressService';
+import RoundBreakScreen from '../components/RoundBreakScreen';
 
 const FaceToFaceInterview = () => {
   const navigate = useNavigate();
@@ -26,6 +27,13 @@ const FaceToFaceInterview = () => {
     duration: 30,
     interviewType: 'face-to-face'
   };
+  
+  // Full interview mode tracking
+  const isFullInterview = location.state?.isFullInterview || false;
+  const allRounds = location.state?.allRounds || [];
+  const currentRoundIndex = location.state?.currentRoundIndex || 0;
+  const trackKey = location.state?.trackKey || null;
+  const totalRounds = location.state?.totalRounds || 0;
 
   // Core interview state
   const [interviewState, setInterviewState] = useState('setup'); // setup, camera-check, interview, assessment, completed
@@ -55,10 +63,13 @@ const FaceToFaceInterview = () => {
   const [faceDetectionActive, setFaceDetectionActive] = useState(false);
   const [integrityViolations, setIntegrityViolations] = useState([]);
   const [showIntegrityAlert, setShowIntegrityAlert] = useState(false);
+  
+  // Break screen state
+  const [showBreakScreen, setShowBreakScreen] = useState(false);
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/Login');
       return;
     }
     initializeFaceDetection();
@@ -468,6 +479,13 @@ const FaceToFaceInterview = () => {
 
       setAssessment(response);
       setInterviewState('completed');
+      
+      // If this is part of a full interview, proceed to next round after delay
+      if (isFullInterview && currentRoundIndex < allRounds.length - 1) {
+        setTimeout(() => {
+          setShowBreakScreen(true);
+        }, 5000); // Show results for 5 seconds before break
+      }
     } catch (error) {
       console.error('Error processing assessment:', error);
       setAssessment({
@@ -491,9 +509,48 @@ const FaceToFaceInterview = () => {
         }))
       });
       setInterviewState('completed');
+      
+      // Also show break screen on error if in full interview mode
+      if (isFullInterview && currentRoundIndex < allRounds.length - 1) {
+        setTimeout(() => {
+          setShowBreakScreen(true);
+        }, 5000);
+      }
     } finally {
       setLoading(false);
     }
+  };
+  
+  const handleContinueToNextRound = () => {
+    const nextRoundIndex = currentRoundIndex + 1;
+    const nextRound = allRounds[nextRoundIndex];
+    
+    if (!nextRound) {
+      navigate('/interview-preparation');
+      return;
+    }
+    
+    const modeRoute = (mode) => {
+      if (mode === 'MCQ') return '/mcq-interview';
+      if (mode === 'CODING' || mode === 'Coding Compiler') return '/compiler';
+      if (mode === 'PERSON' || mode === 'Person-to-Person') return '/face-to-face-interview';
+      return '/interview-preparation';
+    };
+    
+    console.log('🔄 Navigating to next round:', { nextRound, nextRoundIndex, trackKey });
+    
+    navigate(modeRoute(nextRound.mode), {
+      state: {
+        roundId: nextRound.id,
+        subject: interviewConfig.topic, // Keep using same topic
+        topic: interviewConfig.topic,
+        trackKey,
+        allRounds,
+        currentRoundIndex: nextRoundIndex,
+        isFullInterview: true,
+        totalRounds
+      }
+    });
   };
 
   const formatTime = (seconds) => {
@@ -511,7 +568,7 @@ const FaceToFaceInterview = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">
@@ -527,7 +584,7 @@ const FaceToFaceInterview = () => {
   // Setup Phase
   if (interviewState === 'setup') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -598,7 +655,7 @@ const FaceToFaceInterview = () => {
             </button>
             <button
               onClick={requestMediaPermissions}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-colors font-semibold shadow-lg"
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-lg"
             >
               Start Interview Setup
             </button>
@@ -611,7 +668,7 @@ const FaceToFaceInterview = () => {
   // Camera Check Phase
   if (interviewState === 'camera-check') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -721,7 +778,7 @@ const FaceToFaceInterview = () => {
             <button
               onClick={startInterview}
               disabled={!cameraPermission || !microphonePermission}
-              className="px-8 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 transition-colors font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Start Interview
             </button>
@@ -735,6 +792,23 @@ const FaceToFaceInterview = () => {
   if (interviewState === 'interview') {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
+        {/* Full Interview Progress Header */}
+        {isFullInterview && (
+          <div className="bg-blue-600 text-white px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎯</span>
+              <div>
+                <div className="font-bold">Round {currentRoundIndex + 1} of {totalRounds}</div>
+                <div className="text-blue-100 text-xs">{allRounds[currentRoundIndex]?.label}</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-blue-100">Full Interview Mode</div>
+              <div className="text-xs text-blue-200">{totalRounds - currentRoundIndex - 1} rounds remaining</div>
+            </div>
+          </div>
+        )}
+        
         {/* Header */}
         <div className="bg-black bg-opacity-50 p-4">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -1218,9 +1292,26 @@ const FaceToFaceInterview = () => {
     );
   }
 
+  // Show break screen between rounds
+  if (showBreakScreen) {
+    const currentRound = allRounds[currentRoundIndex];
+    const nextRound = allRounds[currentRoundIndex + 1];
+    
+    return (
+      <RoundBreakScreen
+        currentRound={currentRound}
+        nextRound={nextRound}
+        currentRoundIndex={currentRoundIndex}
+        totalRounds={totalRounds}
+        onContinue={handleContinueToNextRound}
+        trackKey={trackKey}
+      />
+    );
+  }
+
   // Default return
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
+    <div className="min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="text-center">
         <p className="text-gray-600">Loading interview...</p>
       </div>

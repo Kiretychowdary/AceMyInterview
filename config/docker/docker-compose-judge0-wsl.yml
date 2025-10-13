@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:13.0
+    env_file: ../../judge0-env/judge0.env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    restart: always
+
+  redis:
+    image: redis:6.0
+    command: 
+      - bash
+      - -c
+      - docker-entrypoint.sh --appendonly yes --requirepass "$$REDIS_PASSWORD"
+    env_file: ../../judge0-env/judge0.env
+    volumes:
+      - redis-data:/data
+    restart: always
+
+  api:
+    image: judge0/judge0:1.13.0
+    env_file: ../../judge0-env/judge0.env
+    ports:
+      - "2358:2358"
+    volumes:
+      - ../../judge0-env/judge0-config.yml:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  worker:
+    image: judge0/judge0:1.13.0
+    command: ["./scripts/workers"]
+    env_file: ../../judge0-env/judge0.env
+    volumes:
+      - ../../judge0-env/judge0-config.yml:/judge0.conf:ro
+    tmpfs:
+      - /tmp:exec,mode=777
+      - /box:exec,mode=777
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - SYS_PTRACE
+    depends_on:
+      - db
+      - redis
+      - api
+    restart: always
+
+volumes:
+  postgres-data:
+  redis-data:

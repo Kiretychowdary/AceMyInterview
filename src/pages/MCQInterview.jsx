@@ -6,16 +6,28 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../components/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
 import { progressService } from '../services/ProgressService';
+import RoundBreakScreen from '../components/RoundBreakScreen';
 
 const MCQInterview = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Get selected topic from navigation state
   const selectedTopic = location.state?.subject || 'JavaScript';
+  
+  // Full interview mode tracking
+  const isFullInterview = location.state?.isFullInterview || false;
+  const allRounds = location.state?.allRounds || [];
+  const currentRoundIndex = location.state?.currentRoundIndex || 0;
+  const trackKey = location.state?.trackKey || null;
+  const totalRounds = location.state?.totalRounds || 0;
+  
+  // Break screen state
+  const [showBreakScreen, setShowBreakScreen] = useState(false);
   
   // Map topics to API format
   const mapTopicToAPI = (topic) => {
@@ -424,7 +436,6 @@ const MCQInterview = () => {
     });
     
     setScore(correctAnswers);
-    setShowResults(true);
 
     // Save session to progress tracking
     if (user) {
@@ -471,6 +482,61 @@ const MCQInterview = () => {
         });
       }
     }
+    
+    // Check if this is part of a full interview sequence
+    if (isFullInterview && currentRoundIndex < allRounds.length - 1) {
+      // Show results briefly, then go to break screen
+      setShowResults(true);
+      setTimeout(() => {
+        setShowBreakScreen(true);
+      }, 3000); // Show results for 3 seconds
+    } else {
+      // Just show results (standalone MCQ or last round)
+      setShowResults(true);
+    }
+  };
+  
+  const handleContinueToNextRound = () => {
+    const nextRoundIndex = currentRoundIndex + 1;
+    const nextRound = allRounds[nextRoundIndex];
+    
+    console.log('📍 MCQ Continue to next round:', {
+      nextRoundIndex,
+      nextRound,
+      allRounds,
+      mode: nextRound?.mode
+    });
+    
+    if (!nextRound) {
+      // No more rounds, go back to preparation
+      console.log('✅ No more rounds, returning to preparation');
+      navigate('/interview-preparation');
+      return;
+    }
+    
+    // Navigate to next round
+    const modeRoute = (mode) => {
+      if (mode === 'MCQ') return '/mcq-interview';
+      if (mode === 'CODING' || mode === 'Coding Compiler') return '/compiler';
+      if (mode === 'PERSON' || mode === 'Person-to-Person') return '/face-to-face-interview';
+      console.log('⚠️ Unknown mode, defaulting to preparation:', mode);
+      return '/interview-preparation';
+    };
+    
+    const route = modeRoute(nextRound.mode);
+    console.log('🎯 Navigating to:', route, 'for round:', nextRound.label);
+    
+    navigate(route, {
+      state: {
+        roundId: nextRound.id,
+        subject: selectedTopic, // Keep the original topic/track title
+        trackKey,
+        allRounds,
+        currentRoundIndex: nextRoundIndex,
+        isFullInterview: true,
+        totalRounds
+      }
+    });
   };
 
   const resetQuiz = () => {
@@ -488,6 +554,23 @@ const MCQInterview = () => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Show break screen between rounds
+  if (showBreakScreen) {
+    const currentRound = allRounds[currentRoundIndex];
+    const nextRound = allRounds[currentRoundIndex + 1];
+    
+    return (
+      <RoundBreakScreen
+        currentRound={currentRound}
+        nextRound={nextRound}
+        currentRoundIndex={currentRoundIndex}
+        totalRounds={totalRounds}
+        onContinue={handleContinueToNextRound}
+        trackKey={trackKey}
+      />
+    );
+  }
 
   // 🌟 BEAUTIFUL LOADING SCREEN - Show while questions are being generated
   if (loading) {
@@ -807,6 +890,29 @@ const MCQInterview = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* Full Interview Progress Header */}
+        {isFullInterview && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-blue-600 text-white rounded-xl shadow-lg p-4 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎯</span>
+                <div>
+                  <div className="font-bold text-lg">Round {currentRoundIndex + 1} of {totalRounds}</div>
+                  <div className="text-blue-100 text-sm">{allRounds[currentRoundIndex]?.label}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-blue-100">Full Interview Mode</div>
+                <div className="text-xs text-blue-200">{totalRounds - currentRoundIndex - 1} rounds remaining</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        
         {/* Header with Progress */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

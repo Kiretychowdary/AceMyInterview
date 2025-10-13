@@ -4,14 +4,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ROUND_MODES, getRoundsForTrack, isModeImplemented } from '../config/roundsConfig';
 import { tracksConfig, getTrackByKey } from '../config/tracksConfig';
 
-// Professional multi-step: Category (tech/non) -> Role selection -> Rounds list
+// Professional multi-step: Category (tech/non) -> Role selection -> Rounds list with START button
 export default function InterviewPreparation() {
   const [category, setCategory] = React.useState(null); // 'tech' | 'nonTech'
   const [selectedRoleKey, setSelectedRoleKey] = React.useState(null);
+  const [showStartConfirmation, setShowStartConfirmation] = React.useState(false);
   const navigate = useNavigate();
 
   const selectedTrack = selectedRoleKey ? getTrackByKey(selectedRoleKey) : null;
   const rounds = selectedRoleKey ? getRoundsForTrack(selectedRoleKey) : [];
+  const implementedRounds = rounds.filter(r => isModeImplemented(r.mode));
+  const totalRounds = rounds.length;
+  const readyRounds = implementedRounds.length;
 
   const modeRoute = (mode) => {
     switch(mode){
@@ -24,7 +28,43 @@ export default function InterviewPreparation() {
 
   const startRound = (round) => {
     if(!isModeImplemented(round.mode)) return;
-    navigate(modeRoute(round.mode), { state: { roundId: round.id, role: selectedTrack?.title, category, mode: round.mode, stage: round.stage, label: round.label } });
+    navigate(modeRoute(round.mode), { state: { 
+      roundId: round.id, 
+      role: selectedTrack?.title, 
+      category, 
+      mode: round.mode, 
+      stage: round.stage, 
+      label: round.label,
+      trackKey: selectedRoleKey,
+      allRounds: rounds,
+      currentRoundIndex: rounds.findIndex(r => r.id === round.id)
+    } });
+  };
+
+  const startFullInterview = () => {
+    if (implementedRounds.length === 0) return; 
+    const firstRound = implementedRounds[0];
+    console.log('🚀 Starting full interview:', {
+      firstRound,
+      allRounds: implementedRounds,
+      totalRounds: implementedRounds.length
+    });
+    navigate(modeRoute(firstRound.mode), { 
+      state: { 
+        roundId: firstRound.id,
+        subject: selectedTrack?.title || 'JavaScript', // Use track title instead of round label
+        role: selectedTrack?.title,
+        category,
+        mode: firstRound.mode,
+        stage: firstRound.stage,
+        label: firstRound.label,
+        trackKey: selectedRoleKey,
+        allRounds: implementedRounds,
+        currentRoundIndex: 0,
+        isFullInterview: true,
+        totalRounds: implementedRounds.length
+      } 
+    });
   };
 
   const TrackCard = ({ track, delay=0 }) => {
@@ -190,24 +230,164 @@ export default function InterviewPreparation() {
         </motion.div>
       )}
 
-      {/* Step 3: Rounds */}
+      {/* Step 3: Rounds with START Button */}
       {selectedRoleKey && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-blue-800 mb-1">{selectedTrack?.title} – Rounds</h2>
+              <h2 className="text-2xl font-bold text-blue-800 mb-1">{selectedTrack?.title} – Interview Rounds</h2>
               <p className="text-gray-600 text-sm max-w-xl">Progress through structured stages. Some advanced or strategic rounds may still be in development.</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setSelectedRoleKey(null)} className="px-4 py-2 rounded-lg bg-white border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-colors">← Roles</button>
-              <button onClick={() => { setSelectedRoleKey(null); setCategory(null); }} className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors">Change Category</button>
+              <button onClick={() => setSelectedRoleKey(null)} className="px-5 py-2.5 rounded-lg bg-white border-2 border-blue-300 text-blue-700 font-semibold hover:bg-blue-50 hover:border-blue-400 transition-all shadow-sm hover:shadow-md">← Roles</button>
+              <button onClick={() => { setSelectedRoleKey(null); setCategory(null); }} className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-sm hover:shadow-md">Change Category</button>
             </div>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rounds.map(r => <RoundCard key={r.id} round={r} />)}
+
+          {/* Interview Overview Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl p-8 border-2 border-blue-200 shadow-lg"
+          >
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex-1">
+                <h3 className="text-3xl font-bold mb-3 text-blue-800">Ready to Start Your Interview?</h3>
+                <p className="text-gray-700 text-lg mb-4">
+                  Complete <span className="font-bold text-blue-600">{totalRounds} rounds</span> to master {selectedTrack?.title} interviews
+                </p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                    <span className="text-2xl">📊</span>
+                    <div>
+                      <div className="font-semibold text-blue-800">{readyRounds}/{totalRounds} Rounds Ready</div>
+                      <div className="text-gray-600 text-xs">Available to practice now</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                    <span className="text-2xl">⏱️</span>
+                    <div>
+                      <div className="font-semibold text-blue-800">Real-Time Practice</div>
+                      <div className="text-gray-600 text-xs">Simulated interview experience</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
+                    <span className="text-2xl">🎯</span>
+                    <div>
+                      <div className="font-semibold text-blue-800">Track Progress</div>
+                      <div className="text-gray-600 text-xs">Monitor your improvement</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowStartConfirmation(true)}
+                  disabled={readyRounds === 0}
+                  className={`px-8 py-4 rounded-xl font-bold text-lg transition-all ${
+                    readyRounds > 0
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg border-2 border-blue-600 hover:border-blue-700'
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed border-2 border-gray-300'
+                  }`}
+                >
+                  {readyRounds > 0 ? (
+                    <span className="flex items-center gap-3">
+                      <span className="text-2xl">🚀</span>
+                      START FULL INTERVIEW
+                    </span>
+                  ) : (
+                    'No Rounds Available'
+                  )}
+                </motion.button>
+                <p className="text-gray-600 text-xs text-center">
+                  Complete all {readyRounds} rounds sequentially
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Round Cards */}
+          <div>
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Individual Rounds ({totalRounds})</h4>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {rounds.map(r => <RoundCard key={r.id} round={r} />)}
+            </div>
           </div>
         </motion.div>
       )}
+
+      {/* Start Confirmation Modal */}
+      <AnimatePresence>
+        {showStartConfirmation && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowStartConfirmation(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl"
+            >
+              <div className="text-center mb-6">
+                <div className="text-6xl mb-4">🎯</div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Start Full Interview?</h3>
+                <p className="text-gray-600">
+                  You're about to begin a complete {selectedTrack?.title} interview with <strong>{readyRounds} rounds</strong>.
+                </p>
+              </div>
+
+              <div className="bg-blue-50 rounded-xl p-4 mb-6 border border-blue-100">
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <span>📋</span> What to Expect:
+                </h4>
+                <ul className="space-y-2 text-sm text-blue-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">✓</span>
+                    <span>Complete {readyRounds} rounds sequentially</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">✓</span>
+                    <span>Real-time coding, MCQs, and interactive interviews</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">✓</span>
+                    <span>Progress automatically tracked</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-600 mt-0.5">✓</span>
+                    <span>Take breaks between rounds if needed</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowStartConfirmation(false)}
+                  className="flex-1 px-6 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold transition-all hover:bg-gray-50 shadow-sm hover:shadow-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStartConfirmation(false);
+                    startFullInterview();
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md hover:shadow-lg border-2 border-blue-600 hover:border-blue-700"
+                >
+                  Let's Begin! 🚀
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

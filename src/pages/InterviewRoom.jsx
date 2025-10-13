@@ -571,7 +571,7 @@ const InterviewRoom = () => {
             <p className="text-xs text-gray-600">{user?.email || ''}</p>
           </div>
           <motion.div 
-            className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white flex items-center justify-center shadow-lg"
+            className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg"
             whileHover={{ scale: 1.1, rotate: 5 }}
             transition={{ duration: 0.2 }}
           >
@@ -595,11 +595,11 @@ const InterviewRoom = () => {
             transition={{ delay: 0.8, duration: 0.6 }}
           >
             <motion.div 
-              className="w-36 h-36 md:w-44 md:h-44 bg-gradient-to-br from-blue-600 to-purple-700 rounded-full flex items-center justify-center border-4 border-white shadow-2xl relative overflow-hidden"
+              className="w-36 h-36 md:w-44 md:h-44 bg-blue-600 rounded-full flex items-center justify-center border-4 border-white shadow-2xl relative overflow-hidden"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/30 to-purple-600/30 animate-pulse"></div>
+              <div className="absolute inset-0 bg-blue-400 opacity-30 animate-pulse"></div>
               <motion.img 
                 src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" 
                 alt="AI" 
@@ -774,7 +774,7 @@ const InterviewRoom = () => {
             <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
               isRecording 
                 ? 'bg-gradient-to-r from-red-400 to-red-500' 
-                : 'bg-gradient-to-r from-green-400 to-green-500'
+                : 'bg-green-500'
             }`}></div>
             <span className="relative z-10 flex items-center gap-3">
               {!isOnline ? (
@@ -899,7 +899,7 @@ const InterviewRoom = () => {
                   className={`flex-1 font-bold py-3 rounded-xl shadow-lg transition-all duration-300 ${
                     isRecording 
                       ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white' 
-                      : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}

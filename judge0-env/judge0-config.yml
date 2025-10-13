@@ -1,49 +1,17 @@
-# Judge0 Configuration File
-
-# Enable or disable debug mode. In debug mode, detailed information is logged.
 debug: false
-
-# Enable or disable production mode. In production mode, exceptions are not reported.
 production: true
-
-# Specify maximum number of submission's attributes that you want to be available in the API response
-# when submissions are fetched. Maximum value is 20.
 max_attributes: 20
-
-# Authentication configuration
 authentication:
-  # JWT Authentication
-  # Secret key for JWT authentication. You can generate your own secret key with:
-  # $ ruby -rsecurerandom -e 'puts SecureRandom.hex(32)'
-  # Make sure this matches your SECRET_KEY in the judge0.env file
   header: "X-Auth-Token"
-
-# Submissions configuration
 submissions:
-  # Default time limit for every program (in seconds)
   default_cpu_time_limit: 2
-  # Default wall time limit for every program (in seconds)
   default_wall_time_limit: 5
-  # Default memory limit for every program (in KB)
   default_memory_limit: 128000
-  # Default stack limit for every program (in KB)
   default_stack_limit: 64000
-  # Default maximum number of processes and/or threads for every program
   default_max_processes_and_or_threads: 60
-  # Default file size limit for every program (in KB)
   default_max_file_size: 30
-
-# Trusted users configuration
 trusted_users:
-  # If enabled, submissions from users in the trusted group will not be limited by default limitations
-  # Default: false
   enabled: false
-
-# Enable or disable runtimes based on their name. If enabled then users
-# can use the runtime. Otherwise, runtime is disabled and users can't use it.
-# Note that disabling runtimes won't automatically update your API docs.
-# For that, please take a look at documentation for config/initializers/swagger.rb.
-# Default: all runtimes are enabled
 enable_per_runtime:
   python: true
   javascript: true

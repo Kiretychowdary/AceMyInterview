@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const tabData = [
 	{
-		name: 'About This Platform',
+		name: 'Platform Overview',
 		features: [
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-emerald-400 text-2xl">
-						{/* Info Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -24,14 +23,13 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Ace Your Interview Journey',
-				desc: 'Our platform is designed to help you master interviews with AI-powered mock sessions, real-time feedback, and curated resources. Whether you\'re a fresher or an experienced professional, you\'ll find everything you need to succeed.',
+				title: 'Master Your Interview Journey',
+				desc: '@AceMyInterview is your complete interview preparation platform featuring AI-powered mock sessions, real-time feedback, and expert-curated resources. Designed for both freshers and experienced professionals to achieve interview success.',
 				link: '#',
 			},
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-purple-400 text-2xl">
-						{/* Community Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -46,8 +44,8 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Built for All Aspirants',
-				desc: 'From coding interviews to system design and behavioral rounds, our tools and content are tailored for every stage of your interview preparation.',
+				title: 'Built for Every Candidate',
+				desc: 'From technical coding interviews to system design and behavioral rounds, our comprehensive tools and resources are tailored for every stage of your interview preparation journey.',
 				link: '#',
 			},
 		],
@@ -55,12 +53,11 @@ const tabData = [
 			'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
 	},
 	{
-		name: 'Page Features',
+		name: 'Smart Features',
 		features: [
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-blue-400 text-2xl">
-						{/* Feature Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -75,13 +72,12 @@ const tabData = [
 					</span>
 				),
 				title: 'AI-Powered Mock Interviews',
-				desc: 'Simulate real interview scenarios with instant feedback and analytics to improve your performance.',
+				desc: 'Experience realistic interview simulations with our advanced AI technology. Get instant feedback, performance analytics, and personalized improvement suggestions.',
 				link: '#',
 			},
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-pink-400 text-2xl">
-						{/* Sheet Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -95,14 +91,13 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Curated Question Bank',
-				desc: 'Access a vast collection of coding, system design, and behavioral questions with detailed solutions.',
+				title: 'Comprehensive Question Bank',
+				desc: 'Access 500+ carefully curated questions covering coding algorithms, system design, behavioral scenarios, and technical deep-dives with detailed solutions.',
 				link: '#',
 			},
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-yellow-400 text-2xl">
-						{/* Feedback Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -115,8 +110,8 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Personalized Feedback',
-				desc: 'Get actionable insights and improvement tips after every mock session.',
+				title: 'Real-Time Performance Analytics',
+				desc: 'Receive detailed feedback on your communication skills, technical accuracy, and problem-solving approach with actionable improvement recommendations.',
 				link: '#',
 			},
 		],
@@ -128,8 +123,7 @@ const tabData = [
 		features: [
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-green-400 text-2xl">
-						{/* Growth Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -143,14 +137,13 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Track Your Progress',
-				desc: 'Monitor your strengths and weaknesses with detailed analytics and progress tracking.',
+				title: 'Progress Tracking Dashboard',
+				desc: 'Monitor your growth with comprehensive analytics tracking your strengths, improvement areas, and skill development over time with visual insights.',
 				link: '#',
 			},
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-indigo-400 text-2xl">
-						{/* Learning Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -164,8 +157,8 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Skill Enhancement',
-				desc: 'Sharpen your coding, problem-solving, and communication skills with targeted practice.',
+				title: 'Targeted Skill Enhancement',
+				desc: 'Improve your coding proficiency, problem-solving abilities, and communication skills with personalized practice sessions and expert guidance.',
 				link: '#',
 			},
 		],
@@ -173,12 +166,11 @@ const tabData = [
 			'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=600&q=80',
 	},
 	{
-		name: 'Interview Details',
+		name: 'Success Resources',
 		features: [
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-red-400 text-2xl">
-						{/* Interview Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -193,13 +185,12 @@ const tabData = [
 					</span>
 				),
 				title: 'Real Interview Experiences',
-				desc: 'Read and share real interview stories, tips, and strategies from top companies.',
+				desc: 'Learn from 10K+ success stories and authentic interview experiences from candidates who landed roles at top tech companies worldwide.',
 				link: '#',
 			},
 			{
 				icon: (
-					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-[#232526] text-orange-400 text-2xl">
-						{/* Tips Icon */}
+					<span className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white text-2xl shadow-lg">
 						<svg
 							width="28"
 							height="28"
@@ -213,8 +204,8 @@ const tabData = [
 						</svg>
 					</span>
 				),
-				title: 'Interview Tips & Guidance',
-				desc: 'Get expert advice on how to approach interviews, handle tricky questions, and leave a lasting impression.',
+				title: 'Expert Interview Strategies',
+				desc: 'Access proven strategies, insider tips, and expert guidance on approaching different interview formats and making memorable impressions on hiring managers.',
 				link: '#',
 			},
 		],
@@ -235,26 +226,54 @@ const PageFeatures = () => {
 	const currentTab = tabData[activeTab];
 
 	return (
-        <section className="w-full bg-white/95 border border-gray-200 rounded-3xl p-4 sm:p-6 md:p-12 mt-6 sm:mt-10 max-w-7xl mx-auto shadow-lg">
+        <section className="w-full bg-gradient-to-br from-blue-50 via-white to-blue-50 border border-blue-100 rounded-3xl p-6 sm:p-8 md:p-12 mt-8 sm:mt-12 max-w-7xl mx-auto shadow-xl relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100 to-transparent rounded-full transform translate-x-32 -translate-y-32 opacity-50"></div>
+            
+            {/* Header */}
+            <motion.div
+                className="text-center mb-12"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+            >
+                <div className="inline-flex items-center gap-2 bg-blue-600 text-white rounded-full px-6 py-3 mb-6">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <span className="font-bold text-lg">@AceMyInterview Features</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+                    Everything You Need to
+                    <br />
+                    <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                        Succeed in Interviews
+                    </span>
+                </h2>
+                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Comprehensive tools and resources designed to help you excel in every aspect of the interview process.
+                </p>
+            </motion.div>
+
             {/* Tabs */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 sm:mb-10 gap-4">
-                <div className="flex flex-wrap gap-4 sm:gap-8 md:gap-16 w-full md:w-auto justify-center md:justify-start">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-center mb-10 gap-4">
+                <div className="flex flex-wrap gap-3 sm:gap-4 w-full justify-center">
                     {tabData.map((tab, idx) => (
-                        <button
+                        <motion.button
                             key={tab.name}
                             onClick={() => setActiveTab(idx)}
-                            className={`text-base sm:text-lg font-semibold px-4 sm:px-7 py-2 rounded border transition
-                ${
-									idx === activeTab
-										? 'border-blue-600 text-blue-700 bg-blue-50 shadow-[0_0_0_2px_rgba(37,99,235,0.15)]'
-										: 'border-transparent text-gray-700 hover:text-blue-700 hover:bg-blue-50'
-								}`}
+                            className={`text-sm sm:text-base font-semibold px-6 py-3 rounded-2xl transition-all duration-300 ${
+								idx === activeTab
+									? 'bg-blue-600 text-white shadow-lg transform scale-105'
+									: 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 hover:border-blue-200'
+							}`}
+                            whileHover={{ scale: idx === activeTab ? 1.05 : 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                         >
                             {tab.name}
-                        </button>
+                        </motion.button>
                     ))}
                 </div>
             </div>
+
             {/* Content */}
             <AnimatePresence mode="wait">
                 <motion.div
@@ -263,46 +282,67 @@ const PageFeatures = () => {
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 0.4, ease: 'easeInOut' }}
-                    className="flex flex-col md:flex-row gap-6 md:gap-10"
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    className="flex flex-col lg:flex-row gap-8 lg:gap-12 relative z-10"
                 >
                     {/* Left: Features */}
-                    <div className="flex-1 flex flex-col gap-6 md:gap-8 justify-center">
+                    <div className="flex-1 flex flex-col gap-8 justify-center">
                         {currentTab.features.map((f, i) => (
                             <motion.div
                                 key={i}
                                 initial={{ opacity: 0, x: -30 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.1 * i }}
-                                className="flex items-start gap-4 sm:gap-5"
+                                transition={{ delay: 0.1 * i, duration: 0.6 }}
+                                className="flex items-start gap-5 p-6 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 hover:border-blue-200 group"
                             >
-                                {f.icon}
-                                <div>
-                                    <h3 className="text-blue-700 text-base sm:text-xl font-bold mb-1">{f.title}</h3>
-                                    <p className="text-gray-600 mb-2 text-sm sm:text-base">{f.desc}</p>
+                                <div className="group-hover:scale-110 transition-transform duration-300">
+                                    {f.icon}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-blue-700 text-lg sm:text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors duration-300">
+                                        {f.title}
+                                    </h3>
+                                    <p className="text-gray-600 mb-4 text-sm sm:text-base leading-relaxed">
+                                        {f.desc}
+                                    </p>
                                     <a
                                         href={f.link}
-                                        className="text-blue-600 font-semibold hover:underline flex items-center gap-1 text-sm sm:text-base"
-                                        aria-label={`Get Started with ${f.title}`}
+                                        className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 transition-colors duration-300 text-sm sm:text-base group/link"
+                                        aria-label={`Learn more about ${f.title}`}
                                     >
-                                        Get Started <span aria-hidden>→</span>
+                                        <span>Learn More</span>
+                                        <svg
+                                            className="w-4 h-4 group-hover/link:translate-x-1 transition-transform duration-300"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
                                     </a>
                                 </div>
                             </motion.div>
                         ))}
                     </div>
+
                     {/* Right: Image */}
                     <motion.div
-                        className="flex-1 flex items-center justify-center mt-4 md:mt-0"
-                        initial={{ opacity: 0, scale: 0.95 }}
+                        className="flex-1 flex items-center justify-center"
+                        initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
+                        transition={{ delay: 0.3, duration: 0.6 }}
                     >
-                        <img
-                            src={currentTab.image}
-                            alt="Feature Preview"
-                            className="rounded-2xl shadow-lg w-full max-w-xs sm:max-w-md md:max-w-xl border border-gray-200 bg-gray-100 object-contain"
-                        />
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 rounded-3xl transform rotate-3 group-hover:rotate-6 transition-transform duration-500"></div>
+                            <img
+                                src={currentTab.image}
+                                alt="Feature Preview"
+                                className="relative rounded-3xl shadow-2xl w-full max-w-md lg:max-w-lg border-4 border-white object-cover h-80 sm:h-96 transform group-hover:scale-105 transition-transform duration-500"
+                            />
+                            <div className="absolute -bottom-4 -right-4 bg-blue-600 text-white rounded-2xl px-4 py-2 font-bold shadow-lg">
+                                @AceMyInterview
+                            </div>
+                        </div>
                     </motion.div>
                 </motion.div>
             </AnimatePresence>

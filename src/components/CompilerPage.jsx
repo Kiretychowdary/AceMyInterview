@@ -4,12 +4,14 @@ import { Editor } from "@monaco-editor/react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { toast } from 'react-toastify';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import GeminiService from '../services/GeminiService';
 import { validateJudge0Setup } from '../utils/judge0Config';
 import judge0Client from '../services/judge0Client';
 import { markRoundComplete } from '../config/roundsConfig';
 import { useAuth } from './AuthContext';
+import RoundBreakScreen from './RoundBreakScreen';
+import { testJudge0Connection, printConnectionReport } from '../utils/judge0Diagnostics';
 
 const languages = [
   {
@@ -158,15 +160,27 @@ const difficulties = [
 
 function CompilerPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Get selected topic from navigation state
   const selectedTopic = location.state?.subject || 'algorithms';
 
+  // Full interview mode tracking
+  const isFullInterview = location.state?.isFullInterview || false;
+  const allRounds = location.state?.allRounds || [];
+  const currentRoundIndex = location.state?.currentRoundIndex || 0;
+  const trackKey = location.state?.trackKey || null;
+  const totalRounds = location.state?.totalRounds || 0;
+
   // Topic hierarchy state
   const [selectedMainTopic, setSelectedMainTopic] = useState(null);
   const [showSubTopics, setShowSubTopics] = useState(false);
   const [configuredTopic, setConfiguredTopic] = useState(null);
+  const [showBreakScreen, setShowBreakScreen] = useState(false);
+  
+  // Judge0 connection state
+  const [judge0Status, setJudge0Status] = useState({ connected: null, testing: false });
 
   // Auto-configure based on selected topic from navigation
   useEffect(() => {
@@ -493,6 +507,13 @@ function CompilerPage() {
         if (roundId) {
           try { markRoundComplete(user?.uid || 'anonymous', roundId); } catch {}
         }
+        
+        // If this is part of a full interview, proceed to next round after a delay
+        if (isFullInterview && currentRoundIndex < allRounds.length - 1) {
+          setTimeout(() => {
+            setShowBreakScreen(true);
+          }, 3000); // Show success for 3 seconds before break
+        }
       } else {
         toast.error(`❌ ${batch.passed}/${batch.total} test cases passed. Keep trying!`);
       }
@@ -502,6 +523,61 @@ function CompilerPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const testJudge0Setup = async () => {
+    setJudge0Status({ connected: null, testing: true });
+    toast.info('🔍 Testing Judge0 connection...', { autoClose: 2000 });
+    
+    try {
+      const results = await testJudge0Connection();
+      const success = printConnectionReport(results);
+      
+      setJudge0Status({ connected: success, testing: false });
+      
+      if (success) {
+        toast.success('✅ Judge0 is connected and working!', { autoClose: 3000 });
+      } else {
+        toast.error(
+          `❌ Judge0 connection failed:\n${results.errors.join('\n')}`,
+          { autoClose: 5000 }
+        );
+      }
+    } catch (error) {
+      setJudge0Status({ connected: false, testing: false });
+      toast.error(`❌ Connection test failed: ${error.message}`, { autoClose: 5000 });
+    }
+  };
+
+  const handleContinueToNextRound = () => {
+    const nextRoundIndex = currentRoundIndex + 1;
+    const nextRound = allRounds[nextRoundIndex];
+    
+    if (!nextRound) {
+      navigate('/interview-preparation');
+      return;
+    }
+    
+    const modeRoute = (mode) => {
+      if (mode === 'MCQ') return '/mcq-interview';
+      if (mode === 'CODING' || mode === 'Coding Compiler') return '/compiler';
+      if (mode === 'PERSON' || mode === 'Person-to-Person') return '/face-to-face-interview';
+      return '/interview-preparation';
+    };
+    
+    console.log('🔄 Navigating to next round:', { nextRound, nextRoundIndex, trackKey });
+    
+    navigate(modeRoute(nextRound.mode), {
+      state: {
+        roundId: nextRound.id,
+        subject: selectedTopic, // Keep using same topic
+        trackKey,
+        allRounds,
+        currentRoundIndex: nextRoundIndex,
+        isFullInterview: true,
+        totalRounds
+      }
+    });
   };
 
   // Helper function to poll for result
@@ -1025,8 +1101,42 @@ function CompilerPage() {
     ? 'fixed inset-0 z-[100] w-screen h-screen overflow-hidden bg-white flex flex-col'
     : 'h-screen w-full max-w-[100vw] overflow-hidden overflow-x-hidden bg-gradient-to-br from-blue-50 via-white to-blue-100 flex flex-col';
 
+  // Show break screen between rounds
+  if (showBreakScreen) {
+    const currentRound = allRounds[currentRoundIndex];
+    const nextRound = allRounds[currentRoundIndex + 1];
+    
+    return (
+      <RoundBreakScreen
+        currentRound={currentRound}
+        nextRound={nextRound}
+        currentRoundIndex={currentRoundIndex}
+        totalRounds={totalRounds}
+        onContinue={handleContinueToNextRound}
+        trackKey={trackKey}
+      />
+    );
+  }
+
   return (
     <div className={rootClasses}>
+      {/* Full Interview Progress Header */}
+      {isFullInterview && (
+        <div className="bg-blue-600 text-white px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎯</span>
+            <div>
+              <div className="font-bold">Round {currentRoundIndex + 1} of {totalRounds}</div>
+              <div className="text-blue-100 text-xs">{allRounds[currentRoundIndex]?.label}</div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-blue-100">Full Interview Mode</div>
+            <div className="text-xs text-blue-200">{totalRounds - currentRoundIndex - 1} rounds remaining</div>
+          </div>
+        </div>
+      )}
+      
       {/* Top Bar */}
       <div className="h-14 flex items-center justify-between px-6 border-b border-blue-200 bg-white/80 backdrop-blur-sm shadow-sm">
         <div className="flex items-center gap-3">
@@ -1037,6 +1147,27 @@ function CompilerPage() {
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
+          {/* Judge0 Status Indicator */}
+          {judge0Status.connected !== null && (
+            <div className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium ${
+              judge0Status.connected 
+                ? 'bg-green-100 text-green-700' 
+                : 'bg-red-100 text-red-700'
+            }`}>
+              <span>{judge0Status.connected ? '✅' : '❌'}</span>
+              <span>Judge0</span>
+            </div>
+          )}
+          
+          <button
+            onClick={testJudge0Setup}
+            disabled={judge0Status.testing}
+            className="px-3 py-1.5 rounded-lg border border-blue-300 bg-white text-blue-600 hover:bg-blue-600 hover:text-white transition text-[11px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Test Judge0 Connection"
+          >
+            {judge0Status.testing ? '🔄 Testing...' : '🔌 Test Judge0'}
+          </button>
+          
           <span className="hidden sm:inline">Ctrl+Enter: Run • Ctrl+Shift+Enter: Test</span>
           {dragging && <span className="text-blue-600 font-medium">Adjusting Layout...</span>}
           {!problemDetails && (
