@@ -22,7 +22,10 @@ const Home = () => {
   const { user } = useAuth();
   
   return (
-    <div className="min-h-screen bg-white text-black font-sans">
+    <div className="min-h-screen bg-white text-black font-sans relative overflow-hidden">
+      {/* Decorative corner accents for hero (responsive) */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-16 w-44 h-44 rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-60 blur-2xl transform -rotate-12 sm:-left-32 sm:-top-24 sm:w-72 sm:h-72 sm:opacity-50"></div>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 -bottom-12 w-52 h-52 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-55 blur-2xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-45"></div>
       {/* HERO SECTION */}
       <div className="flex flex-col h-auto md:h-screen md:flex-row items-center justify-between px-2 sm:px-6 md:px-16 py-10 sm:py-20 max-w-7xl mx-auto">
         {/* TEXT */}
@@ -174,7 +177,7 @@ const Home = () => {
       </section> */}
 
       {/* TESTIMONIALS SECTION */}
-      <section className="py-20 bg-white">
+      {/* <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-16"
@@ -246,10 +249,10 @@ const Home = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* INTERACTIVE DEMO SECTION */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-blue-100">
+      {/* <section className="py-20 bg-gradient-to-br from-blue-50 to-blue-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             <motion.div
@@ -335,7 +338,7 @@ const Home = () => {
             </motion.div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* PROFESSIONAL RESOURCES SECTION */}
       <div id="resources">
@@ -344,9 +347,10 @@ const Home = () => {
       
       <PageFeatures/>
 
-      {/* FAQ SECTION */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      {/* FAQ SECTION - Professional UI */}
+      <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-blue-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0, y: 30 }}
@@ -354,15 +358,15 @@ const Home = () => {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-800 mb-4">
               Frequently Asked Questions
             </h2>
-            <p className="text-lg text-gray-600">
-              Everything you need to know about @AceMyInterview
+            <p className="text-lg text-blue-700 font-medium">
+              Everything you need to know about <span className="font-bold">@AceMyInterview</span>
             </p>
           </motion.div>
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             {[
               {
                 question: "How does the AI interviewer work?",
@@ -383,51 +387,62 @@ const Home = () => {
             ].map((faq, idx) => (
               <motion.div
                 key={idx}
-                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
+                className="bg-white rounded-3xl p-8 shadow-xl border-2 border-blue-100 hover:border-blue-300 transition-all duration-300"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: idx * 0.1 }}
                 viewport={{ once: true }}
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{faq.question}</h3>
-                <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                <h3 className="text-xl font-bold text-blue-700 mb-3 flex items-center gap-2">
+                  <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
+                  {faq.question}
+                </h3>
+                <p className="text-gray-700 leading-relaxed text-base">{faq.answer}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* NEWSLETTER SECTION */}
-      <section className="py-20 bg-blue-600">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Stay Updated with Interview Tips
-            </h2>
-            <p className="text-xl text-blue-100 mb-8">
-              Get weekly insights, new questions, and success strategies delivered to your inbox
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+      {/* FOOTER - Modern Newsletter Signup */}
+      <footer className="mt-20">
+        <motion.div
+          className="max-w-5xl mx-auto bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 rounded-3xl p-10 sm:p-14 text-white relative overflow-hidden shadow-2xl"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+        >
+          {/* Decorative Circles - less opacity for better text contrast */}
+          <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+            <div className="absolute top-10 left-10 w-24 h-24 bg-white opacity-5 rounded-full animate-pulse"></div>
+            <div className="absolute bottom-10 right-10 w-40 h-40 bg-white opacity-5 rounded-full animate-bounce"></div>
+          </div>
+          <div className="relative z-10 text-center">
+            <h3 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight text-white drop-shadow-lg">Stay Updated with Interview Tips</h3>
+            <p className="mb-8 text-lg max-w-2xl mx-auto text-white/90 drop-shadow">Get weekly insights, new questions, and success strategies delivered to your inbox</p>
+            <form className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-xl mx-auto">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-6 py-4 rounded-2xl border-0 focus:ring-2 focus:ring-blue-300 outline-none text-gray-900"
+                className="w-full sm:w-72 px-6 py-4 rounded-2xl text-blue-800 placeholder-white/80 focus:outline-none focus:ring-2 focus:ring-white/70 border-2 border-white/30 bg-white bg-opacity-90 shadow-md text-lg font-medium transition-all duration-200"
+                required
+                style={{'::placeholder': {color: '#fff'}}}
               />
-              <button className="bg-white text-blue-600 font-semibold px-8 py-4 rounded-2xl hover:bg-blue-50 transition-all duration-300 transform hover:scale-105">
+              <button
+                type="submit"
+                className="px-8 py-4 rounded-2xl bg-white text-blue-700 font-semibold text-lg shadow-lg hover:bg-blue-50 hover:text-blue-800 transition-all duration-200"
+              >
                 Subscribe
               </button>
-            </div>
-            <p className="text-sm text-blue-200 mt-4">
-              Join 25,000+ subscribers. No spam, unsubscribe anytime.
-            </p>
-          </motion.div>
-        </div>
-      </section>
+            </form>
+             
+          </div>
+        </motion.div>
+      </footer>
+
+      
+      
     </div>
   );
 };

@@ -108,71 +108,154 @@ const MockInterviews = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4 md:p-8 relative overflow-hidden">
+      {/* Decorative corner accents */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 w-56 h-56 rounded-full bg-gradient-to-br from-blue-200 to-transparent opacity-70 blur-3xl transform -rotate-12 sm:-left-32 sm:-top-24 sm:w-80 sm:h-80 sm:opacity-60"></div>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-60 blur-3xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-50"></div>
       <div className="max-w-7xl mx-auto">
         {!selectedCategory && (
           <motion.div
-            className="flex flex-col items-center justify-center min-h-[60vh] space-y-10"
+            className="flex flex-col items-center justify-center min-h-[70vh] space-y-12 py-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-bold text-blue-700 mb-4">
+            {/* Hero Section */}
+            <div className="text-center max-w-4xl mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="mb-4"
+              >
+                <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-4">
+                  🎯 Personalized Interview Preparation
+                </span>
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 mb-6 leading-tight"
+              >
                 Choose Your Path
-              </h1>
-              <p className="text-gray-600 text-lg">
-                Start with a broad category. You can explore interview modes and deep-dive topics after selecting a track.
-              </p>
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.5 }}
+                className="text-gray-600 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto"
+              >
+                Begin your journey with a specialized track. Master technical skills or excel in strategic roles with our comprehensive interview preparation platform.
+              </motion.p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+
+            {/* Category Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl px-4">
+              {/* Tech Track Card */}
               <motion.button
-                className="group relative bg-white rounded-2xl p-10 shadow-lg border border-blue-100 hover:shadow-xl transition-all text-left"
-                whileHover={{ y: -6 }}
+                className="group relative bg-white rounded-3xl p-8 md:p-10 shadow-xl border-2 border-blue-100 hover:border-blue-300 transition-all text-left overflow-hidden"
+                whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedCategory('tech')}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5, duration: 0.5 }}
               >
-                <div className="absolute inset-0 rounded-2xl pointer-events-none" />
-                <h2 className="text-2xl font-bold text-blue-700 mb-3 flex items-center gap-2">
-                  <span className="text-3xl">💻</span> Tech Tracks
-                </h2>
-                <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                  Software engineering, cybersecurity, data science — build technical excellence with structured preparation.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {tracks.tech.slice(0,3).map(t => (
-                    <span key={t.key} className="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-100">
-                      {t.title}
+                {/* Gradient Background Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-transparent to-purple-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Icon Badge */}
+                <div className="relative mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    💻
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="relative">
+                  <h2 className="text-3xl font-bold text-blue-700 mb-3 group-hover:text-blue-800 transition-colors">
+                    Tech Tracks
+                  </h2>
+                  <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                    Master software engineering, cybersecurity, and data science with structured technical interview preparation.
+                  </p>
+                  
+                  {/* Preview Tags */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {tracks.tech.slice(0,3).map(t => (
+                      <span key={t.key} className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200 group-hover:bg-blue-100 transition-colors">
+                        {t.title}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  {/* CTA */}
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold group-hover:from-blue-700 group-hover:to-blue-800 transition-all shadow-md group-hover:shadow-lg">
+                      Explore Tech
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
                     </span>
-                  ))}
+                  </div>
                 </div>
-                <div className="mt-6">
-                  <span className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold group-hover:bg-blue-700 transition-colors">Explore Tech →</span>
-                </div>
+
+                {/* Corner Decoration */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/20 to-transparent rounded-bl-full opacity-50 group-hover:opacity-70 transition-opacity" />
               </motion.button>
 
+              {/* Non-Tech Track Card */}
               <motion.button
-                className="group relative bg-white rounded-2xl p-10 shadow-lg border border-blue-100 hover:shadow-xl transition-all text-left"
-                whileHover={{ y: -6 }}
+                className="group relative bg-white rounded-3xl p-8 md:p-10 shadow-xl border-2 border-blue-100 hover:border-purple-300 transition-all text-left overflow-hidden"
+                whileHover={{ y: -8, scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedCategory('nonTech')}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6, duration: 0.5 }}
               >
-                <h2 className="text-2xl font-bold text-blue-700 mb-3 flex items-center gap-2">
-                  <span className="text-3xl">🧠</span> Non-Tech Tracks
-                </h2>
-                <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                  Product, design, leadership & communication — prepare for strategic and people-focused roles.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {tracks.nonTech.slice(0,3).map(t => (
-                    <span key={t.key} className="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-100">
-                      {t.title}
+                {/* Gradient Background Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-transparent to-blue-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Icon Badge */}
+                <div className="relative mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    🧠
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="relative">
+                  <h2 className="text-3xl font-bold text-blue-700 mb-3 group-hover:text-purple-700 transition-colors">
+                    Non-Tech Tracks
+                  </h2>
+                  <p className="text-gray-600 mb-6 text-base leading-relaxed">
+                    Excel in product management, design, and leadership with strategic interview preparation.
+                  </p>
+                  
+                  {/* Preview Tags */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {tracks.nonTech.slice(0,3).map(t => (
+                      <span key={t.key} className="text-xs px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 font-semibold border border-purple-200 group-hover:bg-purple-100 transition-colors">
+                        {t.title}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  {/* CTA */}
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-xl font-semibold group-hover:from-purple-700 group-hover:to-purple-800 transition-all shadow-md group-hover:shadow-lg">
+                      Explore Non-Tech
+                      <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
                     </span>
-                  ))}
+                  </div>
                 </div>
-                <div className="mt-6">
-                  <span className="inline-block bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold group-hover:bg-blue-700 transition-colors">Explore Non-Tech →</span>
-                </div>
+
+                {/* Corner Decoration */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-200/20 to-transparent rounded-bl-full opacity-50 group-hover:opacity-70 transition-opacity" />
               </motion.button>
             </div>
           </motion.div>
@@ -182,37 +265,54 @@ const MockInterviews = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.35 }}
-            className="space-y-10"
+            transition={{ duration: 0.4 }}
+            className="space-y-8"
           >
-            <div className="flex items-center justify-between flex-wrap gap-4">
+            {/* Header with Back Button */}
+            <div className="flex items-center justify-between flex-wrap gap-4 mb-8">
               <div>
-                <h2 className="text-3xl font-bold text-blue-700 mb-1">
-                  {selectedCategory === 'tech' ? 'Tech Tracks' : 'Non-Tech Tracks'}
-                </h2>
-                <p className="text-gray-600 text-sm">
-                  {selectedCategory === 'tech' ? 'Choose a specialization to begin structured interview preparation.' : 'Select a non-technical domain to start focused practice.'}
-                </p>
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold mb-3">
+                    {selectedCategory === 'tech' ? '💻 Technical' : '🧠 Strategic'}
+                  </span>
+                  <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700 mb-2">
+                    {selectedCategory === 'tech' ? 'Tech Tracks' : 'Non-Tech Tracks'}
+                  </h2>
+                  <p className="text-gray-600 text-base">
+                    {selectedCategory === 'tech' ? 'Choose a specialization to begin structured interview preparation.' : 'Select a non-technical domain to start focused practice.'}
+                  </p>
+                </motion.div>
               </div>
-              <button
+              <motion.button
                 onClick={() => { setSelectedCategory(null); setSelectedMock(null); }}
-                className="px-4 py-2 rounded-lg bg-white border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-white border-2 border-blue-200 text-blue-700 font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4 }}
               >
-                ← Back to Categories
-              </button>
+                ← Back
+              </motion.button>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Track Cards Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {tracks[selectedCategory].map((track, index) => (
                 <motion.div
                   key={track.key}
-                  className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 overflow-hidden border border-blue-100/60 flex flex-col"
-                  initial={{ opacity: 0, y: 18 }}
+                  className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 border-blue-100/60 hover:border-blue-300 flex flex-col"
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06, duration: 0.35 }}
-                  whileHover={{ y: -5 }}
+                  transition={{ delay: index * 0.08, duration: 0.4 }}
+                  whileHover={{ y: -8 }}
                 >
-                  <div className="h-44 md:h-48 lg:h-52 overflow-hidden relative bg-blue-100">
+                  {/* Image Section */}
+                  <div className="h-48 overflow-hidden relative bg-gradient-to-br from-blue-100 to-purple-100">
                     {(() => {
                       const isUnsplash = track.img.includes('images.unsplash.com');
                       const base = track.img.split('?')[0];
@@ -227,30 +327,55 @@ const MockInterviews = () => {
                           loading="lazy"
                           decoding="async"
                           alt={track.title + ' cover image'}
-                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 select-none"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 select-none"
                           draggable={false}
                         />
                       );
                     })()}
-                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/10 via-black/0 to-black/10" />
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/30 via-black/0 to-black/10" />
+                    
+                    {/* Category Badge */}
+                    <div className="absolute top-3 right-3">
+                      <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-bold text-blue-700 shadow-md">
+                        {track.subTopics.length} Topics
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Content Section */}
                   <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">{track.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4 flex-1">{track.desc}</p>
-                    <div className="flex flex-wrap gap-2 mb-4">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">
+                      {track.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4 flex-1 leading-relaxed">
+                      {track.desc}
+                    </p>
+                    
+                    {/* Topic Tags */}
+                    <div className="flex flex-wrap gap-2 mb-5">
                       {track.subTopics.slice(0,3).map(s => (
-                        <span key={s.name} className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">
+                        <span key={s.name} className="text-xs px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 font-semibold group-hover:from-blue-100 group-hover:to-blue-200 transition-all">
                           {s.name}
                         </span>
                       ))}
+                      {track.subTopics.length > 3 && (
+                        <span className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 font-semibold">
+                          +{track.subTopics.length - 3} more
+                        </span>
+                      )}
                     </div>
+                    
+                    {/* CTA Button */}
                     <motion.button
-                      className="w-full mt-auto bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                      className="w-full mt-auto bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                       onClick={() => { handleStartPractice(track); }}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
                       Start Practice
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
                     </motion.button>
                   </div>
                 </motion.div>
@@ -264,56 +389,76 @@ const MockInterviews = () => {
         <AnimatePresence>
           {showModeSelection && selectedMock && selectedSubTopic && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.25 }}
               onClick={() => setShowModeSelection(false)}
             >
               <motion.div
-                className="bg-white/95 backdrop-blur-md rounded-2xl p-8 w-full max-w-lg mx-4 shadow-2xl border border-white/20"
-                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                className="bg-white rounded-3xl p-8 w-full max-w-2xl mx-4 shadow-2xl border-2 border-blue-200"
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-2xl font-bold text-blue-700">Choose Interview Mode</h3>
+                {/* Modal Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700 mb-2">
+                      Choose Interview Mode
+                    </h3>
+                    <p className="text-gray-600 text-sm">Select how you'd like to practice</p>
+                  </div>
                   <button
                     onClick={() => setShowModeSelection(false)}
-                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors duration-150 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center"
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center transition-all"
                   >
-                    ×
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
 
-                <div className="mb-6 p-4 rounded-xl border border-blue-100 bg-blue-50/60">
-                  <div className="text-xs uppercase tracking-wide text-blue-600 font-semibold mb-1">Selected Topic</div>
-                  <div className="font-semibold text-blue-700">{selectedMock.title} / {selectedSubTopic.name}</div>
-                  <div className="text-xs text-gray-600 mt-1">{selectedSubTopic.desc}</div>
+                {/* Selected Topic Info */}
+                <div className="mb-6 p-5 rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {selectedCategory === 'tech' ? '💻' : '🧠'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs uppercase tracking-wide text-blue-600 font-bold mb-1">Selected Topic</div>
+                      <div className="font-bold text-blue-700 text-lg truncate">{selectedMock.title} / {selectedSubTopic.name}</div>
+                      <div className="text-sm text-gray-600 mt-1 line-clamp-2">{selectedSubTopic.desc}</div>
+                    </div>
+                  </div>
                 </div>
 
-                <p className="text-gray-600 text-sm mb-4">How would you like to practice?</p>
-
+                {/* Mode Options */}
                 <div className="space-y-4">
                   {getModesForSubTopic(selectedSubTopic.name).map((mode, index) => (
                     <motion.button
                       key={mode.name}
-                      className="w-full p-4 bg-blue-50 hover:bg-blue-100 rounded-xl text-left transition-all duration-150 border border-blue-100 flex items-center space-x-4"
+                      className="group w-full p-5 bg-gradient-to-br from-blue-50 to-white hover:from-blue-100 hover:to-blue-50 rounded-2xl text-left transition-all duration-200 border-2 border-blue-100 hover:border-blue-300 hover:shadow-lg flex items-center space-x-4"
                       onClick={() => handleModeSelect(mode)}
-                      initial={{ opacity: 0, x: -10 }}
+                      initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05, duration: 0.2 }}
-                      whileHover={{ scale: 1.01, x: 2 }}
-                      whileTap={{ scale: 0.99 }}
+                      transition={{ delay: index * 0.08, duration: 0.3 }}
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <div className="text-3xl">{mode.icon}</div>
+                      <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-md">
+                        {mode.icon}
+                      </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-blue-700">{mode.name}</div>
+                        <div className="font-bold text-blue-700 text-lg group-hover:text-blue-800 transition-colors">{mode.name}</div>
                         <div className="text-sm text-gray-600 mt-1">{mode.desc}</div>
                       </div>
+                      <svg className="w-6 h-6 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
                     </motion.button>
                   ))}
                 </div>
@@ -322,61 +467,91 @@ const MockInterviews = () => {
           )}
         </AnimatePresence>
 
-        {/* Sub Topics Modal - Only for Interview Person to Person */}
+        {/* Sub Topics Modal */}
         <AnimatePresence>
           {showSubTopics && selectedMock && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.25 }}
               onClick={() => setShowSubTopics(false)}
             >
               <motion.div
-                className={`bg-white/95 backdrop-blur-md rounded-2xl p-8 w-full mx-4 shadow-2xl border border-white/20 ${selectedMock.subTopics.length > 6 ? 'max-w-4xl' : 'max-w-md'}`}
-                initial={{ scale: 0.95, opacity: 0, y: 10 }}
+                className={`bg-white rounded-3xl p-8 w-full mx-4 shadow-2xl border-2 border-blue-200 ${selectedMock.subTopics.length > 6 ? 'max-w-5xl' : 'max-w-2xl'}`}
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-blue-700">
-                    {selectedMock.title}
-                  </h3>
+                {/* Modal Header */}
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-2xl">
+                        {selectedCategory === 'tech' ? '💻' : '🧠'}
+                      </div>
+                      <div>
+                        <h3 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700">
+                          {selectedMock.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm mt-1">{selectedMock.desc}</p>
+                      </div>
+                    </div>
+                  </div>
                   <button
                     onClick={() => setShowSubTopics(false)}
-                    className="text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors duration-150 hover:bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center"
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center transition-all"
                   >
-                    ×
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
                 
-                <p className="text-gray-600 text-sm mb-6">{selectedMock.desc}</p>
-                
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-gray-800 mb-3">Choose a topic:</h4>
-                  <div className={`grid gap-4 ${selectedMock.subTopics.length > 10 ? 'md:grid-cols-3' : 'md:grid-cols-2'} max-h-[60vh] overflow-y-auto pr-1 custom-scroll`}>
+                {/* Topics Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                      <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                      Choose a Topic to Begin
+                    </h4>
+                    <span className="text-sm text-gray-500 font-medium">
+                      {selectedMock.subTopics.length} topics available
+                    </span>
+                  </div>
+                  
+                  <div className={`grid gap-4 ${selectedMock.subTopics.length > 10 ? 'md:grid-cols-3' : selectedMock.subTopics.length > 6 ? 'md:grid-cols-2' : 'md:grid-cols-2'} max-h-[55vh] overflow-y-auto pr-2`}>
                     {selectedMock.subTopics.map((topic, index) => (
                       <motion.button
                         key={index}
-                        className="p-4 bg-blue-50 hover:bg-blue-100 rounded-xl text-left transition-all duration-150 border border-blue-100"
+                        className="group p-5 bg-gradient-to-br from-blue-50 to-white hover:from-blue-100 hover:to-blue-50 rounded-2xl text-left transition-all duration-200 border-2 border-blue-100 hover:border-blue-300 hover:shadow-lg"
                         onClick={() => {
                           handleSubTopicSelect(topic);
                         }}
-                        initial={{ opacity: 0, y: 8 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.03, duration: 0.18 }}
-                        whileHover={{ scale: 1.02, y: -2 }}
+                        transition={{ delay: index * 0.04, duration: 0.2 }}
+                        whileHover={{ scale: 1.03, y: -3 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        <div className="font-semibold text-blue-700 truncate" title={topic.name}>{topic.name}</div>
-                        <div className="text-xs text-gray-600 mt-1 line-clamp-2" title={topic.desc}>{topic.desc}</div>
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-bold text-blue-700 group-hover:text-blue-800 transition-colors text-base" title={topic.name}>
+                            {topic.name}
+                          </div>
+                          <svg className="w-5 h-5 text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </div>
+                        <div className="text-xs text-gray-600 leading-relaxed line-clamp-2" title={topic.desc}>
+                          {topic.desc}
+                        </div>
                       </motion.button>
                     ))}
                   </div>
-                </div>
+      </div>
               </motion.div>
             </motion.div>
           )}

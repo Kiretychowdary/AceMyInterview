@@ -1,11 +1,12 @@
 //nmkrspvlidata
-//radhakrishna
-// SIMPLE GEMINI-ONLY BACKEND - NO N8N COMPLEXITY
-// NMKRSPVLIDATAPERMANENT - Direct Gemini AI Integration
+//radhakrishna 
+// NMKRSPVLIDATAPERMANENT  
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+// Mongoose connection for models
+const mongooseService = require('./services/mongoose.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,10 +24,113 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Mount backend API routes
+try {
+  const submissionsRoutes = require('./routes/submissions.cjs');
+  app.use('/api/submissions', submissionsRoutes);
+} catch (e) {
+  console.warn('Submissions routes not available:', e.message);
+}
+
+// Mount contests routes (CRUD + problems)
+try {
+  const contestsRoutes = require('./routes/contests.cjs');
+  app.use('/api/contests', contestsRoutes);
+} catch (e) {
+  console.warn('Contests routes not available:', e.message);
+}
+
+// Connect to MongoDB via Mongoose before starting the server.
+// Start the HTTP server only after successful DB connection. Exit on failure.
+mongooseService.connect()
+  .then(() => {
+    console.log('Mongoose connected');
+    // Start the server once DB is ready
+    app.listen(PORT, () => {
+      console.log(`🚀 SIMPLIFIED AceMyInterview Backend running on http://localhost:${PORT}`);
+      console.log(`🤖 Gemini AI: ${GEMINI_API_KEY ? 'READY' : 'NOT CONFIGURED'}`);
+      console.log(`💾 Q&A Storage: ENABLED`);
+      console.log('');
+      console.log('Available endpoints:');
+      console.log('  POST /api/mcq-questions - Generate MCQ questions');
+      console.log('  POST /api/coding-problems - Generate coding problems');
+      console.log('  POST /api/store-qa - Store question-answer data');
+      console.log('  GET  /api/qa-history/:userId - Get user Q&A history');
+      console.log('  GET  /api/session/:sessionId - Get session details');
+      console.log('  GET  /api/qa-analytics - Get Q&A analytics');
+      console.log('  GET  /api/health - Health check');
+      console.log('  GET  /fetchProblem - Codeforces proxy');
+    });
+  })
+  .catch((err) => {
+    console.error('Mongoose connection error:', err && err.message ? err.message : err);
+    console.error('Exiting process since DB connection failed.');
+    // Give logs a moment to flush
+    setTimeout(() => process.exit(1), 250);
+  });
+
 // Environment Configuration
 const GEMINI_API_URL = process.env.GEMINI_API_URL;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const REQUEST_TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT) || 30000;
+
+// Helper: POST with retries for transient upstream errors (e.g., 429)
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+async function postWithRetries(url, body, options = {}, maxAttempts = 3) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const resp = await axios.post(url, body, options);
+      return { response: resp, attempts: attempt };
+    } catch (err) {
+      lastErr = err;
+      const status = err.response?.status;
+      const retryAfter = err.response?.headers?.['retry-after'];
+
+      console.warn(`postWithRetries attempt ${attempt} failed with status ${status}`);
+      if (status === 429) {
+        // If Retry-After provided, wait that long (in seconds)
+        let waitMs = 1000 * Math.pow(2, attempt);
+        if (retryAfter) {
+          const parsed = parseInt(retryAfter, 10);
+          if (!Number.isNaN(parsed)) waitMs = parsed * 1000;
+        }
+        if (attempt < maxAttempts) {
+          console.log(`Retrying after ${waitMs}ms due to 429`);
+          await sleep(waitMs + Math.floor(Math.random() * 300));
+          continue;
+        }
+        // exhausted
+        const e = new Error(`Upstream HTTP 429: ${err.message}`);
+        e.retryAfter = retryAfter || null;
+        e.status = 429;
+        // Attach upstream body for diagnostics
+        e.upstreamBody = err.response?.data || null;
+        throw e;
+      }
+
+      // For network errors or other 5xx, apply backoff and retry
+      if (attempt < maxAttempts) {
+        const backoff = 1000 * Math.pow(2, attempt);
+        console.log(`Transient error - retrying after ${backoff}ms`);
+        await sleep(backoff + Math.floor(Math.random() * 200));
+        continue;
+      }
+
+      // Non-retriable or exhausted attempts
+      const e = new Error(err.message || 'Upstream request failed');
+      e.status = status || null;
+      e.retryAfter = retryAfter || null;
+      e.upstreamBody = err.response?.data || null;
+      throw e;
+    }
+  }
+  // Fallback throw
+  const e = new Error(lastErr?.message || 'Upstream request failed after retries');
+  e.status = lastErr?.response?.status || null;
+  e.upstreamBody = lastErr?.response?.data || null;
+  throw e;
+}
 
 // 💾 Q&A STORAGE SYSTEM
 let questionAnswerStorage = {
@@ -225,7 +329,7 @@ CRITICAL REQUIREMENTS:
     const prompt = getTopicSpecificPrompt(topic, difficulty, count, sessionId);
 
     console.log('🚀 Sending request to Gemini...');
-    const response = await axios.post(
+    const { response } = await postWithRetries(
       `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
       {
         contents: [{
@@ -294,10 +398,19 @@ CRITICAL REQUIREMENTS:
     console.error('❌ Error:', error.message);
     console.log('🎯 ===============================================');
 
-    res.status(500).json({
+    // If upstream provided a Retry-After, forward it
+    // Prefer explicit retryAfter from the error, fall back to upstream body hint
+    const retryAfterHeader = error.retryAfter || error.upstreamBody?.retry_after || null;
+    if (retryAfterHeader) res.set('Retry-After', String(retryAfterHeader));
+
+    // If we detected an upstream 429, forward 429 so clients can retry with backoff
+    const statusCode = (error.status === 429 || String(error.message || '').includes('429')) ? 429 : 500;
+    res.status(statusCode).json({
       success: false,
       error: 'Failed to generate MCQ questions',
-      details: error.message
+      details: error.message,
+      retryAfter: retryAfterHeader || null,
+      upstreamBody: error.upstreamBody || null
     });
   }
 });
@@ -405,7 +518,7 @@ CRITICAL REQUIREMENTS:
     const prompt = getCodingPrompt(topic, difficulty, language, sessionId);
 
     console.log('🚀 Sending request to Gemini...');
-    const response = await axios.post(
+    const { response } = await postWithRetries(
       `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
       {
         contents: [{
@@ -451,10 +564,16 @@ CRITICAL REQUIREMENTS:
     console.error('❌ Error:', error.message);
     console.log('🎯 ===============================================');
 
-    res.status(500).json({
+    const retryAfterHeader = error.retryAfter || error.upstreamBody?.retry_after || null;
+    if (retryAfterHeader) res.set('Retry-After', String(retryAfterHeader));
+
+    const statusCode = (error.status === 429 || String(error.message || '').includes('429')) ? 429 : 500;
+    res.status(statusCode).json({
       success: false,
       error: 'Failed to generate coding problem',
-      details: error.message
+      details: error.message,
+      retryAfter: retryAfterHeader || null,
+      upstreamBody: error.upstreamBody || null
     });
   }
 });
@@ -656,7 +775,7 @@ ASSESSMENT CRITERIA:
 Provide constructive, actionable feedback that helps the candidate improve their interview performance.`;
 
     console.log('🚀 Sending assessment request to Gemini...');
-    const response = await axios.post(
+    const { response } = await postWithRetries(
       `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
       {
         contents: [{
@@ -709,10 +828,16 @@ Provide constructive, actionable feedback that helps the candidate improve their
     console.error('❌ Assessment Error:', error.message);
     console.log('🎯 ===============================================');
 
-    res.status(500).json({
+    const retryAfterHeader = error.retryAfter || error.upstreamBody?.retry_after || null;
+    if (retryAfterHeader) res.set('Retry-After', String(retryAfterHeader));
+
+    const statusCode = (error.status === 429 || String(error.message || '').includes('429')) ? 429 : 500;
+    res.status(statusCode).json({
       success: false,
       error: 'Failed to assess interview',
-      details: error.message
+      details: error.message,
+      retryAfter: retryAfterHeader || null,
+      upstreamBody: error.upstreamBody || null
     });
   }
 });
@@ -805,7 +930,7 @@ ANALYSIS GUIDELINES:
 - Consider performance, readability, and maintainability`;
 
     console.log('🚀 Sending code analysis request to Gemini...');
-    const response = await axios.post(
+    const { response } = await postWithRetries(
       `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
       {
         contents: [{
@@ -849,10 +974,16 @@ ANALYSIS GUIDELINES:
     console.error('❌ Code Analysis Error:', error.message);
     console.log('🎯 ===============================================');
 
-    res.status(500).json({
+    const retryAfterHeader = error.retryAfter || error.upstreamBody?.retry_after || null;
+    if (retryAfterHeader) res.set('Retry-After', String(retryAfterHeader));
+
+    const statusCode = (error.status === 429 || String(error.message || '').includes('429')) ? 429 : 500;
+    res.status(statusCode).json({
       success: false,
       error: 'Failed to analyze code',
-      details: error.message
+      details: error.message,
+      retryAfter: retryAfterHeader || null,
+      upstreamBody: error.upstreamBody || null
     });
   }
 });
@@ -1065,18 +1196,5 @@ function calculateAverageCorrectRate() {
   return (totalCorrectRate / allQuestions.length) * 100;
 }
 
-app.listen(PORT, () => {
-  console.log(`🚀 SIMPLIFIED AceMyInterview Backend running on http://localhost:${PORT}`);
-  console.log(`🤖 Gemini AI: ${GEMINI_API_KEY ? 'READY' : 'NOT CONFIGURED'}`);
-  console.log(`💾 Q&A Storage: ENABLED`);
-  console.log('');
-  console.log('Available endpoints:');
-  console.log('  POST /api/mcq-questions - Generate MCQ questions');
-  console.log('  POST /api/coding-problems - Generate coding problems');
-  console.log('  POST /api/store-qa - Store question-answer data');
-  console.log('  GET  /api/qa-history/:userId - Get user Q&A history');
-  console.log('  GET  /api/session/:sessionId - Get session details');
-  console.log('  GET  /api/qa-analytics - Get Q&A analytics');
-  console.log('  GET  /api/health - Health check');
-  console.log('  GET  /fetchProblem - Codeforces proxy');
-});
+// NOTE: server is started inside mongooseService.connect() above so we only run
+// when the DB is available.

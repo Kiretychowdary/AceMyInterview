@@ -6,8 +6,10 @@ import { Link } from 'react-router-dom';
 import Logo from '../assets/Logo.jpg';
 import { useAuth } from "./AuthContext";
 const navLinks = [
+  { name: 'Home', href: '/' },
   { name: 'Practice', href: '/mock-interviews' },
   { name: 'Interview Preparation', href: '/interview-preparation' },
+  { name: 'Contests', href: '/contests' },
   { name: 'Dashboard', href: '/dashboard' },
 ];
 
@@ -18,7 +20,7 @@ const Navbar = () => {
 
   return (
     <motion.header
-      className="sticky top-0 z-50 bg-white/95 border-b border-blue-700 shadow-lg"
+      className="sticky top-0 z-50 bg-white border-b border-blue-700 shadow-lg font-sans"
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -30,7 +32,7 @@ const Navbar = () => {
             <img src={Logo} alt="Logo" className="w-11 h-11 rounded-full object-cover border-2 border-blue-700 shadow" />
           </Link>
           <Link to="/">
-            <span className="font-serif text-2xl font-bold text-blue-700 tracking-wide select-none">
+            <span className="font-sans text-2xl font-bold text-blue-700 tracking-wide select-none">
               AceMyInterview
             </span>
           </Link>
@@ -42,7 +44,7 @@ const Navbar = () => {
             <Link
               key={link.name}
               to={link.href}
-              className="transition-colors duration-200 text-black hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50"
+              className="transition-colors duration-200 text-blue-900 hover:text-white px-2 py-1 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 font-sans"
             >
               {link.name}
             </Link>
@@ -55,7 +57,7 @@ const Navbar = () => {
         ) : (
           <div className="hidden md:flex space-x-3 flex-shrink-0">
             <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile">
-              <div className="user-profile-inner">
+              <div className="user-profile-inner text-blue-900 hover:text-white hover:bg-blue-700 transition rounded px-3 py-1 font-sans">
                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                   <g data-name="Layer 2" id="Layer_2">
                     <path d="m15.626 11.769a6 6 0 1 0 -7.252 0 9.008 9.008 0 0 0 -5.374 8.231 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 9.008 9.008 0 0 0 -5.374-8.231zm-7.626-4.769a4 4 0 1 1 4 4 4 4 0 0 1 -4-4zm10 14h-12a1 1 0 0 1 -1-1 7 7 0 0 1 14 0 1 1 0 0 1 -1 1z"></path>
@@ -70,8 +72,8 @@ const Navbar = () => {
         {/* Toggle Button: Only show if user is logged in */}
         {user && (
           <button
-            className={`flex items-center justify-center w-10 h-10 rounded-full border transition
-              ${menuOpen ? "bg-blue-700 border-blue-700 shadow-lg" : "bg-white border-blue-700 hover:bg-blue-50"}`}
+            className={`flex items-center justify-center w-10 h-10 rounded-full border transition font-sans
+              ${menuOpen ? "bg-blue-700 border-blue-700 shadow-lg text-white" : "bg-white border-blue-700 hover:bg-blue-50 text-blue-700"}`}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((v) => !v)}
           >
@@ -100,7 +102,7 @@ const Navbar = () => {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full max-w-xs bg-white/95 px-6 py-8 border-l border-blue-700 shadow-2xl z-50 flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-xs app-sidebar px-6 py-8 shadow-2xl z-50 flex flex-col"
             style={{ minHeight: "100vh" }}
           >
             {/* Overlay to close sidebar when clicking outside */}
@@ -115,7 +117,7 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="text-lg font-semibold text-black hover:text-blue-700 transition px-2 py-1 rounded hover:bg-blue-50"
+                  className="text-lg font-semibold text-white hover:text-white/90 transition px-2 py-1 rounded hover:bg-white/10"
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.name}

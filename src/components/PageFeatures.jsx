@@ -226,9 +226,11 @@ const PageFeatures = () => {
 	const currentTab = tabData[activeTab];
 
 	return (
-        <section className="w-full bg-gradient-to-br from-blue-50 via-white to-blue-50 border border-blue-100 rounded-3xl p-6 sm:p-8 md:p-12 mt-8 sm:mt-12 max-w-7xl mx-auto shadow-xl relative overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100 to-transparent rounded-full transform translate-x-32 -translate-y-32 opacity-50"></div>
+		<section className="w-full bg-gradient-to-br from-blue-50 via-white to-blue-50 border border-blue-100 rounded-3xl p-6 sm:p-8 md:p-12 mt-8 sm:mt-12 max-w-7xl mx-auto shadow-xl relative overflow-hidden">
+			{/* Background Pattern */}
+			<div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-100 to-transparent rounded-full transform translate-x-32 -translate-y-32 opacity-50"></div>
+			{/* Left corner accent for visual balance (responsive) */}
+			<div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-12 w-40 h-40 rounded-full bg-gradient-to-br from-blue-200 to-transparent opacity-60 blur-2xl transform -rotate-6 sm:-left-24 sm:-top-20 sm:w-64 sm:h-64 sm:opacity-50"></div>
             
             {/* Header */}
             <motion.div

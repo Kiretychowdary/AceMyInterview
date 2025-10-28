@@ -1,32 +1,31 @@
 // RADHAKRISHNALOVEPERMANENT
 // AMMALOVEBLESSINGSONRECURSION
 
-import React, { useState, useEffect } from 'react';
-import {
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithPopup,
-  GoogleAuthProvider,
-} from "firebase/auth";
-import { auth } from "../config/firebase.config";
-import { toast } from "react-toastify";
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { supabase } from '../config/supabaseClient';
+import { useAuth } from '../components/AuthContext';
 import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // If already logged in, redirect to home
+  React.useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
 
   const login = async () => {
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        registerEmail,
-        registerPassword
-      );
-      console.log("User logged in:", userCredential.user);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: registerEmail,
+        password: registerPassword,
+      });
+      if (error) throw error;
       toast.success("Login successful!", {
         autoClose: 3000,
         position: "top-right",
@@ -40,11 +39,9 @@ const Login = () => {
           border: '2px solid #10b981'
         }
       });
-      setUser(userCredential.user);
-      navigate('/');
+      // AuthContext will update and redirect
     } catch (error) {
-      console.error("Login error:", error.message);
-      toast.error(error.message, {
+      toast.error(error.message || "Login failed", {
         autoClose: 5000,
         position: "top-right",
         style: {
@@ -61,27 +58,12 @@ const Login = () => {
   };
 
   const googleLogin = async () => {
-    const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      console.log("Google Login Success:", result.user);
-      toast.success("Logged in with Google!", {
-        autoClose: 3000,
-        position: "top-right",
-        style: {
-          backgroundColor: '#eff6ff',
-          color: '#1d4ed8',
-          fontSize: '16px',
-          fontWeight: '600',
-          padding: '16px',
-          borderRadius: '10px',
-          border: '2px solid #3b82f6'
-        }
-      });
-      navigate('/');
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) throw error;
+      // On success, Supabase will handle redirect and AuthContext will update
     } catch (error) {
-      console.error("Google login error:", error.message);
-      toast.error("Google login failed", {
+      toast.error(error.message || "Google login failed", {
         autoClose: 5000,
         position: "top-right",
         style: {
@@ -96,19 +78,6 @@ const Login = () => {
       });
     }
   };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("User is signed in:", user);
-        setUser(user);
-      } else {
-        console.log("No user is signed in.");
-        setUser(null);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
@@ -152,13 +121,6 @@ const Login = () => {
           </span>
         </p>
         <div className="buttons-container">
-          {/* <div className="apple-login-button">
-            <svg stroke="currentColor" fill="currentColor" strokeWidth="0" className="apple-icon" viewBox="0 0 1024 1024" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-              <path d="M747.4 535.7c-.4-68.2 30.5-119.6 92.9-157.5-34.9-50-87.7-77.5-157.3-82.8-65.9-5.2-138 38.4-164.4 38.4-27.9 0-91.7-36.6-141.9-36.6C273.1 298.8 163 379.8 163 544.6c0 48.7 8.9 99 26.7 150.8 23.8 68.2 109.6 235.3 199.1 232.6 46.8-1.1 79.9-33.2 140.8-33.2 59.1 0 89.7 33.2 141.9 33.2 90.3-1.3 167.9-153.2 190.5-221.6-121.1-57.1-114.6-167.2-114.6-170.7zm-105.1-305c50.7-60.2 46.1-115 44.6-134.7-44.8 2.6-96.6 30.5-126.1 64.8-32.5 36.8-51.6 82.3-47.5 133.6 48.4 3.7 92.6-21.2 129-63.7z"></path>
-            </svg>
-            <span>Log in with Apple</span>
-          </div> */}
-
           <div className="google-login-button" onClick={googleLogin}>
             <svg stroke="currentColor" fill="currentColor" strokeWidth="0" version="1.1" x="0px" y="0px" className="google-icon" viewBox="0 0 48 48" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
               <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
@@ -175,8 +137,6 @@ const Login = () => {
           </div>
         </div>
       </div>
-
-      {/* Styles */}
       <style>{`
         .form-container {
           width: 350px;
@@ -251,7 +211,6 @@ const Login = () => {
           flex-direction: column;
           gap: 12px;
         }
-        .apple-login-button,
         .google-login-button {
           display: flex;
           align-items: center;
@@ -261,17 +220,11 @@ const Login = () => {
           border-radius: 20px;
           font-size: 14px;
           cursor: pointer;
-        }
-        .apple-login-button {
-          background: #1d4ed8;
-          color: white;
-        }
-        .google-login-button {
           border: 1px solid #1d4ed8;
           background: white;
           color: #000000;
         }
-        .apple-icon, .google-icon {
+        .google-icon {
           font-size: 18px;
         }
       `}</style>

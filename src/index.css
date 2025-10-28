@@ -16,10 +16,11 @@
   --glass-border: rgba(255, 255, 255, 0.2);
 }
 
-/* 🎨 TOAST ENHANCEMENT STYLES */
+ 
 .Toastify__toast-container {
+ 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  z-index: 9999999 !important; /* Ensure toasts are on top */
+  z-index: 9999999 !important;  
 }
 
 .Toastify__toast {
@@ -132,6 +133,11 @@ body {
   background-color: var(--bg-white);
   color: var(--text-black);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Prevent accidental horizontal overflow caused by large absolute accent blobs or editor sizing */
+html, body {
+  overflow-x: hidden;
 }
 
 /* Smooth animations */
@@ -377,4 +383,23 @@ h1, h2, h3, h4, h5, h6 {
 
 .voice-slider:focus {
   box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.3);
+}
+
+/* Reusable application sidebar style (use on any sidebar/drawer) */
+/* Use plain CSS instead of @apply to avoid tooling issues while keeping the same look */
+.app-sidebar {
+  background: linear-gradient(135deg, var(--primary-blue), #1e40af);
+  color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 2px solid #1e40af;
+}
+
+.app-sidebar a,
+.app-sidebar p,
+.app-sidebar span,
+.app-sidebar div,
+.app-sidebar button {
+  /* Ensure text inside sidebars is readable */
+  color: #ffffff;
 }

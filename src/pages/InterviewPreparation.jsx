@@ -26,47 +26,7 @@ export default function InterviewPreparation() {
     }
   };
 
-  const startRound = (round) => {
-    if(!isModeImplemented(round.mode)) return;
-    navigate(modeRoute(round.mode), { state: { 
-      roundId: round.id, 
-      role: selectedTrack?.title, 
-      category, 
-      mode: round.mode, 
-      stage: round.stage, 
-      label: round.label,
-      trackKey: selectedRoleKey,
-      allRounds: rounds,
-      currentRoundIndex: rounds.findIndex(r => r.id === round.id)
-    } });
-  };
-
-  const startFullInterview = () => {
-    if (implementedRounds.length === 0) return; 
-    const firstRound = implementedRounds[0];
-    console.log('🚀 Starting full interview:', {
-      firstRound,
-      allRounds: implementedRounds,
-      totalRounds: implementedRounds.length
-    });
-    navigate(modeRoute(firstRound.mode), { 
-      state: { 
-        roundId: firstRound.id,
-        subject: selectedTrack?.title || 'JavaScript', // Use track title instead of round label
-        role: selectedTrack?.title,
-        category,
-        mode: firstRound.mode,
-        stage: firstRound.stage,
-        label: firstRound.label,
-        trackKey: selectedRoleKey,
-        allRounds: implementedRounds,
-        currentRoundIndex: 0,
-        isFullInterview: true,
-        totalRounds: implementedRounds.length
-      } 
-    });
-  };
-
+  // TrackCard subcomponent
   const TrackCard = ({ track, delay=0 }) => {
     const isUnsplash = track.img.includes('images.unsplash.com');
     const base = track.img.split('?')[0];
@@ -108,56 +68,28 @@ export default function InterviewPreparation() {
     );
   };
 
-  const RoundCard = ({ round }) => {
-    const implemented = isModeImplemented(round.mode);
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: implemented ? -5 : 0 }}
-        className={`relative border rounded-xl p-5 flex flex-col gap-3 shadow-sm transition bg-white ${implemented ? 'border-blue-600 hover:shadow-xl' : 'border-blue-200 opacity-70'} `}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold tracking-wide text-blue-700">Stage {round.stage}</span>
-          <span className={`text-xs px-2 py-1 rounded-full border ${implemented ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>{round.mode}</span>
-        </div>
-        <h3 className="font-bold text-lg text-blue-800 leading-snug">{round.label}</h3>
-        {round.objectives && (
-          <div className="flex flex-wrap gap-1">
-            {round.objectives.slice(0,3).map(o => (
-              <span key={o} className="text-[10px] tracking-wide uppercase bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded">{o.replace(/_/g,' ')}</span>
-            ))}
-          </div>
-        )}
-        {round.topics && (
-          <div className="flex flex-wrap gap-1">
-            {round.topics.slice(0,4).map(t => (
-              <span key={t} className="text-[10px] bg-blue-100/60 text-blue-700 px-2 py-0.5 rounded">{t}</span>
-            ))}
-          </div>
-        )}
-        <div className="mt-auto flex justify-end">
-          <button
-            disabled={!implemented}
-            onClick={() => startRound(round)}
-            className={`px-4 py-2 text-sm font-semibold rounded-lg border transition-all ${implemented ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700 shadow-md' : 'bg-gray-100 text-gray-400 border-gray-300 cursor-not-allowed'}`}
-          >
-            {implemented ? 'Start' : 'Coming Soon'}
-          </button>
-        </div>
-        {!implemented && <div className="absolute inset-0 rounded-xl bg-white/60 backdrop-blur-[1px]" />}
-      </motion.div>
-    );
-  };
-
+  // Main render
   return (
     <div className="max-w-7xl mx-auto py-10">
-      <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-3xl md:text-4xl font-extrabold text-blue-800 tracking-tight text-center mb-10">
-        Interview Preparation
-      </motion.h1>
-
-      {/* Step 1: Category Selection (redesigned) */}
+      {/* Main Heading and Subtitle */}
+      {!category && !selectedRoleKey && (
+        <>
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 text-center mb-4"
+          >
+            Choose Your Path
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xl md:text-2xl text-gray-600 text-center mb-12 max-w-3xl mx-auto"
+          >
+            Begin your journey with a specialized track. Master technical skills or excel in strategic roles with our comprehensive interview preparation platform.
+          </motion.p>
+        </>
+      )}
       {!category && !selectedRoleKey && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 gap-10">
           {[
@@ -391,3 +323,4 @@ export default function InterviewPreparation() {
     </div>
   );
 }
+

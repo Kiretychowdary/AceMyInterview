@@ -10,6 +10,7 @@ import Home from './pages/Home.jsx';
 import MockInterviews from './pages/MockInterviews.jsx';
 import Login from './pages/Login.jsx';
 import InterviewRoom from './pages/InterviewRoom.jsx';
+import Contests from './pages/Contests.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DeviceSetup from './pages/DeviceSetup.jsx';
@@ -22,6 +23,8 @@ import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
 import DashboardTest from './pages/DashboardTest.jsx';
 import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import AdminLogin from './pages/AdminLogin.jsx';
 
 // ProtectedRoute component to check authentication
 function ProtectedRoute({ children }) {
@@ -83,6 +86,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/mock-interviews" element={<MockInterviews />} />
+          <Route path="/contests" element={<Contests />} />
           <Route path="/interview-preparation" element={<InterviewPreparation />} />
           
           {/* Protected Routes - Require Authentication */}
@@ -154,6 +158,9 @@ function AppContent() {
           {/* Public Routes */}
           <Route path="/Login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          {/* Admin routes (uses sessionStorage adminAuth check inside the AdminDashboard component) */}
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Routes>
       </main>
     </div>

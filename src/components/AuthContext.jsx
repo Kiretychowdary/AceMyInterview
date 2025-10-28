@@ -1,7 +1,6 @@
 // NMKRSPVLIDATAPERMAENE
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth } from "../config/firebase.config";
-import { onAuthStateChanged } from "firebase/auth";
+import { supabase } from "../config/supabaseClient";
 
 const AuthContext = createContext();
 
@@ -12,19 +11,26 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log("AuthProvider user:", currentUser);
-      setUser(currentUser);
+    setLoading(true);
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
       setLoading(false);
     });
-
-    return () => unsubscribe();
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      setLoading(false);
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
   const logout = async () => {
     try {
-      await auth.signOut();
+      await supabase.auth.signOut();
       setUser(null);
     } catch (error) {
       console.error("Logout error:", error);

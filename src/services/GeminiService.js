@@ -1,7 +1,10 @@
+// Import ProgressService for AI assessment
+import progressService from './ProgressService';
 //nmkrspvlidata
 //radhakrishna
 // SIMPLE GEMINI SERVICE - DIRECT API CALLS
 // NMKRSPVLIDATAPERMANENT - No more n8n complexity!
+
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   import.meta.env.VITE_API_BASE_URL + '/api' ||
@@ -9,7 +12,22 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
     ? 'https://acemyinterview.onrender.com/api'  // Render Backend URL
     : 'http://localhost:5000/api');
 
+// Gemini API Key from .env
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
 class GeminiService {
+
+  // AI INTERVIEW ASSESSMENT (for FaceToFaceInterview)
+  static async getInterviewAssessment(assessmentData) {
+    try {
+      // Use ProgressService to get AI assessment
+      const aiAssessment = await progressService.getAIAssessment(assessmentData);
+      return aiAssessment;
+    } catch (error) {
+      console.error('GeminiService: Error in getInterviewAssessment:', error);
+      throw error;
+    }
+  }
   // 🌟 MOTIVATIONAL QUOTES FOR LOADING STATES
   static getMotivationalQuote() {
     const motivationalQuotes = [
@@ -195,58 +213,141 @@ class GeminiService {
     console.log('🎯 GeminiService: Generating Coding Problem');
     console.log(`💻 Topic: ${topic}, Difficulty: ${difficulty}, Language: ${language}`);
     console.log(`🌐 API Base URL: ${API_BASE_URL}`);
+    // Implement retry with exponential backoff for transient errors (e.g., 429)
+    const maxAttempts = 3;
+    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
-    try {
-      // Create an AbortController for timeout control
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+    // Prepare request body once
+    const requestBody = { topic, difficulty, language };
+    if (GEMINI_API_KEY) requestBody.geminiApiKey = GEMINI_API_KEY;
 
-      const response = await fetch(`${API_BASE_URL}/coding-problems`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          topic,
-          difficulty,
-          language
-        }),
-        signal: controller.signal
-      });
+    let lastError = null;
+    let retryAfterHeader = null;
 
-      clearTimeout(timeoutId);
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', response.headers);
+        const resp = await fetch(`${API_BASE_URL}/coding-problems`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        clearTimeout(timeoutId);
+
+        console.log('📡 Attempt', attempt, 'Response status:', resp.status);
+        console.log('📡 Response headers:', resp.headers);
+
+        if (resp.ok) {
+          const data = await resp.json();
+          console.log('✅ Coding Problem Response:', data);
+          if (data.success) {
+            return { success: true, problem: data.problem, source: 'gemini-direct' };
+          }
+          // non-success payload from backend; capture and break to fallback
+          lastError = new Error(data.error || 'Failed to generate problem');
+          break;
+        }
+
+        // Handle 429 specially: look for Retry-After and retry with backoff
+        if (resp.status === 429) {
+          retryAfterHeader = resp.headers.get('Retry-After');
+          let bodyText = '';
+          try { bodyText = await resp.text(); } catch (e) {}
+          console.warn('📡 429 body:', bodyText);
+
+          // Determine wait time: prefer Retry-After header if present
+          let waitMs = 1000 * Math.pow(2, attempt); // default exponential backoff
+          if (retryAfterHeader) {
+            const parsed = parseInt(retryAfterHeader, 10);
+            if (!Number.isNaN(parsed)) waitMs = parsed * 1000;
+          }
+
+          // If we have more attempts left, wait and retry
+          if (attempt < maxAttempts) {
+            console.log(`📡 Received 429, retrying after ${waitMs}ms (attempt ${attempt + 1}/${maxAttempts})`);
+            await sleep(waitMs + Math.floor(Math.random() * 300));
+            continue;
+          }
+
+          // No attempts left — treat as error
+          lastError = new Error(`HTTP 429: ${bodyText || 'Too Many Requests'}`);
+          break;
+        }
+
+        // Some upstream implementations return a 500 but include a JSON body indicating a 429 (rate limit)
+        if (resp.status === 500) {
+          // Try to parse JSON body to detect embedded 429 details
+          let parsedBody = null;
+          let rawBody = '';
+          try {
+            parsedBody = await resp.json();
+          } catch (e) {
+            try { rawBody = await resp.text(); } catch (e2) { rawBody = ''; }
+          }
+
+          const details = parsedBody?.details || rawBody || '';
+          const upstream = parsedBody?.upstreamBody || parsedBody || null;
+
+          // If the body mentions a 429 or upstream indicates rate limit, treat as 429 and retry
+          const indicates429 = String(details).includes('429') || String(details).toLowerCase().includes('too many requests') || upstream?.status === 429 || upstream?.error?.toLowerCase?.()?.includes('rate') || false;
+          const bodyRetryAfter = parsedBody?.retryAfter || parsedBody?.retry_after || upstream?.retry_after || null;
+
+          if (indicates429) {
+            retryAfterHeader = bodyRetryAfter || null;
+            let waitMs = 1000 * Math.pow(2, attempt);
+            if (retryAfterHeader) {
+              const parsed = parseInt(retryAfterHeader, 10);
+              if (!Number.isNaN(parsed)) waitMs = parsed * 1000;
+            }
+
+            if (attempt < maxAttempts) {
+              console.log(`📡 Backend returned 500 with embedded 429 info; treating as 429 and retrying after ${waitMs}ms (attempt ${attempt + 1}/${maxAttempts})`);
+              await sleep(waitMs + Math.floor(Math.random() * 300));
+              continue;
+            }
+
+            lastError = new Error(`HTTP 429 (embedded in 500): ${details || 'Too Many Requests'}`);
+            break;
+          }
+        }
+
+        // For other non-OK responses, include body for diagnostics
+        let bodyText = '';
+        try { bodyText = await resp.text(); } catch (e) {}
+        const statusText = resp.statusText || '';
+        const message = bodyText ? `${statusText} - ${bodyText}` : statusText || 'Unknown error';
+        lastError = new Error(`HTTP ${resp.status}: ${message}`);
+        break;
+      } catch (err) {
+        // Network / abort / other errors — decide whether to retry
+        console.error('📡 Fetch attempt error:', err);
+        lastError = err;
+        if (attempt < maxAttempts) {
+          const backoff = 1000 * Math.pow(2, attempt);
+          await sleep(backoff + Math.floor(Math.random() * 200));
+          continue;
+        }
+        break;
       }
-
-      const data = await response.json();
-      console.log('✅ Coding Problem Response:', data);
-
-      if (data.success) {
-        return {
-          success: true,
-          problem: data.problem,
-          source: 'gemini-direct'
-        };
-      } else {
-        throw new Error(data.error || 'Failed to generate problem');
-      }
-    } catch (error) {
-      console.error('❌ Coding Problem Error:', error);
-      
-      // Simple fallback problem
-      return {
-        success: false,
-        error: error.message,
-        problem: this.getFallbackCodingProblem(topic, difficulty),
-        source: 'fallback'
-      };
     }
-  }
+
+    // After attempts exhausted or unrecoverable error, return fallback with diagnostics
+    console.error('❌ Coding Problem Error after retries:', lastError);
+    return {
+      success: false,
+      error: lastError ? lastError.message : 'Unknown error',
+      problem: this.getFallbackCodingProblem(topic, difficulty),
+      source: 'fallback',
+      retryAfter: retryAfterHeader || null
+    };
+    
+    // end getCodingProblem
+    
+    }
 
   // Dynamic fallback questions with randomization
   static getFallbackMCQs(topic, count = 5) {

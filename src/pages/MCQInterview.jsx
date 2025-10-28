@@ -2,7 +2,7 @@
 //radhakrishna
 // PROFESSIONAL MCQ INTERVIEW - MODERN UI DESIGN
 // NMKRSPVLIDATAPERMANENT - Beautiful, Professional Interface
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../components/AuthContext';
@@ -111,6 +111,28 @@ const MCQInterview = () => {
     count: 5,
     type: 'multiple-choice'
   });
+
+  // Debounce timer for auto-fetch when selections change
+  const fetchTimer = useRef(null);
+
+  // Auto-generate (preload) questions whenever user changes selections
+  useEffect(() => {
+    // Only preload when a specific topic is selected (subtopics shown)
+    if (!showSubTopics || !quizConfig.topic) return;
+
+    // Clear any pending timer
+    if (fetchTimer.current) clearTimeout(fetchTimer.current);
+
+    // Debounce: wait 600ms after last change before fetching
+    fetchTimer.current = setTimeout(() => {
+      // Preload questions but do NOT start the quiz automatically
+      fetchQuestionsFromAI(false);
+    }, 600);
+
+    return () => {
+      if (fetchTimer.current) clearTimeout(fetchTimer.current);
+    };
+  }, [quizConfig.topic, quizConfig.difficulty, quizConfig.count, showSubTopics]);
 
   // Topic hierarchy system
   const [selectedMainTopic, setSelectedMainTopic] = useState(null);
@@ -342,7 +364,9 @@ const MCQInterview = () => {
   }, [timeLeft, quizStarted]);
 
   // Fetch questions from Gemini AI
-  const fetchQuestionsFromAI = async () => {
+  // If autoStart=true the quiz will start immediately. Otherwise questions are preloaded
+  // (used for auto-generating when the user changes selections)
+  const fetchQuestionsFromAI = async (autoStart = false) => {
     setLoading(true);
     try {
       // Generate questions without motivational toast
@@ -354,27 +378,31 @@ const MCQInterview = () => {
 
       if (response.success && response.questions?.length > 0) {
         setQuestions(response.questions);
-        setQuizStarted(true);
-        setTimeLeft(quizConfig.count * 120); // 2 minutes per question  
+        if (autoStart) {
+          setQuizStarted(true);
+          setTimeLeft(quizConfig.count * 120); // 2 minutes per question
+        }
       } else {
-        
-        setQuestions(response.questions);
-        setQuizStarted(true);
-        setTimeLeft(quizConfig.count * 120);
-        toast.warn('⚠️ Using sample questions - AI service unavailable', {
-          autoClose: 6000,
-          position: "top-center",
-          style: {
-            backgroundColor: '#fef3c7',
-            color: '#92400e',
-            fontSize: '16px',
-            fontWeight: '600',
-            padding: '18px',
-            borderRadius: '12px',
-            border: '2px solid #f59e0b',
-            boxShadow: '0 8px 25px rgba(245, 158, 11, 0.15)'
-          }
-        });
+        // Use fallback or empty response but do not start automatically
+        setQuestions(response.questions || []);
+        if (autoStart) {
+          setQuizStarted(true);
+          setTimeLeft(quizConfig.count * 120);
+          toast.warn('⚠️ Using sample questions - AI service unavailable', {
+            autoClose: 6000,
+            position: "top-center",
+            style: {
+              backgroundColor: '#fef3c7',
+              color: '#92400e',
+              fontSize: '16px',
+              fontWeight: '600',
+              padding: '18px',
+              borderRadius: '12px',
+              border: '2px solid #f59e0b',
+              boxShadow: '0 8px 25px rgba(245, 158, 11, 0.15)'
+            }
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
@@ -793,7 +821,7 @@ const MCQInterview = () => {
             <motion.button
               whileHover={{ scale: showSubTopics && quizConfig.topic ? 1.02 : 1 }}
               whileTap={{ scale: showSubTopics && quizConfig.topic ? 0.98 : 1 }}
-              onClick={fetchQuestionsFromAI}
+              onClick={() => fetchQuestionsFromAI(true)}
               disabled={loading || !showSubTopics || !quizConfig.topic}
               className={`w-full mt-10 py-4 px-8 font-semibold rounded-xl shadow-lg transition-all duration-300 ${showSubTopics && quizConfig.topic && !loading ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
             >

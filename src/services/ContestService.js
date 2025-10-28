@@ -1,0 +1,92 @@
+// Use Vite env var VITE_API_BASE when available, otherwise default to localhost:5000 for dev.
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+
+async function apiFetch(path, options = {}) {
+	const res = await fetch(`${API_BASE}/api${path}`, {
+		headers: { 'Content-Type': 'application/json' },
+		credentials: 'include',
+		...options
+	});
+	if (!res.ok) {
+		const text = await res.text().catch(() => '');
+		const err = new Error('API request failed: ' + res.status);
+		err.status = res.status;
+		err.body = text;
+		throw err;
+	}
+	return res.json();
+}
+
+export const getAllContests = async () => {
+	const resp = await apiFetch('/contests');
+	return resp.data || [];
+};
+
+export const getUpcomingContests = async () => {
+	const all = await getAllContests();
+	const now = new Date();
+	return all.filter(c => c.startTime && new Date(c.startTime) > now && c.status !== 'ended');
+};
+
+export const getPastContests = async () => {
+	const all = await getAllContests();
+	const now = new Date();
+	return all.filter(c => !c.startTime || new Date(c.startTime) <= now || c.status === 'ended');
+};
+
+export const createContest = async (contest) => {
+	const resp = await apiFetch('/contests', { method: 'POST', body: JSON.stringify(contest) });
+	return resp.data;
+};
+
+export const checkContestId = async (id) => {
+  const resp = await apiFetch(`/contests/check-id?id=${encodeURIComponent(id)}`);
+  return resp.exists;
+};
+
+export const updateContest = async (id, contest) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(contest) });
+	return resp.data;
+};
+
+export const deleteContest = async (id) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(id)}`, { method: 'DELETE' });
+	return resp.success;
+};
+
+export const updateContestProblems = async (id, problems) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(id)}/problems`, { method: 'PUT', body: JSON.stringify({ problems }) });
+	return resp.data;
+};
+
+export const getContestStatistics = async () => {
+	const contests = await getAllContests();
+	const totalProblems = contests.reduce((sum, c) => sum + (c.problems?.length || 0), 0);
+	const active = contests.filter(c => c.status === 'active').length;
+	const upcoming = contests.filter(c => new Date(c.startTime) > new Date() && c.status !== 'ended').length;
+	const difficultyCount = {
+		Easy: contests.filter(c => c.difficulty === 'Easy').length,
+		Medium: contests.filter(c => c.difficulty === 'Medium').length,
+		Hard: contests.filter(c => c.difficulty === 'Hard').length,
+		Expert: contests.filter(c => c.difficulty === 'Expert').length
+	};
+	return {
+		total: contests.length,
+		active,
+		upcoming,
+		totalProblems,
+		avgProblemsPerContest: contests.length > 0 ? (totalProblems / contests.length).toFixed(1) : 0,
+		byDifficulty: difficultyCount
+	};
+};
+
+export const getContestReport = async (contestId) => {
+		const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}`);
+	const contest = resp.data;
+	return {
+		...contest,
+		problems: contest.problems || [],
+		submissions: []
+	};
+};
+
