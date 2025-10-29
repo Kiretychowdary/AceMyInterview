@@ -2,9 +2,9 @@
 // AMMARADHAKRISHNANANNA
 // KSVIDPERMANENT
 // KIRETY
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React from "react";
 import 'tailwindcss/tailwind.css';
-import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import MockInterviews from './pages/MockInterviews.jsx';
@@ -26,29 +26,28 @@ import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 
-// ProtectedRoute component to check authentication
+// ✅ ProtectedRoute component
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  
-  // Show loading while authentication state is being determined
+
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="text-lg">Loading...</div>
-    </div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
   }
-  
+
   if (!user) {
-    // Redirect to login if user is not authenticated
     return <Navigate to="/Login" replace />;
   }
-  
+
   return children;
 }
 
 function AppContent() {
   const location = useLocation();
-  
-  // Hide Navbar on /interview-room
+
   const hideNavbar =
     location.pathname === "/interview-room" ||
     location.pathname === "/device-interview" ||
@@ -56,7 +55,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <ToastContainer 
+      <ToastContainer
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
@@ -69,7 +68,7 @@ function AppContent() {
         theme="light"
         style={{
           fontSize: '16px',
-          fontWeight: '500'
+          fontWeight: '500',
         }}
         toastStyle={{
           backgroundColor: '#ffffff',
@@ -78,7 +77,7 @@ function AppContent() {
           borderRadius: '12px',
           boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
           minHeight: '70px',
-          padding: '16px'
+          padding: '16px',
         }}
       />
       {!hideNavbar && <Navbar />}
@@ -88,77 +87,22 @@ function AppContent() {
           <Route path="/mock-interviews" element={<MockInterviews />} />
           <Route path="/contests" element={<Contests />} />
           <Route path="/interview-preparation" element={<InterviewPreparation />} />
-          
-          {/* Protected Routes - Require Authentication */}
-          <Route 
-            path="/compiler" 
-            element={
-              <ProtectedRoute>
-                <Compiler />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/device-setup" 
-            element={
-              <ProtectedRoute>
-                <DeviceSetup />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/interview-room" 
-            element={
-              <ProtectedRoute>
-                <InterviewRoom />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/interview-mode" 
-            element={
-              <ProtectedRoute>
-                <InterviewModeSelect />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/mcq-interview" 
-            element={
-              <ProtectedRoute>
-                <MCQInterview />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/face-to-face-interview" 
-            element={
-              <ProtectedRoute>
-                <FaceToFaceInterview />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/dashboard-test" 
-            element={
-              <ProtectedRoute>
-                <DashboardTest />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Public Routes */}
+
+          {/* ✅ Protected Routes */}
+          <Route path="/compiler" element={<ProtectedRoute><Compiler /></ProtectedRoute>} />
+          <Route path="/device-setup" element={<ProtectedRoute><DeviceSetup /></ProtectedRoute>} />
+          <Route path="/interview-room" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
+          <Route path="/interview-mode" element={<ProtectedRoute><InterviewModeSelect /></ProtectedRoute>} />
+          <Route path="/mcq-interview" element={<ProtectedRoute><MCQInterview /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
+          <Route path="/dashboard-test" element={<ProtectedRoute><DashboardTest /></ProtectedRoute>} />
+
+          {/* ✅ Public Routes */}
           <Route path="/Login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          {/* Admin routes (uses sessionStorage adminAuth check inside the AdminDashboard component) */}
+
+          {/* ✅ Admin Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Routes>
@@ -167,12 +111,11 @@ function AppContent() {
   );
 }
 
+// ✅ Wrap only with AuthProvider (no Router)
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AppContent />
     </AuthProvider>
   );
 }
