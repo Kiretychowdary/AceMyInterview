@@ -6,7 +6,19 @@ import path from 'path'
 
 // ✅ PERMANENT FIX for React Router + Vercel builds
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Custom plugin to handle react-router resolution
+    {
+      name: 'resolve-react-router',
+      resolveId(source) {
+        if (source === 'react-router') {
+          return this.resolve('react-router-dom')
+        }
+        return null
+      }
+    }
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
