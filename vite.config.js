@@ -8,15 +8,18 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [
-      { find: '@', replacement: path.resolve(__dirname, 'src') },
-      // map react-router-dom first (specific) to avoid regex collisions
-      { find: 'react-router-dom', replacement: path.resolve(__dirname, 'node_modules/react-router-dom/dist/index.js') },
-      // point react-router to the package dist ESM build
-      { find: 'react-router', replacement: path.resolve(__dirname, 'node_modules/react-router/dist/index.js') }
-    ]
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
   },
-  optimizeDeps: {
-    include: ['react-router', 'react-router-dom']
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom']
+        }
+      }
+    }
   }
 })
