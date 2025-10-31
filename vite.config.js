@@ -10,9 +10,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src')
-    }
+    },
+    dedupe: ['react', 'react-dom', 'react-router-dom']
   },
   build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true
+    },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -21,5 +26,9 @@ export default defineConfig({
         }
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react-router-dom'],
+    exclude: ['react-router']
   }
 })
