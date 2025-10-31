@@ -68,6 +68,43 @@ export default function InterviewPreparation() {
     );
   };
 
+  // RoundCard subcomponent
+  const RoundCard = ({ round }) => {
+    const isImplemented = isModeImplemented(round.mode);
+    const modeEmoji = round.mode === ROUND_MODES.CODING ? '💻' :
+                      round.mode === ROUND_MODES.PERSON ? '🎭' :
+                      round.mode === ROUND_MODES.MCQ ? '📝' : '❓';
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`relative bg-white rounded-xl border-2 p-5 shadow-sm transition-all ${
+          isImplemented 
+            ? 'border-blue-200 hover:border-blue-400 hover:shadow-md' 
+            : 'border-gray-200 opacity-60'
+        }`}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{modeEmoji}</span>
+            <h5 className="font-bold text-gray-800">{round.title}</h5>
+          </div>
+          {!isImplemented && (
+            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-semibold">
+              Coming Soon
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-gray-600 mb-3">{round.description}</p>
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Round {round.number}</span>
+          <span className="capitalize">{round.mode}</span>
+        </div>
+      </motion.div>
+    );
+  };
+
   // Main render
   return (
     <div className="max-w-7xl mx-auto py-10">

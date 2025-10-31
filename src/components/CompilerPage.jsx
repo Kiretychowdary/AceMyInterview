@@ -80,8 +80,10 @@ function CompilerPage(props) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showBreakScreen, setShowBreakScreen] = useState(false);
   const [activeTab, setActiveTab] = useState('Description');
+  const [activeOutputTab, setActiveOutputTab] = useState('custom'); // Output tab: 'custom' or 'tests'
   const [selectedMainTopic, setSelectedMainTopic] = useState('algorithms');
   const [configuredTopic, setConfiguredTopic] = useState(problemConfig.topic);
+  const [customInput, setCustomInput] = useState(''); // Custom input for Execute Code
   const loadingMessages = [
     'Initializing UI...',
     'Preparing test harness...',
@@ -187,7 +189,7 @@ function CompilerPage(props) {
     if (!JUDGE0_BASE_URL) { toast.error('Judge0 not configured'); setOutput('Judge0 base URL is missing.'); return; }
     setIsRunning(true); setOutput('Running code...');
     try {
-      const res = await judge0Client.runOnce({ code, languageId: language.id, stdin: '' });
+      const res = await judge0Client.runOnce({ code, languageId: language.id, stdin: customInput });
       if (res.compile_output) setOutput(res.compile_output);
       else if (res.stderr) setOutput(res.stderr);
       else setOutput(res.stdout || 'No output');
@@ -220,6 +222,50 @@ function CompilerPage(props) {
 
   const resetCode = () => { setCode(language?.template || ''); setOutput(''); setTestResults(null); };
 
+  // Run only sample (visible) test cases
+  const runSampleTests = async () => {
+    if (!code.trim()) { toast.error('Please write some code first!'); return; }
+    const rawTestCases = problemData?.testCases || problemDetails?.testCases;
+    if (!rawTestCases) { toast.error('No test cases available for this problem!'); return; }
+    
+    const allTestCases = normalizeTestCases(rawTestCases);
+    // Filter only visible (non-hidden) test cases
+    const sampleTestCases = allTestCases.filter(tc => !tc.hidden);
+    
+    if (sampleTestCases.length === 0) {
+      toast.error('No sample test cases available!');
+      return;
+    }
+    
+    const judge0Status = validateJudge0Setup();
+    if (!judge0Status.valid) { 
+      toast.error('Judge0 not configured'); 
+      setTestResults({ passed:0,total:0,details:[{input:'',expected:'',actual:judge0Status.message,passed:false,error:'Configuration'}]}); 
+      return; 
+    }
+    
+    setIsSubmitting(true); 
+    setTestResults({ passed:0,total:0,details:[] });
+    
+    try {
+      toast.info('🧪 Running sample test cases...', { autoClose:1500 });
+      const batch = await judge0Client.runBatch({ code, languageId: language.id, testCases: sampleTestCases });
+      setTestResults(batch);
+      setActiveOutputTab('tests'); // Auto-switch to Test Results tab
+      
+      if (batch.passed === batch.total) {
+        toast.success(`🎉 All ${batch.passed}/${batch.total} sample test cases passed!`);
+      } else { 
+        toast.error(`❌ ${batch.passed}/${batch.total} sample test cases passed. Keep trying!`); 
+      }
+    } catch (e) { 
+      toast.error('Failed to run sample tests: ' + e.message); 
+      setTestResults({ passed:0,total:0,details:[],error:e.message }); 
+    } finally { 
+      setIsSubmitting(false); 
+    }
+  };
+
   const handleCodeSubmit = async () => {
     if (!code.trim()) { toast.error('Please write some code first!'); return; }
     const rawTestCases = problemData?.testCases || problemDetails?.testCases;
@@ -232,6 +278,7 @@ function CompilerPage(props) {
       toast.info('🧪 Running test cases...', { autoClose:1500 });
       const batch = await judge0Client.runBatch({ code, languageId: language.id, testCases });
       setTestResults(batch);
+      setActiveOutputTab('tests'); // Auto-switch to Test Results tab
       if (batch.passed === batch.total) {
         toast.success(`🎉 All ${batch.passed}/${batch.total} test cases passed! Great job!`);
         const roundId = location.state?.roundId; if (roundId) try { markRoundComplete(user?.uid || 'anonymous', roundId); } catch {}
@@ -241,19 +288,22 @@ function CompilerPage(props) {
       (async () => {
         try {
           const contestId = location.state?.contestId || props.contestId || null;
+          const problemId = problemData?._id || problemData?.id || problemDetails?._id || problemDetails?.id || null;
           const verdict = batch.passed === batch.total ? 'Accepted' : (batch.passed > 0 ? 'Partial' : 'Failed');
           await createSubmission({
             contestId,
-            problemIndex: props.problemIndex ?? 0,
+            problemId,
             userId: user?.uid || user?.id || null,
             username: user?.displayName || user?.name || user?.email || 'anonymous',
             languageId: language?.id || null,
+            language: language?.name || 'python',
             code: code || '',
             verdict,
             status: 'finished',
             time: batch.metrics?.avgTime ?? null,
             memory: batch.metrics?.maxMemory ?? null,
             code_length: code ? code.length : 0,
+            testResults: batch.details || [],
             result: batch
           });
         } catch (err) {
@@ -306,8 +356,9 @@ function CompilerPage(props) {
       <div className="flex items-center justify-between px-4 py-2 border-b bg-white">
         <ul className="flex items-center gap-4">
           <li><button onClick={() => setActiveTab('Description')} className={`text-sm font-medium pb-1 ${activeTab === 'Description' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}>Description</button></li>
-          <li><button onClick={() => setActiveTab('Editorial')} className={`text-sm pb-1 ${activeTab === 'Editorial' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}>Editorial</button></li>
-          <li><button onClick={() => setActiveTab('Solutions')} className={`text-sm pb-1 ${activeTab === 'Solutions' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}>Solutions</button></li>
+          {/* Editorial and Solutions tabs hidden as requested */}
+          {/* <li><button onClick={() => setActiveTab('Editorial')} className={`text-sm pb-1 ${activeTab === 'Editorial' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}>Editorial</button></li> */}
+          {/* <li><button onClick={() => setActiveTab('Solutions')} className={`text-sm pb-1 ${activeTab === 'Solutions' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}>Solutions</button></li> */}
           <li><button onClick={() => setActiveTab('Submissions')} className={`text-sm pb-1 ${activeTab === 'Submissions' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}>Submissions</button></li>
         </ul>
         <div className="flex items-center gap-2">
@@ -520,7 +571,15 @@ function CompilerPage(props) {
             </div>
             <div className="flex items-center gap-2">
               <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={resetCode} className="px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition font-medium">Reset</motion.button>
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={runCode} disabled={isRunning} className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow">{isRunning ? 'Executing...' : 'Execute Code'}</motion.button>
+              <motion.button 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }} 
+                onClick={runSampleTests} 
+                disabled={isSubmitting || (!problemDetails && !problemData)} 
+                className="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow"
+              >
+                {isSubmitting ? 'Running...' : 'Run Sample Tests'}
+              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -571,143 +630,332 @@ function CompilerPage(props) {
                 <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-20 h-4 rounded-full bg-white/70 border border-blue-300 shadow flex items-center justify-center text-[10px] text-blue-600 font-medium">⇕</div>
               </div>
             )}
-            {/* Output & Tests (remaining space) */}
-            <div style={{ height: isMobile ? 'auto' : `calc(${100 - editorHeight}% - 3px)` }} className="flex-1 min-h-[120px] flex flex-col bg-blue-50 border-t border-blue-200">
-              {/* Output */}
-              <div className="p-3 pb-0 flex flex-col flex-1 overflow-hidden">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-blue-700">Program Output</h3>
-                  <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setOutput('')} className="px-2 py-1 bg-white border border-blue-300 hover:bg-blue-600 hover:text-white text-blue-600 text-[11px] rounded transition">Clear</motion.button>
-                </div>
-                <div className="bg-white rounded-lg p-2 flex-1 overflow-y-auto border border-blue-100">
-                  <pre className="text-[16px] font-mono text-gray-800 whitespace-pre-wrap" style={{fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace'}}>{output || 'Run code to see output...'}</pre>
-                </div>
+            {/* Output & Tests (remaining space) - REDESIGNED */}
+            <div style={{ height: isMobile ? 'auto' : `calc(${100 - editorHeight}% - 3px)` }} className="flex-1 min-h-[300px] flex flex-col bg-gradient-to-br from-gray-50 to-blue-50 border-t-2 border-blue-300">
+              
+              {/* Tab Navigation */}
+              <div className="flex items-center gap-2 p-3 bg-white border-b-2 border-blue-200 shadow-sm">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveOutputTab('custom')}
+                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                    activeOutputTab === 'custom'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>💻</span>
+                    <span>Custom Input/Output</span>
+                  </span>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveOutputTab('tests')}
+                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all relative ${
+                    activeOutputTab === 'tests'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>🧪</span>
+                    <span>Test Results</span>
+                    {testResults && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                        testResults.passed === testResults.total 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-red-500 text-white'
+                      }`}>
+                        {testResults.passed}/{testResults.total}
+                      </span>
+                    )}
+                  </span>
+                </motion.button>
               </div>
-              {/* Test Results */}
-              {testResults && (
-                <div className="bg-white border-t border-blue-200 p-3 flex flex-col max-h-[45%] overflow-hidden">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-sm font-semibold text-blue-700">Test Execution Results</h3>
-                      {testResults.metrics && (
-                        <div className="flex items-center gap-2 text-[10px] text-gray-500">
-                          <span className="bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">Avg Time: {Number(testResults.metrics.avgTime).toFixed(3)}s</span>
-                          <span className="bg-blue-50 border border-blue-100 px-2 py-0.5 rounded">Max Memory: {testResults.metrics.maxMemory} KB</span>
+
+              {/* Custom Input/Output Tab */}
+              {activeOutputTab === 'custom' && (
+                <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4">
+                  
+                  {/* Custom Input Section - Larger */}
+                  <div className="flex flex-col h-1/2 min-h-[180px]">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
+                        <span>📝</span> Custom Input
+                      </h3>
+                      <div className="flex gap-2">
+                        <motion.button 
+                          whileHover={{ scale: 1.05 }} 
+                          whileTap={{ scale: 0.95 }} 
+                          onClick={runCode} 
+                          disabled={isRunning}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm rounded-lg transition font-bold shadow-lg"
+                        >
+                          {isRunning ? '⏳ Executing...' : '▶ Execute Code'}
+                        </motion.button>
+                        {currentTestCasesNormalized && currentTestCasesNormalized.length > 0 && (
+                          <motion.button 
+                            whileHover={{ scale: 1.05 }} 
+                            whileTap={{ scale: 0.95 }} 
+                            onClick={() => {
+                              const firstTestInput = currentTestCasesNormalized[0]?.input || '';
+                              setCustomInput(typeof firstTestInput === 'string' ? firstTestInput : JSON.stringify(firstTestInput));
+                              toast.info('Loaded first test case input');
+                            }} 
+                            className="px-3 py-2 bg-green-50 border-2 border-green-400 hover:bg-green-600 hover:text-white text-green-700 text-sm rounded-lg transition font-semibold"
+                          >
+                            Use Sample
+                          </motion.button>
+                        )}
+                        <motion.button 
+                          whileHover={{ scale: 1.05 }} 
+                          whileTap={{ scale: 0.95 }} 
+                          onClick={() => setCustomInput('')} 
+                          className="px-3 py-2 bg-red-50 border-2 border-red-300 hover:bg-red-600 hover:text-white text-red-600 text-sm rounded-lg transition font-semibold"
+                        >
+                          Clear
+                        </motion.button>
+                      </div>
+                    </div>
+                    <textarea
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      placeholder="Enter input values here (one per line or space-separated)&#10;Example:&#10;2 3&#10;or&#10;5&#10;10"
+                      className="flex-1 p-4 border-2 border-blue-300 rounded-xl font-mono text-base resize-none focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 bg-white shadow-inner"
+                      style={{fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace'}}
+                    />
+                    <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
+                      <span>💡</span>
+                      <span>Click "Execute Code" to run with this custom input. Use "Run Sample Tests" or "Run All Tests" for test cases.</span>
+                    </p>
+                  </div>
+
+                  {/* Program Output Section - Larger */}
+                  <div className="flex flex-col h-1/2 min-h-[180px]">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
+                        <span>📤</span> Program Output
+                      </h3>
+                      <motion.button 
+                        whileHover={{ scale: 1.05 }} 
+                        whileTap={{ scale: 0.95 }} 
+                        onClick={() => setOutput('')} 
+                        className="px-3 py-2 bg-red-50 border-2 border-red-300 hover:bg-red-600 hover:text-white text-red-600 text-sm rounded-lg transition font-semibold"
+                      >
+                        Clear Output
+                      </motion.button>
+                    </div>
+                    <div className="flex-1 bg-gray-900 rounded-xl p-4 overflow-y-auto border-2 border-gray-700 shadow-inner">
+                      <pre className="text-base font-mono text-green-400 whitespace-pre-wrap" style={{fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace'}}>
+                        {output || '// Run code to see output...\n// Your program output will appear here'}
+                      </pre>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* Test Results Tab */}
+              {activeOutputTab === 'tests' && (
+                <div className="flex-1 overflow-y-auto p-4">
+                  {testResults ? (
+                    <div className="space-y-4">
+                      
+                      {/* Test Summary Header */}
+                      <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-xl p-4 text-white shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xl font-bold mb-1">🧪 Test Execution Results</h3>
+                            <p className="text-blue-50 text-sm">Code tested against {testResults.total} test case(s)</p>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-3xl font-bold ${testResults.passed === testResults.total ? 'text-green-200' : 'text-red-200'}`}>
+                              {testResults.passed}/{testResults.total}
+                            </div>
+                            <div className="text-sm text-blue-50">Tests Passed</div>
+                          </div>
+                        </div>
+                        {testResults.metrics && (
+                          <div className="flex gap-4 mt-3 pt-3 border-t border-blue-300">
+                            <div className="bg-white/20 px-3 py-2 rounded-lg">
+                              <div className="text-xs text-blue-50">Avg Time</div>
+                              <div className="font-bold">{Number(testResults.metrics.avgTime).toFixed(3)}s</div>
+                            </div>
+                            <div className="bg-white/20 px-3 py-2 rounded-lg">
+                              <div className="text-xs text-blue-50">Max Memory</div>
+                              <div className="font-bold">{testResults.metrics.maxMemory} KB</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Sample Test Cases - visible ones */}
+                      {testResults.details?.filter((r, idx) => {
+                        const testCase = currentTestCasesNormalized?.[idx];
+                        return !testCase?.hidden;
+                      }).length > 0 && (
+                        <div>
+                          <h4 className="text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
+                            <span>✅</span> Sample Test Cases
+                          </h4>
+                          <div className="space-y-3">
+                            {testResults.details?.map((r, idx) => {
+                              const testCase = currentTestCasesNormalized?.[idx];
+                              if (testCase?.hidden) return null;
+                              return (
+                                <div key={idx} className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="text-base font-bold text-blue-800">Test Case {idx + 1}</div>
+                                    <div className={`text-sm px-3 py-1.5 rounded-full font-bold ${r.passed ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                                      {r.passed ? '✓ PASS' : '✗ FAIL'}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-300 shadow-sm">
+                                      <div className="font-bold text-blue-700 mb-2">📥 Input:</div>
+                                      <div className="font-mono text-sm text-gray-800 whitespace-pre-wrap bg-white p-2 rounded border border-blue-200">
+                                        {r.input !== undefined ? (typeof r.input === 'string' ? r.input : JSON.stringify(r.input)) : '—'}
+                                      </div>
+                                    </div>
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-300 shadow-sm">
+                                      <div className="font-bold text-blue-700 mb-2">✓ Expected:</div>
+                                      <div className="font-mono text-sm text-gray-800 whitespace-pre-wrap bg-white p-2 rounded border border-blue-200">
+                                        {r.expected !== undefined ? (typeof r.expected === 'string' ? r.expected : JSON.stringify(r.expected)) : '—'}
+                                      </div>
+                                    </div>
+                                    <div className={`p-3 rounded-lg border-2 shadow-sm ${r.passed ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
+                                      <div className={`font-bold mb-2 ${r.passed ? 'text-green-700' : 'text-red-700'}`}>📤 Actual Output:</div>
+                                      <div className="font-mono text-sm text-gray-800 whitespace-pre-wrap bg-white p-2 rounded border border-gray-300">
+                                        {r.actual !== undefined ? (typeof r.actual === 'string' ? r.actual : JSON.stringify(r.actual)) : '—'}
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-300">
+                                        <span className="font-bold text-blue-700">⏱ Time:</span> <span className="text-gray-700">{r.time || '—'}s</span>
+                                      </div>
+                                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-300">
+                                        <span className="font-bold text-blue-700">💾 Memory:</span> <span className="text-gray-700">{r.memory || '—'} KB</span>
+                                      </div>
+                                    </div>
+                                    {testCase?.explanation && (
+                                      <div className="bg-blue-50 p-3 rounded-lg border-2 border-blue-300">
+                                        <div className="font-bold text-blue-800 mb-2">💡 Explanation:</div>
+                                        <div className="text-gray-700 text-sm whitespace-pre-wrap">{testCase.explanation}</div>
+                                      </div>
+                                    )}
+                                    {r.classification && (
+                                      <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-300 font-semibold text-xs">
+                                        {r.classification}
+                                      </div>
+                                    )}
+                                    {r.compile_output && (
+                                      <div className="text-amber-800 bg-amber-50 border-2 border-amber-300 rounded-lg p-3">
+                                        <span className="font-bold">⚠ Compile Output:</span> {r.compile_output}
+                                      </div>
+                                    )}
+                                    {r.stderr && !r.compile_output && (
+                                      <div className="text-red-800 bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                                        <span className="font-bold">❌ Stderr:</span> {r.stderr}
+                                      </div>
+                                    )}
+                                    {r.error && (
+                                      <div className="text-red-800 bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                                        <span className="font-bold">🚨 Error:</span> {r.error}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hidden Test Cases - show pass/fail but not details */}
+                      {testResults.details?.filter((r, idx) => {
+                        const testCase = currentTestCasesNormalized?.[idx];
+                        return testCase?.hidden;
+                      }).length > 0 && (
+                        <div>
+                          <h4 className="text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
+                            <span>🔒</span> Hidden Test Cases
+                          </h4>
+                          <div className="space-y-3">
+                            {testResults.details?.map((r, idx) => {
+                              const testCase = currentTestCasesNormalized?.[idx];
+                              if (!testCase?.hidden) return null;
+                              return (
+                                <div key={idx} className="bg-white p-4 rounded-xl border-2 border-blue-200 shadow-md">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="text-base font-bold text-blue-800">Hidden Test {idx + 1 - (testResults.details?.filter((_, i) => i < idx && !currentTestCasesNormalized?.[i]?.hidden).length || 0)}</div>
+                                    <div className={`text-sm px-3 py-1.5 rounded-full font-bold ${r.passed ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                                      {r.passed ? '✓ PASS' : '✗ FAIL'}
+                                    </div>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-300">
+                                      <div className="font-bold text-blue-700 mb-2">🔒 Input:</div>
+                                      <div className="italic text-gray-600">Hidden for evaluation</div>
+                                    </div>
+                                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-300">
+                                      <div className="font-bold text-blue-700 mb-2">🔒 Expected:</div>
+                                      <div className="italic text-gray-600">Hidden for evaluation</div>
+                                    </div>
+                                    <div className={`p-3 rounded-lg border-2 shadow-sm ${r.passed ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`}>
+                                      <div className={`font-bold mb-2 ${r.passed ? 'text-green-700' : 'text-red-700'}`}>📤 Actual Output:</div>
+                                      <div className="font-mono text-sm text-gray-800 whitespace-pre-wrap bg-white p-2 rounded border border-gray-300">
+                                        {r.actual !== undefined ? (typeof r.actual === 'string' ? r.actual : JSON.stringify(r.actual)) : '—'}
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-300">
+                                        <span className="font-bold text-blue-700">⏱ Time:</span> <span className="text-gray-700">{r.time || '—'}s</span>
+                                      </div>
+                                      <div className="bg-blue-50 p-2 rounded-lg border border-blue-300">
+                                        <span className="font-bold text-blue-700">💾 Memory:</span> <span className="text-gray-700">{r.memory || '—'} KB</span>
+                                      </div>
+                                    </div>
+                                    {r.classification && (
+                                      <div className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-300 font-semibold text-xs">
+                                        {r.classification}
+                                      </div>
+                                    )}
+                                    {r.compile_output && (
+                                      <div className="text-amber-800 bg-amber-50 border-2 border-amber-300 rounded-lg p-3">
+                                        <span className="font-bold">⚠ Compile Output:</span> {r.compile_output}
+                                      </div>
+                                    )}
+                                    {r.stderr && !r.compile_output && (
+                                      <div className="text-red-800 bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                                        <span className="font-bold">❌ Stderr:</span> {r.stderr}
+                                      </div>
+                                    )}
+                                    {r.error && (
+                                      <div className="text-red-800 bg-red-50 border-2 border-red-300 rounded-lg p-3">
+                                        <span className="font-bold">🚨 Error:</span> {r.error}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                     </div>
-                    <span className={`text-[11px] px-2 py-1 rounded-full font-medium ${testResults.passed === testResults.total ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>{testResults.passed}/{testResults.total}</span>
-                  </div>
-                  <div className="flex-1 overflow-y-auto space-y-2">
-                    {/* Sample Test Cases - visible ones */}
-                    {testResults.details?.filter((r, idx) => {
-                      const testCase = currentTestCasesNormalized?.[idx];
-                      return !testCase?.hidden;
-                    }).length > 0 && (
-                      <div className="mb-2">
-                        <h4 className="text-xs font-semibold text-green-700 mb-1">Sample Test Cases</h4>
-                        {testResults.details?.map((r, idx) => {
-                          const testCase = currentTestCasesNormalized?.[idx];
-                          if (testCase?.hidden) return null;
-                          return (
-                            <div key={idx} className={`p-3 rounded border ${r.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-sm font-semibold">Sample Test Case {idx + 1}</div>
-                                <div className={`text-xs px-2 py-1 rounded-full font-semibold ${r.passed ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{r.passed ? 'PASS' : 'FAIL'}</div>
-                              </div>
-                              <div className="space-y-2 text-sm">
-                                <div className="bg-white p-2 rounded border">
-                                  <div className="font-medium text-blue-700 mb-1">Input:</div>
-                                  <div className="font-mono text-gray-800 whitespace-pre-wrap">{r.input !== undefined ? (typeof r.input === 'string' ? r.input : JSON.stringify(r.input)) : '—'}</div>
-                                </div>
-                                <div className="bg-white p-2 rounded border">
-                                  <div className="font-medium text-green-700 mb-1">Expected:</div>
-                                  <div className="font-mono text-gray-800 whitespace-pre-wrap">{r.expected !== undefined ? (typeof r.expected === 'string' ? r.expected : JSON.stringify(r.expected)) : '—'}</div>
-                                </div>
-                                <div className="bg-white p-2 rounded border">
-                                  <div className="font-medium text-purple-700 mb-1">Actual:</div>
-                                  <div className="font-mono text-gray-800 whitespace-pre-wrap">{r.actual !== undefined ? (typeof r.actual === 'string' ? r.actual : JSON.stringify(r.actual)) : '—'}</div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div><span className="font-medium">Time:</span> {r.time || '—'}s</div>
-                                  <div><span className="font-medium">Memory:</span> {r.memory || '—'} KB</div>
-                                </div>
-                                {testCase?.explanation && (
-                                  <div className="bg-blue-50 p-2 rounded border border-blue-200">
-                                    <div className="font-medium text-blue-800 mb-1">Explanation:</div>
-                                    <div className="text-gray-700 whitespace-pre-wrap">{testCase.explanation}</div>
-                                  </div>
-                                )}
-                                {r.classification && (
-                                  <div className="text-xs inline-block px-2 py-1 rounded bg-gray-100 text-gray-600 border border-gray-200">{r.classification}</div>
-                                )}
-                                {r.compile_output && (
-                                  <div className="text-amber-700 bg-amber-50 border border-amber-200 rounded p-2"><span className="font-medium">Compile:</span> {r.compile_output}</div>
-                                )}
-                                {r.stderr && !r.compile_output && (
-                                  <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2"><span className="font-medium">Stderr:</span> {r.stderr}</div>
-                                )}
-                                {r.error && (
-                                  <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2"><span className="font-medium">Error:</span> {r.error}</div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {/* Hidden Test Cases - show pass/fail but not details */}
-                    {testResults.details?.filter((r, idx) => {
-                      const testCase = currentTestCasesNormalized?.[idx];
-                      return testCase?.hidden;
-                    }).length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-semibold text-purple-700 mb-1">Hidden Test Cases</h4>
-                        {testResults.details?.map((r, idx) => {
-                          const testCase = currentTestCasesNormalized?.[idx];
-                          if (!testCase?.hidden) return null;
-                          return (
-                            <div key={idx} className={`p-3 rounded border ${r.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-sm font-semibold">Hidden Test Case {idx + 1}</div>
-                                <div className={`text-xs px-2 py-1 rounded-full font-semibold ${r.passed ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>{r.passed ? 'PASS' : 'FAIL'}</div>
-                              </div>
-                              <div className="space-y-2 text-sm">
-                                <div className="bg-gray-100 p-2 rounded border">
-                                  <div className="font-medium text-gray-600 mb-1">Input:</div>
-                                  <div className="italic text-gray-500">Hidden</div>
-                                </div>
-                                <div className="bg-gray-100 p-2 rounded border">
-                                  <div className="font-medium text-gray-600 mb-1">Expected:</div>
-                                  <div className="italic text-gray-500">Hidden</div>
-                                </div>
-                                <div className="bg-white p-2 rounded border">
-                                  <div className="font-medium text-purple-700 mb-1">Actual:</div>
-                                  <div className="font-mono text-gray-800 whitespace-pre-wrap">{r.actual !== undefined ? (typeof r.actual === 'string' ? r.actual : JSON.stringify(r.actual)) : '—'}</div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div><span className="font-medium">Time:</span> {r.time || '—'}s</div>
-                                  <div><span className="font-medium">Memory:</span> {r.memory || '—'} KB</div>
-                                </div>
-                                {r.classification && (
-                                  <div className="text-xs inline-block px-2 py-1 rounded bg-gray-100 text-gray-600 border border-gray-200">{r.classification}</div>
-                                )}
-                                {r.compile_output && (
-                                  <div className="text-amber-700 bg-amber-50 border border-amber-200 rounded p-2"><span className="font-medium">Compile:</span> {r.compile_output}</div>
-                                )}
-                                {r.stderr && !r.compile_output && (
-                                  <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2"><span className="font-medium">Stderr:</span> {r.stderr}</div>
-                                )}
-                                {r.error && (
-                                  <div className="text-red-700 bg-red-50 border border-red-200 rounded p-2"><span className="font-medium">Error:</span> {r.error}</div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full py-20">
+                      <div className="text-6xl mb-4">🧪</div>
+                      <h3 className="text-xl font-bold text-gray-600 mb-2">No Test Results Yet</h3>
+                      <p className="text-gray-500 text-center max-w-md">
+                        Click "Run Sample Tests" or "Run All Tests" to execute your code against test cases
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -17,12 +17,20 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret', 'x-admin-token'],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Mount admin routes (login/logout)
+try {
+  const adminRoutes = require('./routes/admin.cjs');
+  app.use('/api/admin', adminRoutes);
+} catch (e) {
+  console.warn('Admin routes not available:', e.message);
+}
 
 // Mount backend API routes
 try {
@@ -40,30 +48,28 @@ try {
   console.warn('Contests routes not available:', e.message);
 }
 
+// Mount AI interview routes
+try {
+  const aiInterviewRoutes = require('./routes/aiInterview.cjs');
+  app.use('/api/ai', aiInterviewRoutes);
+} catch (e) {
+  console.warn('AI Interview routes not available:', e.message);
+}
+
 // Connect to MongoDB via Mongoose before starting the server.
 // Start the HTTP server only after successful DB connection. Exit on failure.
 mongooseService.connect()
   .then(() => {
-    console.log('Mongoose connected');
+    console.log('\n🎯 NMKRSPVLIDATA');
+    console.log('✅ MongoDB: Connected');
+    
     // Start the server once DB is ready
     app.listen(PORT, () => {
-      console.log(`🚀 SIMPLIFIED AceMyInterview Backend running on http://localhost:${PORT}`);
-      console.log(`🤖 Gemini AI: ${GEMINI_API_KEY ? 'READY' : 'NOT CONFIGURED'}`);
-      console.log(`💾 Q&A Storage: ENABLED`);
-      console.log('');
-      console.log('Available endpoints:');
-      console.log('  POST /api/mcq-questions - Generate MCQ questions');
-      console.log('  POST /api/coding-problems - Generate coding problems');
-      console.log('  POST /api/store-qa - Store question-answer data');
-      console.log('  GET  /api/qa-history/:userId - Get user Q&A history');
-      console.log('  GET  /api/session/:sessionId - Get session details');
-      console.log('  GET  /api/qa-analytics - Get Q&A analytics');
-      console.log('  GET  /api/health - Health check');
-      console.log('  GET  /fetchProblem - Codeforces proxy');
+      console.log(`🚀 Server: Running on http://localhost:${PORT}\n`);
     });
   })
   .catch((err) => {
-    console.error('Mongoose connection error:', err && err.message ? err.message : err);
+    console.error('❌ MongoDB connection error:', err && err.message ? err.message : err);
     console.error('Exiting process since DB connection failed.');
     // Give logs a moment to flush
     setTimeout(() => process.exit(1), 250);
@@ -213,11 +219,6 @@ function calculateCorrectRate(questionKey, isCorrect) {
   return correctAnswers / totalAnswers;
 }
 
-console.log('🔍 Environment Debug:');
-console.log('   GEMINI_API_URL:', GEMINI_API_URL ? 'SET' : 'NOT SET');
-console.log('   GEMINI_API_KEY:', GEMINI_API_KEY ? 'SET (length: ' + GEMINI_API_KEY.length + ')' : 'NOT SET');
-console.log('🤖 Gemini API URL:', GEMINI_API_URL);
-console.log('🔑 API Key configured:', !!GEMINI_API_KEY);
 app.get("/", (req, res) => {
   res.send("✅ Server is running on Render!");
 });

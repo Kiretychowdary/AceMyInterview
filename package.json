@@ -7,16 +7,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
-    "health": "node scripts/health/check-judge0.js",
-    "judge0:setup": "scripts/setup/setup-judge0.bat",
-    "judge0:start": "scripts/setup/start-judge0.bat",
-    "judge0:stop": "scripts/setup/stop-judge0.bat",
-    "judge0:test": "scripts/health/test-judge0.bat",
-    "judge0:wsl:setup": "powershell -ExecutionPolicy Bypass -File scripts/setup/setup-judge0-wsl.ps1",
-    "judge0:wsl:start": "wsl bash -c 'cd /mnt/c/Users/kiret/Downloads/AceMyInterview && bash scripts/setup/start-judge0.sh'",
-    "judge0:wsl:stop": "wsl bash -c 'cd /mnt/c/Users/kiret/Downloads/AceMyInterview/config/docker && docker-compose -f docker-compose-judge0-wsl.yml down'",
     "clean": "rimraf dist node_modules/.vite"
   },
   "dependencies": {
@@ -41,7 +31,8 @@
     "react-router-dom": "^6.30.1",
     "react-toastify": "^11.0.5",
     "react-webcam": "^7.2.0",
-    "recharts": "^3.1.2"
+    "recharts": "^3.1.2",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",

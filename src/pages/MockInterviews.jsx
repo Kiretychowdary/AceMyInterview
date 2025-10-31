@@ -35,6 +35,13 @@ const MockInterviews = () => {
       desc: 'AI Face-to-Face Interview',
       icon: '🎭',
       route: '/interview-room'
+    },
+    {
+      name: 'AI HR Interview',
+      desc: 'Realistic 3D AI Interview with Lip Sync',
+      icon: '🤖',
+      route: '/ai-face-interview',
+      highlight: true
     }
   ];
 

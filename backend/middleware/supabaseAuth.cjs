@@ -11,9 +11,31 @@ const axios = require('axios');
 module.exports = async function requireSupabaseAuth(req, res, next) {
   try {
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const adminSecretHeader = req.headers['x-admin-secret'] || req.headers['x-admin-token'];
+    // Accept server-side cookie based admin JWT (ace_admin)
+    const cookieHeader = req.headers['cookie'] || '';
+    const adminTokenFromCookie = (cookieHeader || '').split(';').map(s => s.trim()).find(s => s.startsWith('ace_admin='));
+    const adminToken = adminTokenFromCookie ? adminTokenFromCookie.split('=')[1] : null;
+
+    // helper to verify ace_admin token without importing heavy libs
+    const adminCtrl = require('../controllers/adminController.cjs');
+    if (adminToken) {
+      const payload = adminCtrl.verify(adminToken);
+      if (payload) {
+        req.supabaseUser = { id: 'admin', role: 'admin', note: 'cookie-admin' };
+        return next();
+      }
+    }
+
+    // Allow an admin secret header to authenticate admin users (local/dev convenience).
+    const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.VITE_ADMIN_SECRET;
+    if (!authHeader && adminSecretHeader && ADMIN_SECRET && adminSecretHeader === ADMIN_SECRET) {
+      req.supabaseUser = { id: 'admin', role: 'admin', note: 'admin-secret-auth' };
+      return next();
+    }
     if (!authHeader) return res.status(401).json({ success: false, error: 'Missing Authorization header' });
 
-    const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
 
     if (!SUPABASE_URL) {
@@ -22,7 +44,7 @@ module.exports = async function requireSupabaseAuth(req, res, next) {
       return next();
     }
 
-    const url = SUPABASE_URL.replace(/\/$/, '') + '/auth/v1/user';
+  const url = SUPABASE_URL.replace(/\/$/, '') + '/auth/v1/user';
     const headers = { Authorization: authHeader };
     if (SUPABASE_KEY) headers.apikey = SUPABASE_KEY;
 

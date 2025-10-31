@@ -4,15 +4,19 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { getUpcomingContests, getPastContests } from '../services/ContestService';
+import { getUpcomingContests, getPastContests, registerForContest, checkRegistrationStatus } from '../services/ContestService';
 import AccentBlobs from '../components/AccentBlobs';
+import { useAuth } from '../components/AuthContext';
 
 const Contests = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedContest, setSelectedContest] = useState(null);
   const [upcomingContests, setUpcomingContests] = useState([]);
   const [pastContests, setPastContests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [registrations, setRegistrations] = useState({}); // Track registration status
+  const [registering, setRegistering] = useState(false);
 
   // Load contests from Firebase
   useEffect(() => {
@@ -29,6 +33,21 @@ const Contests = () => {
       
       setUpcomingContests(upcoming);
       setPastContests(past);
+      
+      // Check registration status for each contest if user is logged in
+      if (user?.uid) {
+        const regStatus = {};
+        for (const contest of upcoming) {
+          try {
+            const status = await checkRegistrationStatus(contest._id || contest.id, user.uid);
+            regStatus[contest._id || contest.id] = status;
+          } catch (err) {
+            // Silently ignore errors for individual contest status checks
+            console.log('Failed to check registration for contest:', contest.id);
+          }
+        }
+        setRegistrations(regStatus);
+      }
     } catch (error) {
       console.error('Error loading contests:', error);
       toast.error('Failed to load contests');
@@ -37,6 +56,31 @@ const Contests = () => {
       setPastContests([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegister = async (contest) => {
+    if (!user?.uid) {
+      toast.error('Please login to register for contests');
+      navigate('/login');
+      return;
+    }
+
+    const contestId = contest._id || contest.id;
+    
+    try {
+      setRegistering(true);
+      await registerForContest(contestId, user.uid);
+      toast.success('Successfully registered for the contest!');
+      
+      // Update registration status
+      const status = await checkRegistrationStatus(contestId, user.uid);
+      setRegistrations({ ...registrations, [contestId]: status });
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error(error.body || 'Failed to register for contest');
+    } finally {
+      setRegistering(false);
     }
   };
 
@@ -195,8 +239,11 @@ const Contests = () => {
     }
   };
 
-  const handleStartContest = (contest) => {
-    navigate('/compiler', { state: { contest } });
+  const handleStartContest = (contest, problemIndex = 0) => {
+    // Navigate to contest problems list page
+    navigate(`/contest/${contest._id || contest.id}/problems`, { 
+      state: { contest } 
+    });
   };
 
   return (
@@ -295,23 +342,23 @@ const Contests = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-4 font-sans">
                   <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                    <div className="text-xs text-gray-600 font-sans">Duration</div>
+                    <div className="text-xs text-gray-600 font-sans">⏰ Duration</div>
                     <div className="text-blue-700 text-sm font-sans">{contest.duration}</div>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                          <div className="text-xs text-gray-600 font-sans">Problems</div>
+                          <div className="text-xs text-gray-600 font-sans">📝 Problems</div>
                             <div className="text-blue-700 text-sm font-sans">{Array.isArray(contest.problems) ? contest.problems.length : (contest.problems || 0)}</div>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                    <div className="text-xs text-gray-600 font-sans">Rating</div>
+                    <div className="text-xs text-gray-600 font-sans">⭐ Rating</div>
                     <div className="text-blue-700 text-sm font-sans">{contest.rating}</div>
                   </div>
                 </div>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {contest.tags?.map(tag => (
-                    <span key={tag} className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-sans">
+                  {(contest.tags || []).map((tag, tagIndex) => (
+                    <span key={`${contest.id}-tag-${tagIndex}`} className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-sans">
                       {tag}
                     </span>
                   ))}
@@ -323,14 +370,34 @@ const Contests = () => {
                     <span className="text-lg">👥</span>
                     <span>{contest.participants || 0} registered</span>
                   </div>
-                  <motion.button
-                    onClick={() => setSelectedContest(contest)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg font-sans"
-                  >
-                    View Details →
-                  </motion.button>
+                  <div className="flex gap-2">
+                    {registrations[contest._id || contest.id]?.registered ? (
+                      <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold text-sm flex items-center gap-2">
+                        <span>✓</span> Registered
+                      </div>
+                    ) : (
+                      <motion.button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRegister(contest);
+                        }}
+                        disabled={registering}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg font-sans disabled:opacity-50"
+                      >
+                        {registering ? 'Registering...' : 'Register'}
+                      </motion.button>
+                    )}
+                    <motion.button
+                      onClick={() => setSelectedContest(contest)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg font-sans"
+                    >
+                      View Details →
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -559,7 +626,7 @@ const Contests = () => {
                     </div>
                     <div>
                       <div className="text-xs text-gray-600 font-sans">Participants</div>
-                      <div className="text-gray-800 font-sans">{selectedContest.participants} registered</div>
+                      <div className="text-gray-800 font-sans">{selectedContest.participants || 0} registered</div>
                     </div>
                   </div>
                 </div>
@@ -582,14 +649,68 @@ const Contests = () => {
                           {(selectedContest.tags || []).map((tag, i) => {
                             const label = typeof tag === 'string' ? tag : (tag.label || tag.name || tag.title || JSON.stringify(tag));
                             return (
-                              <span key={label + i} className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 font-sans">
+                              <span key={`tag-${selectedContest._id || selectedContest.id}-${i}-${label}`} className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border border-blue-200 font-sans">
                                 {label}
                               </span>
                             );
                           })}
                 </div>
-                  <div className="text-gray-800 font-sans">{selectedContest.participants || 0} registered</div>
               </div>
+
+              {/* Problems List */}
+              {Array.isArray(selectedContest.problems) && selectedContest.problems.length > 0 && (
+                <div className="mb-6 font-sans">
+                  <h3 className="text-lg text-gray-800 mb-3 font-sans flex items-center gap-2">
+                    <span>📝</span>
+                    Contest Problems ({selectedContest.problems.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedContest.problems.map((problem, index) => (
+                      <motion.div
+                        key={`problem-${selectedContest._id || selectedContest.id}-${index}-${problem._id || problem.id || problem.title}`}
+                        whileHover={{ scale: 1.02, x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartContest(selectedContest, index);
+                        }}
+                        className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-xl border-2 border-blue-200 hover:border-blue-400 cursor-pointer transition-all shadow-sm hover:shadow-md"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-blue-600 font-semibold text-sm">#{index + 1}</span>
+                              <h4 className="text-gray-800 font-semibold">{problem.title || `Problem ${index + 1}`}</h4>
+                            </div>
+                            {problem.description && (
+                              <p className="text-gray-600 text-sm line-clamp-2 mb-2">{problem.description}</p>
+                            )}
+                            <div className="flex items-center gap-2">
+                              {problem.difficulty && (
+                                <span className={`text-xs px-2 py-1 rounded ${getDifficultyColor(problem.difficulty)}`}>
+                                  {problem.difficulty}
+                                </span>
+                              )}
+                              {problem.testCases && (
+                                <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                  {Array.isArray(problem.testCases) ? problem.testCases.length : 0} test cases
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-4 font-sans">
@@ -601,15 +722,31 @@ const Contests = () => {
                 >
                   Close
                 </motion.button>
-                <motion.button
-                  onClick={() => handleStartContest(selectedContest)}
-                  className="flex-1 px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 font-sans"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span className="text-xl">🚀</span>
-                  Start Contest
-                </motion.button>
+                
+                {selectedContest.status !== 'past' && !registrations[selectedContest._id || selectedContest.id]?.registered && (
+                  <motion.button
+                    onClick={() => handleRegister(selectedContest)}
+                    disabled={registering}
+                    className="flex-1 px-6 py-3.5 rounded-xl bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 font-sans disabled:opacity-50"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="text-xl">📝</span>
+                    {registering ? 'Registering...' : 'Register Now'}
+                  </motion.button>
+                )}
+                
+                {registrations[selectedContest._id || selectedContest.id]?.registered && (
+                  <motion.button
+                    onClick={() => handleStartContest(selectedContest)}
+                    className="flex-1 px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 font-sans"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="text-xl">🚀</span>
+                    Start Contest
+                  </motion.button>
+                )}
               </div>
             </motion.div>
           </motion.div>

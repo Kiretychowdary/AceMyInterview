@@ -1,3 +1,4 @@
+// NMKRSPVLIDATA
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -17,14 +18,28 @@ const AdminLogin = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // For a simple admin gate we only require the secret key (replace with proper auth in production)
-    if (credentials.secretKey === ADMIN_SECRET) {
-      sessionStorage.setItem('adminAuth', JSON.stringify({ isAdmin: true, timestamp: Date.now() }));
-      toast.success('🎉 Admin login successful!');
-      navigate('/admin-dashboard');
-    } else {
-      toast.error('❌ Invalid admin secret!');
-    }
+    // Post secret to server which will set an HttpOnly admin cookie on success
+    (async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+        const res = await fetch(`${API_BASE}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ secret: credentials.secretKey })
+        });
+        const body = await res.json().catch(() => ({}));
+        if (res.ok && body && body.success) {
+          toast.success('🎉 Admin login successful!');
+          navigate('/admin-dashboard');
+        } else {
+          toast.error(body.error || 'Invalid admin secret');
+        }
+      } catch (err) {
+        console.error('Admin login error', err);
+        toast.error('Login failed: ' + (err.message || 'Unknown'));
+      }
+    })();
   };
 
   return (

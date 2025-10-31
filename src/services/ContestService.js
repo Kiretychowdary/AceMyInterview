@@ -2,8 +2,9 @@
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
 async function apiFetch(path, options = {}) {
+	const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
 	const res = await fetch(`${API_BASE}/api${path}`, {
-		headers: { 'Content-Type': 'application/json' },
+		headers,
 		credentials: 'include',
 		...options
 	});
@@ -90,3 +91,30 @@ export const getContestReport = async (contestId) => {
 	};
 };
 
+export const registerForContest = async (contestId, userId) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/register`, {
+		method: 'POST',
+		body: JSON.stringify({ userId })
+	});
+	return resp.data;
+};
+
+export const checkRegistrationStatus = async (contestId, userId) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/registration-status?userId=${encodeURIComponent(userId)}`);
+	return resp.data;
+};
+
+// Get contest with all problems (for registered users)
+export const getContestWithProblems = async (contestId, userId = null) => {
+	const url = userId 
+		? `/contests/${encodeURIComponent(contestId)}/problems?userId=${encodeURIComponent(userId)}`
+		: `/contests/${encodeURIComponent(contestId)}/problems`;
+	const resp = await apiFetch(url);
+	return resp.data;
+};
+
+// Get single problem by ID
+export const getProblemById = async (problemId) => {
+	const resp = await apiFetch(`/contests/problem/${encodeURIComponent(problemId)}`);
+	return resp.data;
+};

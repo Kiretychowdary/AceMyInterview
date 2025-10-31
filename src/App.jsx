@@ -1,4 +1,4 @@
-// NMKRSPVLIDATAPERMANENT
+﻿// NMKRSPVLIDATAPERMANENT
 // AMMARADHAKRISHNANANNA
 // KSVIDPERMANENT
 // KIRETY
@@ -11,6 +11,7 @@ import MockInterviews from './pages/MockInterviews.jsx';
 import Login from './pages/Login.jsx';
 import InterviewRoom from './pages/InterviewRoom.jsx';
 import Contests from './pages/Contests.jsx';
+import ContestProblems from './pages/ContestProblems.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import DeviceSetup from './pages/DeviceSetup.jsx';
@@ -20,13 +21,14 @@ import MCQInterview from './pages/MCQInterview.jsx';
 import Compiler from './pages/Compiler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
+import FaceToFaceAIInterview from './pages/FaceToFaceAIInterview.jsx';
 import DashboardTest from './pages/DashboardTest.jsx';
 import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 
-// ✅ ProtectedRoute component
+// âœ… ProtectedRoute component
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -86,9 +88,11 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/mock-interviews" element={<MockInterviews />} />
           <Route path="/contests" element={<Contests />} />
+          <Route path="/contest/:contestId/problems" element={<ProtectedRoute><ContestProblems /></ProtectedRoute>} />
           <Route path="/interview-preparation" element={<InterviewPreparation />} />
 
-          {/* ✅ Protected Routes */}
+
+          {/* âœ… Protected Routes */}
           <Route path="/compiler" element={<ProtectedRoute><Compiler /></ProtectedRoute>} />
           <Route path="/device-setup" element={<ProtectedRoute><DeviceSetup /></ProtectedRoute>} />
           <Route path="/interview-room" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
@@ -96,13 +100,14 @@ function AppContent() {
           <Route path="/mcq-interview" element={<ProtectedRoute><MCQInterview /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
+          <Route path="/ai-face-interview" element={<ProtectedRoute><FaceToFaceAIInterview /></ProtectedRoute>} />
           <Route path="/dashboard-test" element={<ProtectedRoute><DashboardTest /></ProtectedRoute>} />
 
-          {/* ✅ Public Routes */}
+          {/* âœ… Public Routes */}
           <Route path="/Login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* ✅ Admin Routes */}
+          {/* âœ… Admin Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Routes>
@@ -111,7 +116,7 @@ function AppContent() {
   );
 }
 
-// ✅ Wrap only with AuthProvider (no Router)
+// âœ… Wrap only with AuthProvider (no Router)
 export default function App() {
   return (
     <AuthProvider>
@@ -119,3 +124,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+
