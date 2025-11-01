@@ -21,6 +21,12 @@ router.get('/problem/:problemId', ctrl.getProblem);
 // Public: get by id
 router.get('/:id', ctrl.getContest);
 
+// Public: get contest status with timing info
+router.get('/:id/status', ctrl.getContestStatus);
+
+// Public: get user progress in contest
+router.get('/:id/progress/:userId', ctrl.getUserProgress);
+
 // Public: get contest with all problems (for registered users)
 router.get('/:id/problems', ctrl.getContestWithProblems);
 
@@ -41,11 +47,11 @@ router.put('/:id/problems', requireSupabaseAuth, ctrl.updateProblems);
 // Protected: publish/unpublish contest
 router.put('/:id/publish', requireSupabaseAuth, ctrl.publishContest);
 
-// User: register for contest
-router.post('/:id/register', ctrl.registerForContest);
+// User: register for contest (requires Supabase auth)
+router.post('/:id/register', requireSupabaseAuth, ctrl.registerForContest);
 
-// User: unregister from contest
-router.delete('/:id/register/:userId', ctrl.unregisterFromContest);
+// User: unregister from contest (requires auth)
+router.delete('/:id/register', requireSupabaseAuth, ctrl.unregisterFromContest);
 
 // User: get registered contests
 router.get('/user/:userId/registrations', ctrl.getUserRegistrations);

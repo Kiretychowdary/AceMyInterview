@@ -25,13 +25,41 @@ async function createSubmission(req, res) {
       return res.status(400).json({ success: false, error: 'Invalid payload' });
     }
 
+    // Check contest timing if this is a contest submission
+    let isPracticeMode = false;
+    let canScore = true;
+    
+    if (payload.contestId) {
+      const Contest = require('../models/Contest.cjs');
+      const contest = await Contest.findById(payload.contestId);
+      
+      if (contest) {
+        const now = new Date();
+        const startTime = new Date(contest.startTime);
+        const endTime = new Date(contest.endTime);
+        
+        // Check if contest has ended
+        if (now > endTime) {
+          isPracticeMode = true;
+          canScore = false; // Don't count for scoring after contest ends
+        } else if (now < startTime) {
+          return res.status(400).json({ 
+            success: false, 
+            error: 'Contest has not started yet',
+            startTime: contest.startTime
+          });
+        }
+      }
+    }
+
     // Calculate test case statistics if available
     const testResults = payload.testResults || payload.result?.details || [];
     const totalTestCases = testResults.length || 0;
     const passedTestCases = testResults.filter(t => t.passed).length || 0;
     
     // Calculate marks (percentage based on passed tests)
-    const marksObtained = totalTestCases > 0 
+    // Only count marks if not in practice mode
+    const marksObtained = (canScore && totalTestCases > 0) 
       ? Math.round((passedTestCases / totalTestCases) * 100) 
       : 0;
 
@@ -62,21 +90,24 @@ async function createSubmission(req, res) {
       testResults,
       totalTestCases,
       passedTestCases,
-      marksObtained,
+      marksObtained: canScore ? marksObtained : 0,
       maxMarks: 100,
       completionStatus,
       executionTime: payload.time ?? payload.exec_time ?? 0,
       memory: payload.memory ?? 0,
-      score: marksObtained,
-      judgedAt: new Date()
+      score: canScore ? marksObtained : 0,
+      judgedAt: new Date(),
+      isPracticeMode, // Flag to indicate if this was practice after contest
+      countsForScore: canScore // Flag to indicate if this counts toward contest score
     };
 
-    // Check for existing better submission
-    if (toInsert.userId && toInsert.contestId && toInsert.problemId) {
+    // Check for existing better submission (only if this can score)
+    if (canScore && toInsert.userId && toInsert.contestId && toInsert.problemId) {
       const existing = await Submission.findOne({
         userId: toInsert.userId,
         contestId: toInsert.contestId,
-        problemId: toInsert.problemId
+        problemId: toInsert.problemId,
+        countsForScore: true // Only compare with scored submissions
       }).sort({ marksObtained: -1 }).lean();
 
       if (existing && existing.marksObtained >= marksObtained) {
@@ -93,16 +124,70 @@ async function createSubmission(req, res) {
     // Write to MongoDB
     const doc = await Submission.create(toInsert);
 
+    // Update contest participant progress if this is a scored submission
+    if (canScore && toInsert.userId && toInsert.contestId && toInsert.problemId) {
+      await updateContestProgress(toInsert.userId, toInsert.contestId, toInsert.problemId, marksObtained, completionStatus);
+    }
+
     return res.status(201).json({ 
       success: true, 
       submission: doc,
       message: completionStatus === 'fully_solved' 
         ? 'All test cases passed! 🎉' 
-        : `${passedTestCases}/${totalTestCases} test cases passed`
+        : `${passedTestCases}/${totalTestCases} test cases passed`,
+      isPracticeMode
     });
   } catch (err) {
     console.error('createSubmission error', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+// Helper function to update contest participant progress
+async function updateContestProgress(userId, contestId, problemId, score, status) {
+  try {
+    const Contest = require('../models/Contest.cjs');
+    const contest = await Contest.findById(contestId);
+    
+    if (!contest) return;
+
+    // Find the participant
+    const participant = contest.participants.find(p => p.userId === userId);
+    if (!participant) return;
+
+    // Find or create submission entry for this problem
+    const submissionIndex = participant.submissions.findIndex(
+      s => s.problemId.toString() === problemId.toString()
+    );
+
+    const newSubmission = {
+      problemId,
+      submittedAt: new Date(),
+      passed: status === 'fully_solved',
+      score
+    };
+
+    if (submissionIndex >= 0) {
+      // Update if new score is better
+      if (score > (participant.submissions[submissionIndex].score || 0)) {
+        participant.submissions[submissionIndex] = newSubmission;
+      }
+    } else {
+      // Add new submission
+      participant.submissions.push(newSubmission);
+    }
+
+    // Recalculate total score (sum of best scores for each problem)
+    participant.score = participant.submissions.reduce((total, sub) => total + (sub.score || 0), 0);
+
+    // Mark as modified and save
+    contest.markModified('participants');
+    await contest.save();
+
+    console.log(`✓ Updated progress for user ${userId} in contest ${contestId}: Score ${participant.score}`);
+  } catch (error) {
+    console.error('Error updating contest progress:', error);
+    // Don't throw - this is a background update
   }
 }
 

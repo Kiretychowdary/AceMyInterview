@@ -118,3 +118,9 @@ export const getProblemById = async (problemId) => {
 	const resp = await apiFetch(`/contests/problem/${encodeURIComponent(problemId)}`);
 	return resp.data;
 };
+
+// Get user's progress in a contest
+export const getUserProgress = async (contestId, userId) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/progress/${encodeURIComponent(userId)}`);
+	return resp.data;
+};

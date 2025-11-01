@@ -18,16 +18,18 @@ const ContestProblems = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [problemStatuses, setProblemStatuses] = useState({}); // Track submission status per problem
+  const [userProgress, setUserProgress] = useState({ solved: 0, partial: 0, totalProblems: 0, score: 0 });
 
   useEffect(() => {
     loadContestProblems();
   }, [contestId]);
 
-  // Reload statuses when user navigates back to this page
+  // Reload statuses and progress when user navigates back to this page
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user?.uid && problems.length > 0) {
         loadProblemStatuses(problems);
+        loadUserProgress();
       }
     };
 
@@ -44,9 +46,12 @@ const ContestProblems = () => {
       setContest(data);
       setProblems(data.problems || []);
       
-      // Load submission statuses for all problems
+      // Load submission statuses and progress for all problems
       if (user?.uid && data.problems) {
-        await loadProblemStatuses(data.problems);
+        await Promise.all([
+          loadProblemStatuses(data.problems),
+          loadUserProgress()
+        ]);
       }
     } catch (error) {
       console.error('Error loading contest problems:', error);
@@ -55,6 +60,22 @@ const ContestProblems = () => {
       setTimeout(() => navigate('/contests'), 2000);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUserProgress = async () => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const response = await axios.get(
+        `${API_BASE}/api/contests/${contestId}/progress/${user.uid}`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        setUserProgress(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading user progress:', error);
     }
   };
 
@@ -197,21 +218,32 @@ const ContestProblems = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-yellow-500 rounded-xl flex items-center justify-center text-white">
+                <motion.div 
+                  key={`${userProgress.solved}-${userProgress.partial}`}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center text-white shadow-lg"
+                >
                   ✓
-                </div>
+                </motion.div>
                 <div>
                   <div className="text-xs text-gray-600">Your Progress</div>
-                  <div className="text-sm text-gray-800">
-                    <span className="text-green-600 font-semibold">
-                      {Object.values(problemStatuses).filter(s => s.completionStatus === 'fully_solved').length}
+                  <motion.div 
+                    key={`progress-${userProgress.solved}-${userProgress.partial}`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-sm text-gray-800"
+                  >
+                    <span className="text-green-600 font-bold">
+                      {userProgress.solved || 0}
                     </span>
                     {' solved, '}
-                    <span className="text-yellow-600 font-semibold">
-                      {Object.values(problemStatuses).filter(s => s.completionStatus === 'partially_solved').length}
+                    <span className="text-orange-600 font-bold">
+                      {userProgress.partial || 0}
                     </span>
                     {' partial'}
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             </div>
@@ -230,10 +262,16 @@ const ContestProblems = () => {
               Contest Problems
             </h2>
             <motion.button
-              onClick={() => loadProblemStatuses(problems)}
+              onClick={async () => {
+                await Promise.all([
+                  loadProblemStatuses(problems),
+                  loadUserProgress()
+                ]);
+                toast.success('Progress updated!');
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition flex items-center gap-2 text-sm"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition flex items-center gap-2 text-sm font-medium"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

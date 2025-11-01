@@ -86,6 +86,15 @@ const submissionSchema = new mongoose.Schema({
   judgedAt: {
     type: Date,
     default: null
+  },
+  // Contest timing flags
+  isPracticeMode: {
+    type: Boolean,
+    default: false // True if submitted after contest ended
+  },
+  countsForScore: {
+    type: Boolean,
+    default: true // False if submitted after contest ended
   }
 }, {
   timestamps: true

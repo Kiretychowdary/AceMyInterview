@@ -401,7 +401,7 @@ function CompilerPage(props) {
 
               {currentProblem.testCases && currentProblem.testCases.filter(tc => !tc.hidden).length > 0 && (
                 <div className="mb-2">
-                  <h4 className={`text-xs font-semibold mb-1 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>Sample Test Cases</h4>
+                  <h4 className={`text-xs font-semibold mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Sample Test Cases</h4>
                   {currentProblem.testCases.filter(tc => !tc.hidden).slice(0, 3).map((tc, i) => (
                     <div key={i} className="p-3 rounded border bg-gray-50 border-gray-200 mb-3">
                       <div className="flex items-center justify-between mb-2">
@@ -413,7 +413,7 @@ function CompilerPage(props) {
                           <div className="font-mono text-gray-800 whitespace-pre-wrap">{tc.input !== undefined ? (typeof tc.input === 'string' ? tc.input : JSON.stringify(tc.input)) : '—'}</div>
                         </div>
                         <div className="bg-white p-2 rounded border">
-                          <div className="font-medium text-green-700 mb-1">Output:</div>
+                          <div className="font-medium text-blue-700 mb-1">Output:</div>
                           <div className="font-mono text-gray-800 whitespace-pre-wrap">{tc.output !== undefined ? (typeof tc.output === 'string' ? tc.output : JSON.stringify(tc.output)) : '—'}</div>
                         </div>
                         {tc.explanation && (
@@ -430,7 +430,7 @@ function CompilerPage(props) {
 
               {currentProblem.testCases && currentProblem.testCases.filter(tc => tc.hidden).length > 0 && (
                 <div>
-                  <h4 className={`text-xs font-semibold mb-1 ${darkMode ? 'text-purple-400' : 'text-purple-700'}`}>Hidden Test Cases</h4>
+                  <h4 className={`text-xs font-semibold mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Hidden Test Cases</h4>
                   <div className="text-xs text-gray-600">
                     {currentProblem.testCases.filter(tc => tc.hidden).length} additional test cases will be run but not shown.
                   </div>
@@ -467,7 +467,7 @@ function CompilerPage(props) {
   }
 
   // Main Coding Interface - OPTIMIZED HEIGHT
-  const rootClasses = 'fixed inset-0 z-[100] w-full h-screen overflow-hidden max-w-[100vw] flex flex-col bg-gradient-to-br from-blue-50 via-white to-blue-100';
+  const rootClasses = 'fixed inset-0 z-[100] w-full h-screen overflow-hidden max-w-[100vw] flex flex-col bg-white';
 
   // Show break screen between rounds
   if (showBreakScreen) {
@@ -528,7 +528,7 @@ function CompilerPage(props) {
           <div
             onMouseDown={startDrag}
             onTouchStart={startDrag}
-            className="w-2 cursor-col-resize bg-gradient-to-b from-blue-200 via-blue-300 to-blue-200 hover:from-blue-300 hover:via-blue-400 hover:to-blue-300 transition relative group"
+            className="w-2 cursor-col-resize bg-blue-200 hover:bg-blue-300 transition relative group"
           >
             <div className="absolute inset-0 opacity-0 group-hover:opacity-40 bg-blue-600 mix-blend-multiply transition" />
             <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-5 h-16 rounded-full bg-white/70 border border-blue-300 shadow flex items-center justify-center text-[10px] text-blue-600 font-medium">⇔</div>
@@ -576,7 +576,7 @@ function CompilerPage(props) {
                 whileTap={{ scale: 0.95 }} 
                 onClick={runSampleTests} 
                 disabled={isSubmitting || (!problemDetails && !problemData)} 
-                className="px-4 py-1.5 text-sm bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow"
+                className="px-4 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-semibold shadow"
               >
                 {isSubmitting ? 'Running...' : 'Run Sample Tests'}
               </motion.button>
@@ -624,7 +624,7 @@ function CompilerPage(props) {
               <div
                 onMouseDown={startVerticalDrag}
                 onTouchStart={startVerticalDrag}
-                className={`h-2 bg-gradient-to-r from-blue-200 via-blue-300 to-blue-200 cursor-row-resize relative group ${vDragging ? 'from-blue-300 via-blue-400 to-blue-300' : ''}`}
+                className={`h-2 bg-blue-200 cursor-row-resize relative group ${vDragging ? 'bg-blue-300' : ''}`}
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-40 bg-blue-600 mix-blend-multiply transition" />
                 <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-20 h-4 rounded-full bg-white/70 border border-blue-300 shadow flex items-center justify-center text-[10px] text-blue-600 font-medium">⇕</div>

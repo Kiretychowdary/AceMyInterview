@@ -30,6 +30,38 @@ const contestSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Problem'
   }],
+  // Participants with user details from Supabase auth
+  participants: [{
+    userId: {
+      type: String,  // Supabase user ID
+      required: true
+    },
+    email: {
+      type: String,  // Email from Supabase auth
+      required: true
+    },
+    displayName: {
+      type: String,
+      default: ''
+    },
+    registeredAt: {
+      type: Date,
+      default: Date.now
+    },
+    score: {
+      type: Number,
+      default: 0
+    },
+    submissions: [{
+      problemId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Problem'
+      },
+      submittedAt: Date,
+      passed: Boolean,
+      score: Number
+    }]
+  }],
   status: {
     type: String,
     enum: ['draft', 'scheduled', 'ongoing', 'completed', 'cancelled'],
@@ -73,13 +105,27 @@ const contestSchema = new mongoose.Schema({
 
 // Virtual field to get participant count
 contestSchema.virtual('participantCount').get(function() {
-  return this.registrations ? this.registrations.length : 0;
+  return this.participants ? this.participants.length : 0;
 });
+
+// Method to check if user is already registered
+contestSchema.methods.isUserRegistered = function(userId) {
+  return this.participants.some(p => p.userId === userId);
+};
+
+// Method to check if contest is full
+contestSchema.methods.isFull = function() {
+  if (!this.maxParticipants) return false;
+  return this.participantCount >= this.maxParticipants;
+};
 
 // Method to check if registration is open
 contestSchema.methods.isRegistrationOpen = function() {
   const now = new Date();
-  return now < this.registrationDeadline && this.status !== 'cancelled' && this.isPublished;
+  return now < this.registrationDeadline && 
+         this.status !== 'cancelled' && 
+         this.isPublished &&
+         !this.isFull();
 };
 
 // Method to check if contest is active
@@ -110,6 +156,8 @@ contestSchema.methods.updateStatus = function() {
 // Index for efficient queries
 contestSchema.index({ startTime: 1, status: 1 });
 contestSchema.index({ createdBy: 1 });
+contestSchema.index({ 'participants.userId': 1 }); // For user contest lookups
+contestSchema.index({ 'participants.email': 1 }); // For email-based queries
 
 const Contest = mongoose.model('Contest', contestSchema);
 

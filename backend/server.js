@@ -63,6 +63,15 @@ mongooseService.connect()
     console.log('\n🎯 NMKRSPVLIDATA');
     console.log('✅ MongoDB: Connected');
     
+    // Start contest status auto-updater
+    try {
+      const ContestStatusUpdater = require('./services/contestStatusUpdater.cjs');
+      ContestStatusUpdater.startPolling(60000); // Update every 60 seconds
+      console.log('✅ Contest Status Updater: Started');
+    } catch (err) {
+      console.warn('⚠️  Contest Status Updater not available:', err.message);
+    }
+    
     // Start the server once DB is ready
     app.listen(PORT, () => {
       console.log(`🚀 Server: Running on http://localhost:${PORT}\n`);

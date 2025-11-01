@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getUpcomingContests, getPastContests, registerForContest, checkRegistrationStatus } from '../services/ContestService';
-import AccentBlobs from '../components/AccentBlobs';
+import ContestCountdown from '../components/ContestCountdown';
 import { useAuth } from '../components/AuthContext';
 
 const Contests = () => {
@@ -17,6 +17,7 @@ const Contests = () => {
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState({}); // Track registration status
   const [registering, setRegistering] = useState(false);
+  const [contestStatuses, setContestStatuses] = useState({}); // Track real-time contest statuses
 
   // Load contests from Firebase
   useEffect(() => {
@@ -231,11 +232,11 @@ const Contests = () => {
 
   const getDifficultyColor = (difficulty) => {
     switch(difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-700 border-green-300';
-      case 'Medium': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'Hard': return 'bg-orange-100 text-orange-700 border-orange-300';
-      case 'Expert': return 'bg-red-100 text-red-700 border-red-300';
-      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+      case 'Easy': return 'bg-blue-50 text-blue-600 border-blue-200';
+      case 'Medium': return 'bg-blue-100 text-blue-700 border-blue-300';
+      case 'Hard': return 'bg-blue-200 text-blue-800 border-blue-400';
+      case 'Expert': return 'bg-blue-300 text-blue-900 border-blue-500';
+      default: return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
@@ -247,8 +248,7 @@ const Contests = () => {
   };
 
   return (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 py-8 px-4 md:px-8 font-sans relative overflow-hidden">
-      <AccentBlobs />
+  <div className="min-h-screen bg-white py-8 px-4 md:px-8 font-sans relative">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -256,14 +256,14 @@ const Contests = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <span className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm mb-4">
-            🏆 Compete & Learn
+          <span className="inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm mb-4 border border-blue-100">
+            🏆 Coding Competitions
           </span>
-          <h1 className="text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700 mb-4 font-sans">
-            Coding Contests
+          <h1 className="text-5xl md:text-6xl text-blue-600 mb-4 font-bold">
+            Contests
           </h1>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto font-sans">
-            Challenge yourself with competitive programming contests. Improve your skills and compete with developers worldwide.
+          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+            Challenge yourself with competitive programming contests and improve your skills.
           </p>
         </motion.div>
 
@@ -285,115 +285,169 @@ const Contests = () => {
               className="mb-12"
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-3xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700 font-sans">
+                <h2 className="text-3xl text-blue-600 font-bold">
                   Upcoming Contests
                 </h2>
-                <span className="text-sm text-gray-500 font-medium bg-gray-100 px-4 py-2 rounded-lg font-sans">
+                <span className="text-sm text-gray-600 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100">
                   {upcomingContests.length} contests
                 </span>
               </div>
 
               {upcomingContests.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-2xl border-2 border-blue-200 font-sans">
+                <div className="text-center py-12 bg-white rounded-xl border-2 border-blue-100">
                   <div className="text-6xl mb-4">📅</div>
-                  <p className="text-blue-700">No upcoming contests</p>
-                  <p className="text-blue-600 text-sm">Check back later for new contests!</p>
+                  <p className="text-blue-600 font-medium">No upcoming contests</p>
+                  <p className="text-gray-500 text-sm">Check back later for new contests!</p>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 gap-6 font-sans">
+                <div className="grid md:grid-cols-2 gap-6">
                   {upcomingContests.map((contest, index) => (
                     <motion.div
                       key={contest.id}
                       initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -6 }}
-                className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl border-2 border-blue-100 hover:border-blue-300 transition-all cursor-pointer font-sans"
+                whileHover={{ y: -4 }}
+                className="group bg-white rounded-xl p-6 shadow-sm hover:shadow-md border border-blue-100 hover:border-blue-300 transition-all cursor-pointer"
                 onClick={() => setSelectedContest(contest)}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-xl text-gray-800 mb-2 group-hover:text-blue-700 transition-colors font-sans">
+                    <h3 className="text-xl text-gray-800 mb-2 group-hover:text-blue-600 transition-colors font-medium">
                       {contest.title}
                     </h3>
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span className={`text-xs px-3 py-1 rounded-lg border ${getDifficultyColor(contest.difficulty)}`}> 
+                      <span className={`text-xs px-3 py-1 rounded-md border font-medium ${getDifficultyColor(contest.difficulty)}`}> 
                         {contest.difficulty}
                       </span>
-                      <span className="text-xs px-3 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="text-xs px-3 py-1 rounded-md bg-blue-50 text-blue-600 border border-blue-200 font-medium">
                         {contest.type}
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl mb-1">⏰</div>
-                    <div className="text-xs text-blue-700">
-                      {getTimeUntil(contest.startTime)}
-                    </div>
-                  </div>
+                </div>
+
+                {/* Countdown Timer */}
+                <div className="mb-4">
+                  <ContestCountdown 
+                    contest={contest}
+                    onStatusChange={(newStatus) => {
+                      setContestStatuses(prev => ({
+                        ...prev,
+                        [contest._id || contest.id]: newStatus
+                      }));
+                    }}
+                  />
                 </div>
 
                 {/* Description */}
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2 font-sans">
+                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                   {contest.description}
                 </p>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-4 font-sans">
+                <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                    <div className="text-xs text-gray-600 font-sans">⏰ Duration</div>
-                    <div className="text-blue-700 text-sm font-sans">{contest.duration}</div>
+                    <div className="text-xs text-gray-600">⏰ Duration</div>
+                    <div className="text-blue-600 text-sm font-medium">{contest.duration}</div>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                          <div className="text-xs text-gray-600 font-sans">📝 Problems</div>
-                            <div className="text-blue-700 text-sm font-sans">{Array.isArray(contest.problems) ? contest.problems.length : (contest.problems || 0)}</div>
+                          <div className="text-xs text-gray-600">📝 Problems</div>
+                            <div className="text-blue-600 text-sm font-medium">{Array.isArray(contest.problems) ? contest.problems.length : (contest.problems || 0)}</div>
                   </div>
                   <div className="bg-blue-50 rounded-lg p-2 border border-blue-100">
-                    <div className="text-xs text-gray-600 font-sans">⭐ Rating</div>
-                    <div className="text-blue-700 text-sm font-sans">{contest.rating}</div>
+                    <div className="text-xs text-gray-600">⭐ Rating</div>
+                    <div className="text-blue-600 text-sm font-medium">{contest.rating}</div>
                   </div>
                 </div>
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {(contest.tags || []).map((tag, tagIndex) => (
-                    <span key={`${contest.id}-tag-${tagIndex}`} className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-sans">
+                    <span key={`${contest.id}-tag-${tagIndex}`} className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-600 border border-blue-200">
                       {tag}
                     </span>
                   ))}
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 font-sans">
+                <div className="flex items-center justify-between pt-4 border-t border-blue-100">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="text-lg">👥</span>
                     <span>{contest.participants || 0} registered</span>
                   </div>
                   <div className="flex gap-2">
-                    {registrations[contest._id || contest.id]?.registered ? (
-                      <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-semibold text-sm flex items-center gap-2">
-                        <span>✓</span> Registered
-                      </div>
-                    ) : (
-                      <motion.button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRegister(contest);
-                        }}
-                        disabled={registering}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:shadow-lg font-sans disabled:opacity-50"
-                      >
-                        {registering ? 'Registering...' : 'Register'}
-                      </motion.button>
-                    )}
+                    {(() => {
+                      const contestStatus = contestStatuses[contest._id || contest.id];
+                      const now = new Date();
+                      const startTime = new Date(contest.startTime);
+                      const endTime = new Date(contest.endTime);
+                      const isUpcoming = contestStatus === 'upcoming' || now < startTime;
+                      const isOngoing = contestStatus === 'ongoing' || (now >= startTime && now < endTime);
+                      const isCompleted = contestStatus === 'completed' || now >= endTime;
+
+                      if (isCompleted) {
+                        return (
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartContest(contest);
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                          >
+                            Practice Mode →
+                          </motion.button>
+                        );
+                      }
+
+                      if (isOngoing) {
+                        return (
+                          <motion.button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartContest(contest);
+                            }}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium animate-pulse"
+                          >
+                            Enter Contest →
+                          </motion.button>
+                        );
+                      }
+
+                      // Upcoming - show register button
+                      if (registrations[contest._id || contest.id]?.registered) {
+                        return (
+                          <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium text-sm flex items-center gap-2 border border-blue-200">
+                            <span>✓</span> Registered
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <motion.button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRegister(contest);
+                          }}
+                          disabled={registering}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                        >
+                          {registering ? 'Registering...' : 'Register Now'}
+                        </motion.button>
+                      );
+                    })()}
                     <motion.button
                       onClick={() => setSelectedContest(contest)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg font-sans"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
                       View Details →
                     </motion.button>

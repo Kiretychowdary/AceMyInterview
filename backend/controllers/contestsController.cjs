@@ -368,15 +368,22 @@ exports.publishContest = async (req, res) => {
   }
 };
 
-// Register for contest
+// Register for contest (protected - requires Supabase auth)
 exports.registerForContest = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.body;
     
-    if (!userId) {
-      return res.status(400).json({ success: false, error: 'User ID is required' });
+    // Get user from Supabase auth middleware
+    const supabaseUser = req.supabaseUser;
+    if (!supabaseUser || !supabaseUser.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
     }
+    
+    const userId = supabaseUser.id;
+    const userEmail = supabaseUser.email || '';
+    const displayName = supabaseUser.user_metadata?.full_name || 
+                       supabaseUser.user_metadata?.name || 
+                       userEmail.split('@')[0] || 'User';
     
     const contest = await Contest.findById(id);
     if (!contest) {
@@ -392,21 +399,31 @@ exports.registerForContest = async (req, res) => {
       });
     }
     
-    // Check if already registered
-    const existingRegistration = await Registration.findOne({ userId, contestId: id });
-    if (existingRegistration) {
+    // Check if user is already registered (in participants array)
+    if (contest.isUserRegistered(userId)) {
       return res.status(400).json({ success: false, error: 'Already registered for this contest' });
     }
     
-    // Check participant limit
-    if (contest.maxParticipants) {
-      const registrationCount = await Registration.countDocuments({ contestId: id });
-      if (registrationCount >= contest.maxParticipants) {
-        return res.status(400).json({ success: false, error: 'Contest is full' });
-      }
+    // Check if contest is full
+    if (contest.isFull()) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Contest is full',
+        maxParticipants: contest.maxParticipants 
+      });
     }
     
-    // Create registration
+    // Add participant to contest
+    contest.participants.push({
+      userId,
+      email: userEmail,
+      displayName,
+      registeredAt: new Date(),
+      score: 0,
+      submissions: []
+    });
+    
+    // Also create Registration entry for backward compatibility
     const registration = new Registration({
       userId,
       contestId: id,
@@ -414,12 +431,20 @@ exports.registerForContest = async (req, res) => {
     });
     
     await registration.save();
-    
-    // Add registration to contest
     contest.registrations.push(registration._id);
+    
     await contest.save();
     
-    return res.json({ success: true, data: registration });
+    return res.json({ 
+      success: true, 
+      data: {
+        contestId: contest._id,
+        userId,
+        email: userEmail,
+        displayName,
+        registeredAt: new Date()
+      }
+    });
   } catch (err) {
     console.error('contestsController.registerForContest error:', err.message || err);
     
@@ -431,10 +456,18 @@ exports.registerForContest = async (req, res) => {
   }
 };
 
-// Unregister from contest
+// Unregister from contest (protected - requires Supabase auth)
 exports.unregisterFromContest = async (req, res) => {
   try {
-    const { id, userId } = req.params;
+    const { id } = req.params;
+    
+    // Get user from Supabase auth middleware
+    const supabaseUser = req.supabaseUser;
+    if (!supabaseUser || !supabaseUser.id) {
+      return res.status(401).json({ success: false, error: 'Authentication required' });
+    }
+    
+    const userId = supabaseUser.id;
     
     const contest = await Contest.findById(id);
     if (!contest) {
@@ -446,13 +479,20 @@ exports.unregisterFromContest = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cannot unregister after contest has started' });
     }
     
-    const registration = await Registration.findOneAndDelete({ userId, contestId: id });
-    if (!registration) {
-      return res.status(404).json({ success: false, error: 'Registration not found' });
+    // Remove from participants array
+    const initialLength = contest.participants.length;
+    contest.participants = contest.participants.filter(p => p.userId !== userId);
+    
+    if (contest.participants.length === initialLength) {
+      return res.status(404).json({ success: false, error: 'Not registered for this contest' });
     }
     
-    // Remove registration from contest
-    contest.registrations = contest.registrations.filter(r => r.toString() !== registration._id.toString());
+    // Also remove Registration entry
+    const registration = await Registration.findOneAndDelete({ userId, contestId: id });
+    if (registration) {
+      contest.registrations = contest.registrations.filter(r => r.toString() !== registration._id.toString());
+    }
+    
     await contest.save();
     
     return res.json({ success: true, message: 'Successfully unregistered from contest' });
@@ -523,5 +563,100 @@ exports.getLeaderboard = async (req, res) => {
   } catch (err) {
     console.error('contestsController.getLeaderboard error:', err.message || err);
     return res.status(500).json({ success: false, error: 'Failed to get leaderboard', details: err.message });
+  }
+};
+
+// Get contest current status with time info
+exports.getContestStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const contest = await Contest.findById(id);
+    if (!contest) {
+      return res.status(404).json({ success: false, error: 'Contest not found' });
+    }
+
+    // Update status based on current time
+    const oldStatus = contest.status;
+    contest.updateStatus();
+    
+    // Save if status changed
+    if (oldStatus !== contest.status) {
+      await contest.save();
+    }
+
+    const now = new Date();
+    const startTime = new Date(contest.startTime);
+    const endTime = new Date(contest.endTime);
+
+    return res.json({
+      success: true,
+      data: {
+        contestId: contest._id,
+        status: contest.status,
+        startTime: contest.startTime,
+        endTime: contest.endTime,
+        currentTime: now,
+        isRegistrationOpen: contest.isRegistrationOpen(),
+        isActive: contest.isActive(),
+        canSubmitForScore: now >= startTime && now <= endTime && contest.status === 'ongoing',
+        canPractice: now > endTime || contest.status === 'completed',
+        timeUntilStart: startTime > now ? startTime - now : 0,
+        timeRemaining: endTime > now && startTime <= now ? endTime - now : 0
+      }
+    });
+  } catch (err) {
+    console.error('contestsController.getContestStatus error:', err.message || err);
+    return res.status(500).json({ success: false, error: 'Failed to get contest status', details: err.message });
+  }
+};
+
+// Get user's progress in a contest
+exports.getUserProgress = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    
+    const contest = await Contest.findById(id).populate('problems');
+    if (!contest) {
+      return res.status(404).json({ success: false, error: 'Contest not found' });
+    }
+
+    // Find participant
+    const participant = contest.participants.find(p => p.userId === userId);
+    
+    if (!participant) {
+      return res.json({
+        success: true,
+        data: {
+          registered: false,
+          solved: 0,
+          partial: 0,
+          totalProblems: Array.isArray(contest.problems) ? contest.problems.length : 0,
+          score: 0,
+          submissions: []
+        }
+      });
+    }
+
+    // Count solved and partial
+    const solved = participant.submissions.filter(s => s.passed).length;
+    const partial = participant.submissions.filter(s => !s.passed && s.score > 0).length;
+    const totalProblems = Array.isArray(contest.problems) ? contest.problems.length : 0;
+
+    return res.json({
+      success: true,
+      data: {
+        registered: true,
+        solved,
+        partial,
+        totalProblems,
+        score: participant.score || 0,
+        submissions: participant.submissions,
+        registeredAt: participant.registeredAt
+      }
+    });
+  } catch (err) {
+    console.error('contestsController.getUserProgress error:', err.message || err);
+    return res.status(500).json({ success: false, error: 'Failed to get user progress', details: err.message });
   }
 };

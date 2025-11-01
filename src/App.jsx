@@ -1,4 +1,4 @@
-﻿// NMKRSPVLIDATAPERMANENT
+// NMKRSPVLIDATAPERMANENT
 // AMMARADHAKRISHNANANNA
 // KSVIDPERMANENT
 // KIRETY
@@ -28,7 +28,7 @@ import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 
-// âœ… ProtectedRoute component
+// ✅ ProtectedRoute component
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
@@ -91,8 +91,7 @@ function AppContent() {
           <Route path="/contest/:contestId/problems" element={<ProtectedRoute><ContestProblems /></ProtectedRoute>} />
           <Route path="/interview-preparation" element={<InterviewPreparation />} />
 
-
-          {/* âœ… Protected Routes */}
+          {/* ✅ Protected Routes */}
           <Route path="/compiler" element={<ProtectedRoute><Compiler /></ProtectedRoute>} />
           <Route path="/device-setup" element={<ProtectedRoute><DeviceSetup /></ProtectedRoute>} />
           <Route path="/interview-room" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
@@ -103,11 +102,11 @@ function AppContent() {
           <Route path="/ai-face-interview" element={<ProtectedRoute><FaceToFaceAIInterview /></ProtectedRoute>} />
           <Route path="/dashboard-test" element={<ProtectedRoute><DashboardTest /></ProtectedRoute>} />
 
-          {/* âœ… Public Routes */}
+          {/* ✅ Public Routes */}
           <Route path="/Login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* âœ… Admin Routes */}
+          {/* ✅ Admin Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
         </Routes>
@@ -116,7 +115,7 @@ function AppContent() {
   );
 }
 
-// âœ… Wrap only with AuthProvider (no Router)
+// ✅ Wrap only with AuthProvider (no Router)
 export default function App() {
   return (
     <AuthProvider>
@@ -124,5 +123,3 @@ export default function App() {
     </AuthProvider>
   );
 }
-
-

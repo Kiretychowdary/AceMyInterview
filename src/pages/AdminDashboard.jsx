@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -52,52 +52,6 @@ const AdminDashboard = () => {
       }
 
       if (currentStep < 4) {
-          // Download a contest report (problems + submissions). Used by ContestCard buttons.
-          const handleDownloadReport = async (contestId, format = 'csv') => {
-            try {
-              const { getContestReport } = await import('../services/ContestService');
-              const report = await getContestReport(contestId);
-
-              if (format === 'json') {
-                const json = JSON.stringify(report, null, 2);
-                const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `${(report.title || 'contest').replace(/[^a-z0-9-_]/gi, '_')}_report_${report.id || ''}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-                toast.success('JSON report download started');
-                return;
-              }
-
-              // Build problems CSV
-              const problems = report.problems || [];
-              const problemsHeader = [
-                'contest_id','title','description','type','difficulty','status','startTime','duration','participants','createdAt','updatedAt',
-                'problem_index','problem_title','problem_difficulty','points','problem_description','problem_testcases'
-              ];
-              const problemRows = problems.length === 0 ? [[report.id, report.title, report.description, report.type, report.difficulty, report.status, report.startTime, report.duration, report.participants, report.createdAt, report.updatedAt, '', '', '', '', '', '']] : problems.map((p, idx) => ([report.id, report.title, report.description, report.type, report.difficulty, report.status, report.startTime, report.duration, report.participants, report.createdAt, report.updatedAt, idx+1, p.title || '', p.difficulty || '', p.points || '', (p.description || '').replace(/\r?\n/g, ' '), JSON.stringify(p.testCases || [])]));
-              const problemsCsvLines = [problemsHeader.join(','), ...problemRows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(','))];
-              const problemsCsv = problemsCsvLines.join('\n');
-              const blobP = new Blob([problemsCsv], { type: 'text/csv;charset=utf-8;' });
-              const urlP = URL.createObjectURL(blobP);
-              const aP = document.createElement('a'); aP.href = urlP; aP.download = `${(report.title || 'contest').replace(/[^a-z0-9-_]/gi, '_')}_problems_${report.id || ''}.csv`; document.body.appendChild(aP); aP.click(); aP.remove(); URL.revokeObjectURL(urlP);
-
-              // Submissions CSV (optional)
-              const submissions = report.submissions || [];
-              if (submissions.length > 0) {
-                const subsHeader = ['submission_id','contest_id','user_id','username','problem_index','language_id','verdict','status','time','memory','code_length','createdAt'];
-                const subsRows = submissions.map(s => [s.id || '', s.contestId || '', s.userId || s.user_id || '', s.username || s.user_name || '', s.problemIndex ?? s.problem_index ?? '', s.languageId ?? s.language_id ?? '', s.verdict || s.result || '', s.status || '', s.time || s.executionTime || '', s.memory || s.memoryUsed || '', s.codeLength || (s.code ? s.code.length : ''), s.createdAt || '']);
-                const subsCsvLines = [subsHeader.join(','), ...subsRows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(','))];
-                const subsCsv = subsCsvLines.join('\n');
-                const blobS = new Blob([subsCsv], { type: 'text/csv;charset=utf-8;' });
-                const urlS = URL.createObjectURL(blobS);
-                const aS = document.createElement('a'); aS.href = urlS; aS.download = `${(report.title || 'contest').replace(/[^a-z0-9-_]/gi, '_')}_submissions_${report.id || ''}.csv`; document.body.appendChild(aS); aS.click(); aS.remove(); URL.revokeObjectURL(urlS);
-              }
-
-              toast.success('Report download(s) started');
-            } catch (error) {
-              console.error('Error downloading report:', error);
-              toast.error('Failed to download report');
-            }
-          };
         setCurrentStep(currentStep + 1);
       } else {
         // attach referenceSolution when saving
@@ -451,14 +405,14 @@ const AdminDashboard = () => {
             {/* Step 4: Test Cases Configuration */}
             {currentStep === 4 && (
               <div className="space-y-4">
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4 border-2 border-blue-200">
+                <div className="bg-blue-50 rounded-lg p-4 mb-4 border-2 border-blue-200">
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">ðŸ’¡</span>
+                    <span className="text-2xl">�'�</span>
                     <div>
                       <h4 className="font-bold text-gray-800 mb-1">Test Cases Configuration</h4>
                       <p className="text-sm text-gray-600">
-                        Add test cases and mark them as <span className="font-semibold text-green-700">Visible</span> (shown to participants) 
-                        or <span className="font-semibold text-purple-700">Hidden</span> (used for final evaluation only)
+                        Add test cases and mark them as <span className="font-semibold text-blue-700">Visible</span> (shown to participants) 
+                        or <span className="font-semibold text-blue-600">Hidden</span> (used for final evaluation only)
                       </p>
                     </div>
                   </div>
@@ -470,7 +424,7 @@ const AdminDashboard = () => {
                     <button
                       type="button"
                       onClick={addTestCase}
-                      className="text-sm px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 font-semibold"
+                      className="text-sm px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-semibold"
                     >
                       + Add Test Case
                     </button>
@@ -480,9 +434,9 @@ const AdminDashboard = () => {
                         if (!referenceSolution.code) return toast.error('Provide a reference solution to run tests');
                         await runTests(formData.testCases);
                       }}
-                      className="text-sm px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 font-semibold"
+                      className="text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
                     >
-                      â–¶ï¸ Run All Test Cases
+                      ▶� Run All Test Cases
                     </button>
                   </div>
                 </div>
@@ -492,13 +446,13 @@ const AdminDashboard = () => {
                     key={index} 
                     className={`rounded-lg p-4 mb-3 border-2 ${
                       testCase.isHidden 
-                        ? 'bg-purple-50 border-purple-200' 
-                        : 'bg-green-50 border-green-200'
+                        ? 'bg-blue-100 border-blue-300' 
+                        : 'bg-blue-50 border-blue-200'
                     }`}>
                     <div className="flex justify-between items-center mb-3">
                       <div className="flex items-center gap-3">
                         <span className={`text-sm font-bold ${
-                          testCase.isHidden ? 'text-purple-700' : 'text-green-700'
+                          testCase.isHidden ? 'text-blue-700' : 'text-blue-600'
                         }`}>
                           Test Case {index + 1}
                         </span>
@@ -507,11 +461,11 @@ const AdminDashboard = () => {
                           onClick={() => toggleTestCaseVisibility(index)}
                           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                             testCase.isHidden
-                              ? 'bg-purple-200 text-purple-800 hover:bg-purple-300'
-                              : 'bg-green-200 text-green-800 hover:bg-green-300'
+                              ? 'bg-blue-200 text-blue-800 hover:bg-blue-300'
+                              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                           }`}
                         >
-                          {testCase.isHidden ? 'ðŸ”’ Hidden' : 'ðŸ‘ï¸ Visible'}
+                          {testCase.isHidden ? '🔒 Hidden' : '👁️ Visible'}
                         </button>
                       </div>
                       {formData.testCases.length > 1 && (
@@ -558,10 +512,10 @@ const AdminDashboard = () => {
                     </div>
                     <div className="space-y-2">
                       {testRun.results.details && testRun.results.details.map((d, i) => (
-                        <div key={i} className={`p-2 rounded ${d.passed ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border`}>
+                        <div key={i} className={`p-2 rounded ${d.passed ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'} border`}>
                           <div className="flex items-center justify-between">
                             <div className="text-sm font-semibold">Test {i + 1}: {d.passed ? 'Passed' : 'Failed'}</div>
-                            <div className="text-xs text-gray-600">time: {d.time ?? '-'}s â€¢ mem: {d.memory ?? '-'} KB</div>
+                            <div className="text-xs text-gray-600">time: {d.time ?? '-'}s • mem: {d.memory ?? '-'} KB</div>
                           </div>
                           <div className="text-xs text-gray-700 mt-1">Expected: <pre className="whitespace-pre-wrap font-mono text-xs">{String(d.expected)}</pre></div>
                           <div className="text-xs text-gray-700 mt-1">Actual: <pre className="whitespace-pre-wrap font-mono text-xs">{String(d.actual)}</pre></div>
@@ -573,9 +527,9 @@ const AdminDashboard = () => {
                   </div>
                 )}
 
-                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3 mt-4">
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 mt-4">
                   <div className="flex items-start gap-2">
-                    <span className="text-lg">âš ï¸</span>
+                    <span className="text-lg">⚠️</span>
                     <p className="text-xs text-gray-700">
                       <span className="font-semibold">Tip:</span> Add at least 2-3 visible test cases for debugging 
                       and 3-5 hidden test cases for thorough evaluation.
@@ -593,7 +547,7 @@ const AdminDashboard = () => {
                   onClick={handleBack}
                   className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl transition-all"
                 >
-                  â† Back
+                  ← Back
                 </button>
               )}
               <button
@@ -607,7 +561,7 @@ const AdminDashboard = () => {
                 type="submit"
                 className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl transition-all hover:from-blue-700 hover:to-blue-800 shadow-lg"
               >
-                {currentStep === 4 ? (problem ? 'Update Problem' : 'Add Problem') : 'Next â†’'}
+                {currentStep === 4 ? (problem ? 'Update Problem' : 'Add Problem') : 'Next →'}
               </button>
             </div>
           </form>
@@ -724,39 +678,127 @@ const AdminDashboard = () => {
       handleEdit(contest);
     };
 
+    // Download contest participants with scores and solved questions
+    const handleDownloadReport = async (contestId, format = 'csv') => {
+      try {
+        const contest = contests.find(c => (c.id || c._id) === contestId);
+        if (!contest) {
+          toast.error('Contest not found');
+          return;
+        }
+
+        // Fetch contest with full participant data from backend
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+        const response = await fetch(`${API_BASE}/api/contests/${contestId}`);
+        const data = await response.json();
+        
+        const participants = data.data?.participants || [];
+        const problems = data.data?.problems || contest.problems || [];
+
+        if (format === 'json') {
+          const json = JSON.stringify({ contest: data.data, participants }, null, 2);
+          const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${(contest.title || 'contest').replace(/[^a-z0-9-_]/gi, '_')}_participants.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          toast.success('JSON report downloaded');
+          return;
+        }
+
+        // Build CSV with participants data
+        const header = [
+          'Contest Title',
+          'User Email',
+          'Display Name',
+          'Registration Date',
+          'Total Score',
+          'Problems Solved',
+          'Submission Count'
+        ];
+
+        const rows = participants.map(p => [
+          contest.title || '',
+          p.email || '',
+          p.displayName || p.email?.split('@')[0] || 'Anonymous',
+          p.registeredAt ? new Date(p.registeredAt).toLocaleString() : '',
+          p.score || 0,
+          (p.submissions || []).filter(s => s.passed).length,
+          (p.submissions || []).length
+        ]);
+
+        // Add summary row
+        const totalParticipants = participants.length;
+        const totalSubmissions = participants.reduce((sum, p) => sum + (p.submissions?.length || 0), 0);
+        const averageScore = participants.length > 0 
+          ? (participants.reduce((sum, p) => sum + (p.score || 0), 0) / participants.length).toFixed(2)
+          : 0;
+
+        rows.push(['', '', '', '', '', '', '']);
+        rows.push(['SUMMARY', '', '', '', '', '', '']);
+        rows.push(['Total Participants', totalParticipants, '', '', '', '', '']);
+        rows.push(['Average Score', averageScore, '', '', '', '', '']);
+        rows.push(['Total Submissions', totalSubmissions, '', '', '', '', '']);
+
+        const csvLines = [
+          header.join(','),
+          ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        ];
+        
+        const csv = csvLines.join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${(contest.title || 'contest').replace(/[^a-z0-9-_]/gi, '_')}_participants.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast.success('CSV report downloaded');
+      } catch (error) {
+        console.error('Error downloading report:', error);
+        toast.error('Failed to download report');
+      }
+    };
+
     // filtering helpers
     const activeList = contests.filter(c => c.status === 'active' || (c.startTime && new Date(c.startTime) <= new Date() && (!c.endTime || new Date(c.endTime) > new Date())));
     const upcomingList = contests.filter(c => c.status === 'upcoming' || (c.startTime && new Date(c.startTime) > new Date()));
     const pastList = contests.filter(c => c.status === 'ended' || (c.endTime && new Date(c.endTime) <= new Date()));
 
     return (
-      <div className="p-6">
-        <AccentBlobs />
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
-            <p className="text-sm text-gray-600">Manage contests, problems and reports</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-4xl font-bold text-blue-900">Admin Dashboard</h1>
+              <p className="text-sm text-gray-600 mt-1">Manage contests, problems and reports</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={openCreate} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm transition-all hover:shadow-md">+ Create Contest</button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={openCreate} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold">+ Create Contest</button>
-          </div>
-        </div>
 
-        <div className="mb-6">
-          <div className="flex gap-2">
-            <button className={`px-3 py-2 rounded ${activeTab === 'contests' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`} onClick={() => setActiveTab('contests')}>Contests</button>
-            <button className={`px-3 py-2 rounded ${activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`} onClick={() => setActiveTab('analytics')}>Analytics</button>
+          <div className="mb-6">
+            <div className="flex gap-2">
+              <button className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'contests' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`} onClick={() => setActiveTab('contests')}>Contests</button>
+              <button className={`px-4 py-2 rounded-lg font-medium transition-all ${activeTab === 'analytics' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`} onClick={() => setActiveTab('analytics')}>Analytics</button>
+            </div>
           </div>
-        </div>
 
         {activeTab === 'analytics' ? (
           <AnalyticsTab contests={contests} statistics={statistics} />
         ) : (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold mb-3">Ongoing / Active</h2>
-              {loading ? <div>Loading...</div> : (
-                activeList.length === 0 ? <div className="text-sm text-gray-500">No active contests</div> : (
+              <h2 className="text-2xl font-bold text-blue-900 mb-4">Ongoing / Active</h2>
+              {loading ? <div className="text-blue-600">Loading...</div> : (
+                activeList.length === 0 ? <div className="bg-white rounded-lg p-6 text-center border-2 border-blue-100"><p className="text-gray-500">No active contests</p></div> : (
                   <div className="grid md:grid-cols-2 gap-4">
                     {activeList.map(c => (
                       <ContestCard key={c.id || c._id || c.title} contest={c} onEdit={() => handleEdit(c)} onDelete={() => handleDelete(c)} onManageQuestions={() => handleManageQuestions(c)} />
@@ -767,8 +809,8 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold mb-3">Upcoming</h2>
-              {upcomingList.length === 0 ? <div className="text-sm text-gray-500">No upcoming contests</div> : (
+              <h2 className="text-2xl font-bold text-blue-900 mb-4">Upcoming</h2>
+              {upcomingList.length === 0 ? <div className="bg-white rounded-lg p-6 text-center border-2 border-blue-100"><p className="text-gray-500">No upcoming contests</p></div> : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {upcomingList.map(c => (
                     <ContestCard key={c.id || c._id || c.title} contest={c} onEdit={() => handleEdit(c)} onDelete={() => handleDelete(c)} onManageQuestions={() => handleManageQuestions(c)} />
@@ -778,8 +820,8 @@ const AdminDashboard = () => {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold mb-3">Past Contests</h2>
-              {pastList.length === 0 ? <div className="text-sm text-gray-500">No past contests</div> : (
+              <h2 className="text-2xl font-bold text-blue-900 mb-4">Past Contests</h2>
+              {pastList.length === 0 ? <div className="bg-white rounded-lg p-6 text-center border-2 border-blue-100"><p className="text-gray-500">No past contests</p></div> : (
                 <div className="grid md:grid-cols-2 gap-4">
                   {pastList.map(c => (
                     <ContestCard key={c.id || c._id || c.title} contest={c} onEdit={() => handleEdit(c)} onDelete={() => handleDelete(c)} onManageQuestions={() => handleManageQuestions(c)} />
@@ -797,6 +839,7 @@ const AdminDashboard = () => {
           onSave={handleSaveContest}
           problems={draftProblems}
         />
+        </div>
       </div>
     );
   };
@@ -804,10 +847,10 @@ const AdminDashboard = () => {
   const ContestCard = ({ contest, onEdit, onDelete, onManageQuestions }) => {
   const getDifficultyColor = (difficulty) => {
     const colors = {
-      Easy: 'bg-green-100 text-green-700 border-green-300',
-      Medium: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-      Hard: 'bg-orange-100 text-orange-700 border-orange-300',
-      Expert: 'bg-red-100 text-red-700 border-red-300'
+      Easy: 'bg-blue-50 text-blue-700 border-blue-200',
+      Medium: 'bg-blue-100 text-blue-800 border-blue-300',
+      Hard: 'bg-blue-200 text-blue-900 border-blue-400',
+      Expert: 'bg-blue-300 text-blue-900 border-blue-500'
     };
     return colors[difficulty] || 'bg-gray-100 text-gray-700 border-gray-300';
   };
@@ -815,7 +858,7 @@ const AdminDashboard = () => {
   const getStatusColor = (status) => {
     const colors = {
       upcoming: 'bg-blue-100 text-blue-700 border-blue-300',
-      active: 'bg-green-100 text-green-700 border-green-300',
+      active: 'bg-blue-50 text-blue-700 border-blue-200',
       ended: 'bg-gray-100 text-gray-700 border-gray-300'
     };
     return colors[status] || 'bg-gray-100 text-gray-700 border-gray-300';
@@ -837,7 +880,7 @@ const AdminDashboard = () => {
             <span className={`text-xs px-2 py-1 rounded-lg font-semibold border ${getStatusColor(contest.status)}`}>
               {contest.status}
             </span>
-            <span className="text-xs px-2 py-1 rounded-lg font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+            <span className="text-xs px-2 py-1 rounded-lg font-semibold bg-blue-100 text-blue-800 border border-blue-300">
               {contest.problems?.length || 0} Problems
             </span>
           </div>
@@ -846,15 +889,15 @@ const AdminDashboard = () => {
 
       <div className="space-y-2 text-sm text-gray-600 mb-4">
         <div className="flex items-center gap-2">
-          <span>📅</span>
+          <span>??</span>
           <span>Start: {new Date(contest.startTime).toLocaleString()}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span>⏱️</span>
+          <span>??</span>
           <span>Duration: {contest.duration}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span>🎯</span>
+          <span>??</span>
           <span>Type: {contest.type}</span>
         </div>
       </div>
@@ -866,15 +909,15 @@ const AdminDashboard = () => {
           whileTap={{ scale: 0.95 }}
           className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm"
         >
-          ðŸ“ Questions
+          📝 Questions
         </motion.button>
         <motion.button
           onClick={() => handleDownloadReport(contest.id, 'csv')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm"
+          className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg font-semibold text-sm"
         >
-          ðŸ“¥ CSV
+          📥 CSV
         </motion.button>
         <motion.button
           onClick={() => handleDownloadReport(contest.id, 'json')}
@@ -882,23 +925,23 @@ const AdminDashboard = () => {
           whileTap={{ scale: 0.95 }}
           className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg font-semibold text-sm"
         >
-          ðŸ—„ï¸ JSON
+          🗄️ JSON
         </motion.button>
         <motion.button
           onClick={onEdit}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-semibold text-sm"
+          className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm"
         >
-          âœï¸ Edit
+          ✏️ Edit
         </motion.button>
         <motion.button
           onClick={onDelete}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold text-sm"
+          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold text-sm"
         >
-          ðŸ—‘ï¸
+          🗑️
         </motion.button>
       </div>
     </motion.div>
@@ -924,16 +967,16 @@ const AnalyticsTab = ({ contests, statistics }) => {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl p-6 border-2 border-purple-200">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Problem Statistics</h3>
+        <div className="bg-white rounded-xl p-6 border-2 border-blue-200 shadow-sm">
+          <h3 className="text-lg font-bold text-blue-900 mb-4">Problem Statistics</h3>
           <div className="space-y-4">
             <div>
               <div className="text-sm text-gray-600 mb-1">Total Problems</div>
-              <div className="text-3xl font-bold text-purple-700">{statistics.totalProblems}</div>
+              <div className="text-3xl font-bold text-blue-700">{statistics.totalProblems}</div>
             </div>
             <div>
               <div className="text-sm text-gray-600 mb-1">Avg Problems/Contest</div>
-              <div className="text-3xl font-bold text-purple-700">{statistics.avgProblemsPerContest}</div>
+              <div className="text-3xl font-bold text-blue-700">{statistics.avgProblemsPerContest}</div>
             </div>
           </div>
         </div>
