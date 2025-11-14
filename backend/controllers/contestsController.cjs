@@ -37,7 +37,9 @@ exports.createContest = async (req, res) => {
 
     const startTime = new Date(payload.startTime);
     const endTime = new Date(payload.endTime);
-    const registrationDeadline = payload.registrationDeadline ? new Date(payload.registrationDeadline) : new Date(startTime.getTime() - 60000); // 1 min before start
+    const registrationDeadline = payload.registrationDeadline 
+      ? new Date(payload.registrationDeadline) 
+      : new Date(startTime.getTime() - 5 * 60000); // 5 minutes before start by default
 
     // Validation
     if (endTime <= startTime) {
@@ -45,9 +47,9 @@ exports.createContest = async (req, res) => {
       return res.status(400).json({ success: false, error: 'End time must be after start time' });
     }
 
-    if (registrationDeadline >= startTime) {
+    if (registrationDeadline > startTime) {
       await session.abortTransaction();
-      return res.status(400).json({ success: false, error: 'Registration deadline must be before start time' });
+      return res.status(400).json({ success: false, error: 'Registration deadline must be before or equal to start time' });
     }
 
     // Extract problems from payload

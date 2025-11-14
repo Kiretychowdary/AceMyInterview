@@ -211,7 +211,7 @@ const CreateContestModal = ({ show, contest, onClose, onSave }) => {
       startTime: start.toISOString(),
       endTime: end.toISOString(),
       duration: Math.floor((end - start) / 60000), // duration in minutes
-      registrationDeadline: new Date(start.getTime() - 60000).toISOString(), // 1 min before
+      registrationDeadline: new Date(start.getTime() - 5 * 60000).toISOString(), // 5 minutes before
       problems: problems,
       difficulty: 'mixed',
       createdBy: 'admin',

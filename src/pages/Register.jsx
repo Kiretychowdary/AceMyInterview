@@ -2,27 +2,29 @@
 // AMMALOVEBLESSINGSONRECURSION
 
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../config/firebase.config";
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthContext';
 import "tailwindcss/tailwind.css";
 import "react-toastify/dist/ReactToastify.css";
 
 const Register = () => {
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, signInWithGoogle } = useAuth();
 
-  const register = async () => {
+  // If already logged in, redirect to home
+  React.useEffect(() => {
+    if (user) navigate('/');
+  }, [user, navigate]);
+
+  const handleGoogleSignup = async () => {
+    setLoading(true);
     try {
-      const user = await createUserWithEmailAndPassword(
-        auth,
-        registerEmail,
-        registerPassword
-      );
-      console.log("User registered:", user.user);
-      toast.success("Registration successful!", {
+      const { error } = await signInWithGoogle();
+      if (error) throw error;
+      
+      toast.success("Welcome! Your account has been created successfully!", {
         autoClose: 4000,
         position: "top-right",
         style: {
@@ -36,9 +38,10 @@ const Register = () => {
           boxShadow: '0 6px 20px rgba(34, 197, 94, 0.15)'
         }
       });
+      // Google OAuth will handle redirect automatically
     } catch (error) {
       console.error("Registration error:", error.message);
-      toast.error(error.message, {
+      toast.error(error.message || "Signup failed. Please try again.", {
         autoClose: 5000,
         position: "top-right",
         style: {
@@ -52,57 +55,24 @@ const Register = () => {
           boxShadow: '0 6px 20px rgba(239, 68, 68, 0.15)'
         }
       });
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="form-container">
-        <p className="title">Welcome back</p>
-        <form
-          className="form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            register();
-          }}
-        >
-          <input
-            type="email"
-            className="input"
-            placeholder="Email"
-            value={registerEmail}
-            onChange={(e) => setRegisterEmail(e.target.value)}
-          />
-          <input
-            type="password"
-            className="input"
-            placeholder="Password"
-            value={registerPassword}
-            onChange={(e) => setRegisterPassword(e.target.value)}
-          />
-          <p className="page-link">
-            <span className="page-link-label cursor-pointer">Forgot Password?</span>
+        <p className="title">Create Your Account</p>
+        <div className="signup-description">
+          <h3 className="signup-subtitle">Join AceMyInterview Today!</h3>
+          <p className="signup-text">
+            Get started with your coding interview preparation journey. 
+            Sign up with Google to access personalized mock interviews, contests, and more.
           </p>
-          <button type="submit" className="form-btn">
-            Sign Up
-          </button>
-        </form>
-        <p className="sign-up-label">
-          Already have an account?
-          <span className="sign-up-link cursor-pointer" onClick={()=>{
-            navigate('/Login')
-          }}>
-           Login
-          </span>
-        </p>
+        </div>
+        
         <div className="buttons-container">
-          <div className="apple-login-button">
-            <svg stroke="currentColor" fill="currentColor" strokeWidth="0" className="apple-icon" viewBox="0 0 1024 1024" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-              <path d="M747.4 535.7c-.4-68.2 30.5-119.6 92.9-157.5-34.9-50-87.7-77.5-157.3-82.8-65.9-5.2-138 38.4-164.4 38.4-27.9 0-91.7-36.6-141.9-36.6C273.1 298.8 163 379.8 163 544.6c0 48.7 8.9 99 26.7 150.8 23.8 68.2 109.6 235.3 199.1 232.6 46.8-1.1 79.9-33.2 140.8-33.2 59.1 0 89.7 33.2 141.9 33.2 90.3-1.3 167.9-153.2 190.5-221.6-121.1-57.1-114.6-167.2-114.6-170.7zm-105.1-305c50.7-60.2 46.1-115 44.6-134.7-44.8 2.6-96.6 30.5-126.1 64.8-32.5 36.8-51.6 82.3-47.5 133.6 48.4 3.7 92.6-21.2 129-63.7z"></path>
-            </svg>
-            <span>Log in with Apple</span>
-          </div>
-          <div className="google-login-button">
+          <div className={`google-signup-button ${loading ? 'disabled' : ''}`} onClick={!loading ? handleGoogleSignup : undefined}>
             <svg stroke="currentColor" fill="currentColor" strokeWidth="0" version="1.1" x="0px" y="0px" className="google-icon" viewBox="0 0 48 48" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
               <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
     c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24
@@ -114,108 +84,137 @@ const Register = () => {
               <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
     c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
             </svg>
-            <span>Log in with Google</span>
+            <span>{loading ? 'Creating Account...' : 'Sign up with Google'}</span>
           </div>
         </div>
+
+        <div className="features-list">
+          <h4 className="features-title">What you'll get:</h4>
+          <ul className="features">
+            <li>✨ Personalized mock interviews</li>
+            <li>🏆 Coding contests and challenges</li>
+            <li>📊 Real-time progress tracking</li>
+            <li>🎯 AI-powered interview feedback</li>
+          </ul>
+        </div>
+
+        <p className="sign-up-label">
+          Already have an account?
+          <span className="sign-up-link cursor-pointer" onClick={() => navigate('/Login')}>
+           Login here
+          </span>
+        </p>
       </div>
 
       {/* Inline Styles */}
       <style>{`
         .form-container {
-          width: 350px;
+          width: 400px;
           background-color: #fff;
-          border-radius: 10px;
-          box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-          padding: 20px 30px;
+          border-radius: 16px;
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
+          padding: 32px 40px;
+          border: 1px solid #e5e7eb;
         }
         .title {
           text-align: center;
-          font-size: 28px;
+          font-size: 32px;
           font-weight: 800;
-          margin-bottom: 30px;
+          margin-bottom: 16px;
           font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
           color: #1d4ed8;
         }
-        .form {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
+        .signup-description {
+          text-align: center;
+          margin-bottom: 32px;
         }
-        .input {
-          padding: 12px 15px;
-          border-radius: 20px;
-          border: 1px solid #1d4ed8;
-          outline: none;
-        }
-        .input:focus {
-          border-color: #1d4ed8;
-          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
-        }
-        .form-btn {
-          background-color: #1d4ed8;
-          color: white;
-          padding: 10px;
-          border-radius: 20px;
-          border: none;
-          cursor: pointer;
+        .signup-subtitle {
+          font-size: 18px;
           font-weight: 600;
-          box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-          transition: background-color 0.3s ease;
+          color: #374151;
+          margin-bottom: 8px;
         }
-        .form-btn:hover {
-          background-color: #1e40af;
-        }
-        .form-btn:active {
-          box-shadow: none;
-        }
-        .page-link {
-          text-align: right;
-          font-size: 12px;
-        }
-        .page-link-label {
-          text-decoration: underline;
-          cursor: pointer;
-          color: #000000;
-        }
-        .sign-up-label {
-          margin-top: 10px;
-          font-size: 12px;
-          color: #000000;
-        }
-        .sign-up-link {
-          color: #1d4ed8;
-          font-weight: bold;
-          cursor: pointer;
-          text-decoration: underline;
+        .signup-text {
+          font-size: 14px;
+          color: #6b7280;
+          line-height: 1.5;
         }
         .buttons-container {
-          margin-top: 20px;
+          margin-bottom: 24px;
           display: flex;
           flex-direction: column;
           gap: 12px;
         }
-        .apple-login-button,
-        .google-login-button {
+        .google-signup-button {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          padding: 10px;
-          border-radius: 20px;
-          font-size: 14px;
+          gap: 12px;
+          padding: 14px 20px;
+          border-radius: 12px;
+          font-size: 16px;
+          font-weight: 600;
           cursor: pointer;
-        }
-        .apple-login-button {
-          background: #1d4ed8;
+          border: 2px solid #1d4ed8;
+          background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
           color: white;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
         }
-        .google-login-button {
-          border: 1px solid #1d4ed8;
-          background: white;
-          color: #000000;
+        .google-signup-button:hover:not(.disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
         }
-        .apple-icon, .google-icon {
-          font-size: 18px;
+        .google-signup-button.disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+        }
+        .google-icon {
+          font-size: 20px;
+        }
+        .features-list {
+          background: #f8fafc;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 24px;
+          border: 1px solid #e2e8f0;
+        }
+        .features-title {
+          font-size: 16px;
+          font-weight: 600;
+          color: #374151;
+          margin-bottom: 12px;
+        }
+        .features {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .features li {
+          font-size: 14px;
+          color: #4b5563;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .sign-up-label {
+          text-align: center;
+          font-size: 14px;
+          color: #6b7280;
+        }
+        .sign-up-link {
+          color: #1d4ed8;
+          font-weight: 600;
+          cursor: pointer;
+          text-decoration: underline;
+          margin-left: 4px;
+        }
+        .sign-up-link:hover {
+          color: #1e40af;
         }
       `}</style>
     </div>

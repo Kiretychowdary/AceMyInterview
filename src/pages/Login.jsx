@@ -4,15 +4,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { supabase } from '../config/supabaseClient';
 import { useAuth } from '../components/AuthContext';
 import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signInWithEmail, signInWithGoogle } = useAuth();
 
   // If already logged in, redirect to home
   React.useEffect(() => {
@@ -20,13 +20,29 @@ const Login = () => {
   }, [user, navigate]);
 
   const login = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: registerEmail,
-        password: registerPassword,
+    if (!registerEmail || !registerPassword) {
+      toast.error("Please enter both email and password", {
+        autoClose: 3000,
+        position: "top-right",
+        style: {
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          fontSize: '16px',
+          fontWeight: '600',
+          padding: '16px',
+          borderRadius: '10px',
+          border: '2px solid #ef4444'
+        }
       });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await signInWithEmail(registerEmail, registerPassword);
       if (error) throw error;
-      toast.success("Login successful!", {
+      
+      toast.success("Login successful! Welcome back!", {
         autoClose: 3000,
         position: "top-right",
         style: {
@@ -39,7 +55,7 @@ const Login = () => {
           border: '2px solid #10b981'
         }
       });
-      // AuthContext will update and redirect
+      navigate('/');
     } catch (error) {
       toast.error(error.message || "Login failed", {
         autoClose: 5000,
@@ -54,14 +70,17 @@ const Login = () => {
           border: '2px solid #ef4444'
         }
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const googleLogin = async () => {
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      const { error } = await signInWithGoogle();
       if (error) throw error;
-      // On success, Supabase will handle redirect and AuthContext will update
+      // Google OAuth will handle redirect automatically
     } catch (error) {
       toast.error(error.message || "Google login failed", {
         autoClose: 5000,
@@ -76,6 +95,7 @@ const Login = () => {
           border: '2px solid #ef4444'
         }
       });
+      setLoading(false);
     }
   };
 
@@ -107,8 +127,8 @@ const Login = () => {
           <p className="page-link">
             <span className="page-link-label cursor-pointer">Forgot Password?</span>
           </p>
-          <button type="submit" className="form-btn">
-            Log in
+          <button type="submit" className="form-btn" disabled={loading}>
+            {loading ? 'Signing in...' : 'Log in'}
           </button>
         </form>
         <p className="sign-up-label">
@@ -121,7 +141,7 @@ const Login = () => {
           </span>
         </p>
         <div className="buttons-container">
-          <div className="google-login-button" onClick={googleLogin}>
+          <div className={`google-login-button ${loading ? 'disabled' : ''}`} onClick={!loading ? googleLogin : undefined}>
             <svg stroke="currentColor" fill="currentColor" strokeWidth="0" version="1.1" x="0px" y="0px" className="google-icon" viewBox="0 0 48 48" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
               <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
               c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24
@@ -133,7 +153,7 @@ const Login = () => {
               <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
               c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
             </svg>
-            <span>Log in with Google</span>
+            <span>{loading ? 'Connecting...' : 'Log in with Google'}</span>
           </div>
         </div>
       </div>
@@ -223,6 +243,19 @@ const Login = () => {
           border: 1px solid #1d4ed8;
           background: white;
           color: #000000;
+          transition: all 0.3s ease;
+        }
+        .google-login-button:hover:not(.disabled) {
+          background-color: #f8fafc;
+          transform: translateY(-1px);
+        }
+        .google-login-button.disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .form-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
         .google-icon {
           font-size: 18px;

@@ -14,18 +14,35 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     setLoading(true);
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
+    
+    try {
+      const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+        setUser(session?.user || null);
+        setLoading(false);
+      });
+      
+      // Get initial session with error handling
+      supabase.auth.getSession()
+        .then(({ data: { session } }) => {
+          setUser(session?.user || null);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.warn("Supabase session error:", error.message);
+          // Set user to null and continue without auth
+          setUser(null);
+          setLoading(false);
+        });
+      
+      return () => {
+        listener?.subscription?.unsubscribe();
+      };
+    } catch (error) {
+      console.warn("Supabase auth initialization error:", error.message);
+      // Continue without auth if Supabase fails
+      setUser(null);
       setLoading(false);
-    });
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-      setLoading(false);
-    });
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
+    }
   }, []);
 
   const logout = async () => {
@@ -33,7 +50,43 @@ export function AuthProvider({ children }) {
       await supabase.auth.signOut();
       setUser(null);
     } catch (error) {
-      console.error("Logout error:", error);
+      console.warn("Logout error (continuing anyway):", error.message);
+      // Force logout even if Supabase call fails
+      setUser(null);
+    }
+  };
+
+  const signInWithEmail = async (email, password) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error("Email sign in error:", error.message);
+      return { data: null, error };
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error("Google sign in error:", error.message);
+      return { data: null, error };
     }
   };
 
@@ -41,6 +94,8 @@ export function AuthProvider({ children }) {
     user,
     logout,
     loading,
+    signInWithEmail,
+    signInWithGoogle,
   };
 
   return (

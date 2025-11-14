@@ -53,7 +53,17 @@ const Navbar = () => {
 
         {/* Desktop Buttons */}
         {user ? (
-          <div className="hidden md:flex space-x-3 flex-shrink-0"></div>
+          <div className="hidden md:flex items-center space-x-3 flex-shrink-0">
+            <span className="text-blue-700 font-medium text-sm">
+              Welcome, {user.email?.split('@')[0] || 'User'}
+            </span>
+            <button 
+              onClick={logout}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition font-medium"
+            >
+              Logout
+            </button>
+          </div>
         ) : (
           <div className="hidden md:flex space-x-3 flex-shrink-0">
             <Link to="/login" tabIndex={0} aria-label="User Login Button" className="user-profile">
@@ -102,13 +112,12 @@ const Navbar = () => {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full max-w-xs app-sidebar px-6 py-8 shadow-2xl z-50 flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-xs bg-white px-6 py-8 shadow-2xl z-50 flex flex-col border-l-2 border-blue-100"
             style={{ minHeight: "100vh" }}
           >
             {/* Overlay to close sidebar when clicking outside */}
             <div
-              className="fixed inset-0 z-40"
-              style={{ background: "transparent" }}
+              className="fixed inset-0 bg-black bg-opacity-30 z-40"
               onClick={() => setMenuOpen(false)}
               aria-label="Close sidebar when clicking outside"
             />
@@ -117,7 +126,7 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className="text-lg font-semibold text-white hover:text-white/90 transition px-2 py-1 rounded hover:bg-white/10"
+                  className="text-lg font-semibold text-blue-900 hover:text-blue-700 transition px-4 py-3 rounded-lg hover:bg-blue-50 border border-transparent hover:border-blue-200"
                   onClick={() => setMenuOpen(false)}
                 >
                   {link.name}
