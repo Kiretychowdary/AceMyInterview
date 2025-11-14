@@ -1,5 +1,5 @@
-// Use Vite env var VITE_API_BASE when available, otherwise default to localhost:5000 for dev.
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+// Use Vite env var VITE_API_BASE_URL when available, otherwise default to localhost:5000 for dev.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 async function apiFetch(path, options = {}) {
 	const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };

@@ -102,7 +102,7 @@ const FaceToFaceAIInterview = () => {
   // Generate interview questions using AI
   const generateQuestions = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const response = await axios.post(`${API_BASE}/api/ai/generate-interview-questions`, {
         role: interviewData.role,
         difficulty: interviewData.difficulty,
@@ -246,7 +246,7 @@ const FaceToFaceAIInterview = () => {
   // AI evaluates user's answer
   const evaluateAnswer = async (answerData) => {
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const response = await axios.post(`${API_BASE}/api/ai/evaluate-answer`, {
         question: answerData.question,
         answer: answerData.answer,
@@ -280,7 +280,7 @@ const FaceToFaceAIInterview = () => {
 
     // Calculate final score
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const response = await axios.post(`${API_BASE}/api/ai/generate-interview-report`, {
         userId: user?.uid,
         role: interviewData.role,
