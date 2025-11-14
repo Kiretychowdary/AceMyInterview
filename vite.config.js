@@ -16,21 +16,17 @@ export default defineConfig({
     }
   },
   build: {
+    target: 'esnext',
     rollupOptions: {
-      external: [],
       output: {
-        manualChunks(id) {
-          // Don't create chunks for react-router, let it be bundled naturally
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor'
-            }
-            if (id.includes('react-router-dom')) {
-              return 'router'
-            }
-          }
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom']
         }
       }
     }
+  },
+  optimizeDeps: {
+    include: ['react-router-dom']
   }
 })
