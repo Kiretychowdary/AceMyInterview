@@ -27,7 +27,6 @@ import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
-import ConnectionTest from './components/ConnectionTest.jsx';
 
 // ✅ ProtectedRoute component
 function ProtectedRoute({ children }) {
