@@ -11,9 +11,35 @@ const mongooseService = require('./services/mongoose.cjs');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS Configuration
+// CORS Configuration with enhanced logging
+const allowedOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : [
+      'http://localhost:3000', 
+      'http://localhost:5173', 
+      'http://localhost:5174', 
+      'http://localhost:5175',
+      'http://acemyinterview.app',
+      'https://acemyinterview.app'
+    ];
+
+console.log('🌐 CORS Origins configured:', allowedOrigins);
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+    
+    console.log('🔍 CORS request from origin:', origin);
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ CORS: Origin allowed');
+      callback(null, true);
+    } else {
+      console.log('❌ CORS: Origin blocked');
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -30,7 +56,19 @@ app.get('/api/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     service: 'AceMyInterview Backend',
-    version: '1.0.0'
+    version: '1.0.0',
+    corsOrigins: allowedOrigins,
+    nodeEnv: process.env.NODE_ENV
+  });
+});
+
+// Debug endpoint for CORS configuration
+app.get('/api/debug/cors', (req, res) => {
+  res.json({
+    allowedOrigins,
+    requestOrigin: req.get('Origin'),
+    corsOriginEnv: process.env.CORS_ORIGIN,
+    nodeEnv: process.env.NODE_ENV
   });
 });
 
