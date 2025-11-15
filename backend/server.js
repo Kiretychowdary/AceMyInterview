@@ -24,6 +24,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    service: 'AceMyInterview Backend',
+    version: '1.0.0'
+  });
+});
+
 // Mount admin routes (login/logout)
 try {
   const adminRoutes = require('./routes/admin.cjs');
