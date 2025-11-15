@@ -249,9 +249,10 @@ const Contests = () => {
 
   return (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4 md:px-8 font-sans relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-white to-purple-50 opacity-50"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
+      {/* Professional Background Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-white to-blue-50 opacity-50 -z-10"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200 to-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse -z-10"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-100 to-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000 -z-10"></div>
       
       <div className="relative max-w-7xl mx-auto">
         {/* Enhanced Header */}
@@ -260,10 +261,10 @@ const Contests = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-lg transform rotate-3">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl mb-6 shadow-lg">
             <span className="text-3xl">🏆</span>
           </div>
-          <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-6">
+          <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-6">
             Coding Contests
           </h1>
           <p className="text-gray-600 text-xl max-w-4xl mx-auto leading-relaxed mb-8">
@@ -278,11 +279,11 @@ const Contests = () => {
               <div className="text-gray-500 text-sm font-medium">Upcoming</div>
             </div>
             <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
-              <div className="text-3xl font-bold text-purple-600">{pastContests.length}</div>
+              <div className="text-3xl font-bold text-blue-700">{pastContests.length}</div>
               <div className="text-gray-500 text-sm font-medium">Completed</div>
             </div>
             <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
-              <div className="text-3xl font-bold text-green-600">{Object.keys(registrations).length}</div>
+              <div className="text-3xl font-bold text-blue-800">{Object.keys(registrations).length}</div>
               <div className="text-gray-500 text-sm font-medium">Registered</div>
             </div>
           </div>

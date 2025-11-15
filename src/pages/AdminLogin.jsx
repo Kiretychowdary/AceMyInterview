@@ -13,8 +13,8 @@ const AdminLogin = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  // Prefer Vite env variable VITE_ADMIN_SECRET for production; fallback keeps compatibility
-  const ADMIN_SECRET = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_ADMIN_SECRET) || 'ACE-ADMIN-SECRET-KEY-2025';
+  // Use the same secret as backend
+  const ADMIN_SECRET = 'NMKRSPVLIDATA';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -45,14 +45,14 @@ const AdminLogin = () => {
   return (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
       {/* Enhanced Background Elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-white to-purple-50 opacity-50"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200 to-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-2000"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-white to-purple-50 opacity-50 -z-10"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse -z-10"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200 to-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-2000 -z-10"></div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-20"
       >
         {/* Warning Banner */}
         <div className="bg-blue-100 border-2 border-blue-400 rounded-2xl p-4 mb-6 backdrop-blur-md">
@@ -68,7 +68,7 @@ const AdminLogin = () => {
         </div>
 
         {/* Login Card */}
-  <div className="bg-white rounded-3xl p-8 shadow-2xl border border-blue-200">
+  <div className="bg-white rounded-3xl p-8 shadow-2xl border border-blue-200 relative z-30">
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
               🔐
@@ -87,9 +87,10 @@ const AdminLogin = () => {
                 type="text"
                 value={credentials.username}
                 onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
-                className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all"
+                className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all relative z-10"
                 placeholder="Enter admin username"
                 required
+                autoComplete="off"
               />
             </div>
 
@@ -103,9 +104,10 @@ const AdminLogin = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={credentials.password}
                   onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all"
+                  className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all relative z-10"
                   placeholder="Enter password"
                   required
+                  autoComplete="off"
                 />
                 <button
                   type="button"
@@ -135,9 +137,10 @@ const AdminLogin = () => {
                 type="password"
                 value={credentials.secretKey}
                 onChange={(e) => setCredentials({ ...credentials, secretKey: e.target.value })}
-                className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all font-mono"
+                className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all font-mono relative z-10"
                 placeholder="Enter secret key"
                 required
+                autoComplete="off"
               />
             </div>
 
@@ -174,9 +177,12 @@ const AdminLogin = () => {
           </div>
         </div>
 
-        {/* Note: remove demo credentials and use VITE_ADMIN_SECRET for production */}
+        {/* Admin Credentials Info */}
         <div className="mt-4 text-center text-blue-400 text-xs">
-          <div className="bg-blue-50 rounded-lg p-3">Use an environment-provided secret (VITE_ADMIN_SECRET) for admin access in production.</div>
+          <div className="bg-blue-50 rounded-lg p-3">
+            <div className="font-semibold text-blue-600 mb-1">Admin Access</div>
+            <div className="text-xs text-blue-500">Secret Key: <span className="font-mono">NMKRSPVLIDATA</span></div>
+          </div>
         </div>
       </motion.div>
     </div>

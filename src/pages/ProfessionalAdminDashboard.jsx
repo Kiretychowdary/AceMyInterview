@@ -63,15 +63,36 @@ const ProfessionalAdminDashboard = () => {
 
   const handleCreateContest = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!contestForm.title.trim()) {
+      toast.error('Contest title is required');
+      return;
+    }
+    if (!contestForm.startTime || !contestForm.endTime) {
+      toast.error('Start time and end time are required');
+      return;
+    }
+    if (new Date(contestForm.endTime) <= new Date(contestForm.startTime)) {
+      toast.error('End time must be after start time');
+      return;
+    }
+
     try {
-      await createContest(contestForm);
-      toast.success('Contest created successfully!');
+      if (editingContest) {
+        await updateContest(editingContest._id || editingContest.id, contestForm);
+        toast.success('Contest updated successfully!');
+      } else {
+        await createContest(contestForm);
+        toast.success('Contest created successfully!');
+      }
       setShowCreateModal(false);
       resetForm();
       loadDashboardData();
     } catch (error) {
-      console.error('Error creating contest:', error);
-      toast.error('Failed to create contest');
+      console.error('Error creating/updating contest:', error);
+      const errorMessage = error?.body || error?.message || 'Failed to save contest';
+      toast.error(errorMessage);
     }
   };
 
@@ -95,10 +116,10 @@ const ProfessionalAdminDashboard = () => {
 
   const getDifficultyColor = (difficulty) => {
     const colors = {
-      Easy: 'bg-green-100 text-green-700 border-green-300',
-      Medium: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-      Hard: 'bg-orange-100 text-orange-700 border-orange-300',
-      Expert: 'bg-red-100 text-red-700 border-red-300'
+      Easy: 'bg-blue-100 text-blue-700 border-blue-300',
+      Medium: 'bg-blue-200 text-blue-800 border-blue-400',
+      Hard: 'bg-blue-300 text-blue-900 border-blue-500',
+      Expert: 'bg-blue-400 text-white border-blue-600'
     };
     return colors[difficulty] || 'bg-gray-100 text-gray-700 border-gray-300';
   };
