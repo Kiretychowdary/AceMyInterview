@@ -248,23 +248,44 @@ const Contests = () => {
   };
 
   return (
-  <div className="min-h-screen bg-white py-8 px-4 md:px-8 font-sans relative">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4 md:px-8 font-sans relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-white to-purple-50 opacity-50"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
+      
+      <div className="relative max-w-7xl mx-auto">
+        {/* Enhanced Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm mb-4 border border-blue-100">
-            🏆 Coding Competitions
-          </span>
-          <h1 className="text-5xl md:text-6xl text-blue-600 mb-4 font-bold">
-            Contests
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-6 shadow-lg transform rotate-3">
+            <span className="text-3xl">🏆</span>
+          </div>
+          <h1 className="text-6xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-6">
+            Coding Contests
           </h1>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-            Challenge yourself with competitive programming contests and improve your skills.
+          <p className="text-gray-600 text-xl max-w-4xl mx-auto leading-relaxed mb-8">
+            Challenge yourself with competitive programming contests. Solve algorithmic problems, 
+            compete with developers worldwide, and showcase your coding expertise.
           </p>
+          
+          {/* Stats Row */}
+          <div className="flex justify-center space-x-8 mb-8">
+            <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+              <div className="text-3xl font-bold text-blue-600">{upcomingContests.length}</div>
+              <div className="text-gray-500 text-sm font-medium">Upcoming</div>
+            </div>
+            <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+              <div className="text-3xl font-bold text-purple-600">{pastContests.length}</div>
+              <div className="text-gray-500 text-sm font-medium">Completed</div>
+            </div>
+            <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+              <div className="text-3xl font-bold text-green-600">{Object.keys(registrations).length}</div>
+              <div className="text-gray-500 text-sm font-medium">Registered</div>
+            </div>
+          </div>
         </motion.div>
 
         {/* Loading State */}
@@ -300,17 +321,21 @@ const Contests = () => {
                   <p className="text-gray-500 text-sm">Check back later for new contests!</p>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {upcomingContests.map((contest, index) => (
                     <motion.div
                       key={contest.id}
                       initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -4 }}
-                className="group bg-white rounded-xl p-6 shadow-sm hover:shadow-md border border-blue-100 hover:border-blue-300 transition-all cursor-pointer"
-                onClick={() => setSelectedContest(contest)}
-              >
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ y: -8, scale: 1.02 }}
+                      className="group bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-2xl border border-white/20 hover:border-blue-200 transition-all duration-300 cursor-pointer relative overflow-hidden"
+                      onClick={() => setSelectedContest(contest)}
+                    >
+                      {/* Gradient Background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      <div className="relative z-10">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -452,9 +477,10 @@ const Contests = () => {
                       View Details →
                     </motion.button>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
                 </div>
               )}
             </motion.div>

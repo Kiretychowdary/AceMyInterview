@@ -72,10 +72,24 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = async () => {
     try {
+      // Get the correct redirect URL based on environment
+      const getRedirectURL = () => {
+        // For production domain
+        if (window.location.hostname === 'acemyinterview.app') {
+          return 'https://acemyinterview.app';
+        }
+        // For localhost development
+        if (window.location.hostname === 'localhost') {
+          return window.location.origin;
+        }
+        // Fallback to production URL
+        return 'https://acemyinterview.app';
+      };
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}`,
+          redirectTo: getRedirectURL(),
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

@@ -43,10 +43,11 @@ const AdminLogin = () => {
   };
 
   return (
-  <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
-      {/* Decorative corner accents */}
-      <div aria-hidden="true" className="pointer-events-none absolute -left-20 -top-20 w-56 h-56 rounded-full bg-gradient-to-br from-blue-200 to-transparent opacity-70 blur-3xl transform -rotate-12 sm:-left-32 sm:-top-24 sm:w-80 sm:h-80 sm:opacity-60"></div>
-      <div aria-hidden="true" className="pointer-events-none absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-60 blur-3xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-50"></div>
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
+      {/* Enhanced Background Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-100 via-white to-purple-50 opacity-50"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-200 to-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse animation-delay-2000"></div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -102,7 +103,7 @@ const AdminLogin = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={credentials.password}
                   onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-white/10 border-2 border-white/30 rounded-xl text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none transition-all"
+                  className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all"
                   placeholder="Enter password"
                   required
                 />

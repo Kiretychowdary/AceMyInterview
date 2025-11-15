@@ -18,6 +18,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('contests');
   const [draftProblems, setDraftProblems] = useState([]);
+  // const [showCreateModal, setShowCreateModal] = useState(false);
+  // const [editingContest, setEditingContest] = useState(null);
   // Add Problem Form Component
   const SharedAddProblemForm = ({ problem, onSave, onCancel }) => {
     const [currentStep, setCurrentStep] = useState(1);
