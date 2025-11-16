@@ -22,10 +22,8 @@ import Compiler from './pages/Compiler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
 import FaceToFaceAIInterview from './pages/FaceToFaceAIInterview.jsx';
-import DashboardTest from './pages/DashboardTest.jsx';
 import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
-import AdminDashboard from './pages/AdminDashboard.jsx';
 import ProfessionalAdminDashboard from './pages/ProfessionalAdminDashboard.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
 
@@ -101,7 +99,6 @@ function AppContent() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
           <Route path="/ai-face-interview" element={<ProtectedRoute><FaceToFaceAIInterview /></ProtectedRoute>} />
-          <Route path="/dashboard-test" element={<ProtectedRoute><DashboardTest /></ProtectedRoute>} />
 
           {/* ✅ Public Routes */}
           <Route path="/Login" element={<Login />} />

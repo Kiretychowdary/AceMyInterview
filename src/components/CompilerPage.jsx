@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
-import JUDGE0_BASE_URL from '../config/judge0Config';
 import judge0Client from '../services/judge0Client';
 
 // Persist submissions by POSTing to our backend API which enforces Supabase auth

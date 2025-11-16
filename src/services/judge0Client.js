@@ -1,5 +1,5 @@
-// Judge0 API client
-import JUDGE0_BASE_URL from '../config/judge0Config';
+// Judge0 API client - using RapidAPI endpoint
+const JUDGE0_BASE_URL = 'https://judge0-ce.p.rapidapi.com';
 
 const runOnce = async ({ code, languageId, stdin = '' }) => {
   const response = await fetch(`${JUDGE0_BASE_URL}/submissions?base64_encoded=false&wait=true`, {
