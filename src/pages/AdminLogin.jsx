@@ -6,40 +6,78 @@ import { toast } from 'react-toastify';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const [isSignup, setIsSignup] = useState(false);
   const [credentials, setCredentials] = useState({
     username: '',
+    email: '',
     password: '',
-    secretKey: ''
+    confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Use the same secret as backend
-  const ADMIN_SECRET = 'NMKRSPVLIDATA';
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Post secret to server which will set an HttpOnly admin cookie on success
-    (async () => {
-      try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-        const res = await fetch(`${API_BASE}/api/admin/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ secret: credentials.secretKey })
-        });
-        const body = await res.json().catch(() => ({}));
-        if (res.ok && body && body.success) {
-          toast.success('🎉 Admin login successful!');
-          navigate('/admin-dashboard');
-        } else {
-          toast.error(body.error || 'Invalid admin secret');
+    setLoading(true);
+
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      const endpoint = isSignup ? '/api/admin/signup' : '/api/admin/login';
+      
+      // Validation
+      if (isSignup) {
+        if (!credentials.username || !credentials.email || !credentials.password || !credentials.confirmPassword) {
+          toast.error('Please fill in all fields');
+          return;
         }
-      } catch (err) {
-        console.error('Admin login error', err);
-        toast.error('Login failed: ' + (err.message || 'Unknown'));
+        if (credentials.password !== credentials.confirmPassword) {
+          toast.error('Passwords do not match');
+          return;
+        }
+        if (credentials.password.length < 6) {
+          toast.error('Password must be at least 6 characters long');
+          return;
+        }
+      } else {
+        if (!credentials.email || !credentials.password) {
+          toast.error('Please enter email and password');
+          return;
+        }
       }
-    })();
+
+      const payload = isSignup 
+        ? {
+            username: credentials.username,
+            email: credentials.email,
+            password: credentials.password,
+            confirmPassword: credentials.confirmPassword
+          }
+        : {
+            email: credentials.email,
+            password: credentials.password
+          };
+
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+
+      const body = await res.json().catch(() => ({}));
+      
+      if (res.ok && body && body.success) {
+        toast.success(`🎉 Admin ${isSignup ? 'signup' : 'login'} successful!`);
+        navigate('/admin-dashboard');
+      } else {
+        toast.error(body.error || `${isSignup ? 'Signup' : 'Login'} failed`);
+      }
+    } catch (err) {
+      console.error(`Admin ${isSignup ? 'signup' : 'login'} error`, err);
+      toast.error(`${isSignup ? 'Signup' : 'Login'} failed: ` + (err.message || 'Network error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,24 +111,46 @@ const AdminLogin = () => {
             <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
               🔐
             </div>
-            <h1 className="text-3xl font-bold text-blue-800 mb-2">Admin Portal</h1>
-            <p className="text-blue-600 text-sm">Secure Contest Management System</p>
+            <h1 className="text-3xl font-bold text-blue-800 mb-2">
+              {isSignup ? 'Create Admin Account' : 'Admin Portal'}
+            </h1>
+            <p className="text-blue-600 text-sm">
+              {isSignup ? 'Set up your admin credentials' : 'Secure Contest Management System'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username */}
+            {/* Username - Only for signup */}
+            {isSignup && (
+              <div>
+                <label className="block text-blue-900 text-sm font-semibold mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={credentials.username}
+                  onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                  className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all relative z-10"
+                  placeholder="Enter username"
+                  required={isSignup}
+                  autoComplete="username"
+                />
+              </div>
+            )}
+
+            {/* Email */}
             <div>
               <label className="block text-blue-900 text-sm font-semibold mb-2">
-                Admin Username
+                Email Address
               </label>
               <input
-                type="text"
-                value={credentials.username}
-                onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                type="email"
+                value={credentials.email}
+                onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                 className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all relative z-10"
-                placeholder="Enter admin username"
+                placeholder="Enter admin email"
                 required
-                autoComplete="off"
+                autoComplete="email"
               />
             </div>
 
@@ -107,7 +167,7 @@ const AdminLogin = () => {
                   className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all relative z-10"
                   placeholder="Enter password"
                   required
-                  autoComplete="off"
+                  autoComplete={isSignup ? "new-password" : "current-password"}
                 />
                 <button
                   type="button"
@@ -128,31 +188,60 @@ const AdminLogin = () => {
               </div>
             </div>
 
-            {/* Secret Key */}
-            <div>
-              <label className="block text-blue-900 text-sm font-semibold mb-2">
-                Secret Admin Key
-              </label>
-              <input
-                type="password"
-                value={credentials.secretKey}
-                onChange={(e) => setCredentials({ ...credentials, secretKey: e.target.value })}
-                className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all font-mono relative z-10"
-                placeholder="Enter secret key"
-                required
-                autoComplete="off"
-              />
-            </div>
+            {/* Confirm Password - Only for signup */}
+            {isSignup && (
+              <div>
+                <label className="block text-blue-900 text-sm font-semibold mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  value={credentials.confirmPassword}
+                  onChange={(e) => setCredentials({ ...credentials, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:border-blue-400 focus:outline-none transition-all relative z-10"
+                  placeholder="Confirm password"
+                  required={isSignup}
+                  autoComplete="new-password"
+                />
+              </div>
+            )}
 
             {/* Submit Button */}
             <motion.button
               type="submit"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              disabled={loading}
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+              className="w-full py-4 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed"
             >
-              🔓 Access Admin Panel
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  {isSignup ? 'Creating Account...' : 'Signing In...'}
+                </div>
+              ) : (
+                <>🔓 {isSignup ? 'Create Admin Account' : 'Access Admin Panel'}</>
+              )}
             </motion.button>
+
+            {/* Toggle Login/Signup */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignup(!isSignup);
+                  setCredentials({
+                    username: '',
+                    email: '',
+                    password: '',
+                    confirmPassword: ''
+                  });
+                }}
+                className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+              >
+                {isSignup ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+              </button>
+            </div>
 
             {/* Back Button */}
             <button
