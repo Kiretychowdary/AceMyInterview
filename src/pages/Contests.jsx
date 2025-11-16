@@ -51,7 +51,10 @@ const Contests = () => {
       }
     } catch (error) {
       console.error('Error loading contests:', error);
-      toast.error('Failed to load contests');
+      // Don't show error toast for network issues - just show fallback UI
+      if (error.message && !error.message.includes('Failed to fetch')) {
+        toast.error('Failed to load contests');
+      }
       // Set empty fallbacks if loading fails
       setUpcomingContests([]);
       setPastContests([]);

@@ -55,7 +55,18 @@ const ProfessionalAdminDashboard = () => {
       setStatistics(statsData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      toast.error('Failed to load dashboard data');
+      // Set empty fallbacks to prevent crashes
+      setContests([]);
+      setStatistics({
+        totalContests: 0,
+        activeContests: 0,
+        totalParticipants: 0,
+        byDifficulty: {}
+      });
+      // Only show error for non-network issues
+      if (error.message && !error.message.includes('Failed to fetch')) {
+        toast.error('Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }
