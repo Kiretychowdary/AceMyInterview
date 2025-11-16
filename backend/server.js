@@ -50,6 +50,22 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Manual cookie parser if cookie-parser package is not available
+app.use((req, res, next) => {
+  const cookies = {};
+  if (req.headers.cookie) {
+    req.headers.cookie.split(';').forEach(cookie => {
+      const parts = cookie.trim().split('=');
+      if (parts.length === 2) {
+        cookies[parts[0]] = decodeURIComponent(parts[1]);
+      }
+    });
+  }
+  req.cookies = cookies;
+  next();
+});
 
 // Health check endpoint for Render
 app.get('/api/health', (req, res) => {
