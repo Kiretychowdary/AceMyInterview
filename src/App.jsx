@@ -26,6 +26,7 @@ import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 import ProfessionalAdminDashboard from './pages/ProfessionalAdminDashboard.jsx';
 import AdminLogin from './pages/AdminLogin.jsx';
+import AdminContestView from './pages/AdminContestView.jsx';
 
 // ✅ ProtectedRoute component
 function ProtectedRoute({ children }) {
@@ -107,6 +108,7 @@ function AppContent() {
           {/* ✅ Admin Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<ProfessionalAdminDashboard />} />
+          <Route path="/admin/contest/:contestId" element={<AdminContestView />} />
         </Routes>
       </main>
     </div>

@@ -682,12 +682,82 @@ const CreateContestModal = ({ show, contest, onClose, onSave }) => {
                   </div>
                 </div>
               )}
+
+              {/* Step 3: Preview */}
+              {currentStep === 3 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800 mb-2">Contest Preview</h3>
+                    <p className="text-gray-600">Review your contest before creating</p>
+                  </div>
+
+                  {/* Contest Details Preview */}
+                  <div className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-200 rounded-2xl p-6 shadow-lg">
+                    <h4 className="text-xl font-bold text-blue-900 mb-4">{formData.title}</h4>
+                    <p className="text-gray-700 mb-4">{formData.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="bg-white rounded-lg p-3 border border-blue-100">
+                        <span className="text-gray-600 font-medium">Start Time:</span>
+                        <div className="text-gray-800 font-semibold mt-1">
+                          {formData.startTime ? new Date(formData.startTime).toLocaleString() : 'Not set'}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-blue-100">
+                        <span className="text-gray-600 font-medium">End Time:</span>
+                        <div className="text-gray-800 font-semibold mt-1">
+                          {formData.endTime ? new Date(formData.endTime).toLocaleString() : 'Not set'}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-blue-100">
+                        <span className="text-gray-600 font-medium">Duration:</span>
+                        <div className="text-gray-800 font-semibold mt-1">{calculateDuration() || 'N/A'}</div>
+                      </div>
+                      <div className="bg-white rounded-lg p-3 border border-blue-100">
+                        <span className="text-gray-600 font-medium">Total Problems:</span>
+                        <div className="text-blue-600 font-bold text-lg mt-1">{problems.length}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Problems Preview */}
+                  <div>
+                    <h4 className="text-lg font-bold text-gray-800 mb-4">Problems ({problems.length})</h4>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {problems.map((problem, index) => (
+                        <div key={index} className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-all">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="text-lg font-bold text-gray-800">{index + 1}.</span>
+                                <h5 className="text-lg font-bold text-gray-900">{problem.title}</h5>
+                                <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                                  problem.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                                  problem.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-red-100 text-red-700'
+                                }`}>
+                                  {problem.difficulty?.toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-gray-600 text-sm line-clamp-2 mb-2">{problem.description}</p>
+                              <div className="flex gap-4 text-xs text-gray-500">
+                                <span>📝 {problem.testCases?.length || 0} test cases</span>
+                                <span>⭐ {problem.points} points</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer Navigation */}
             <div className="bg-gray-50 px-8 py-4 border-t-2 border-gray-200 flex justify-between items-center">
               <div>
-                {currentStep > 1 && currentStep < 3 && (
+                {currentStep > 1 && currentStep < 4 && (
                   <button
                     type="button"
                     onClick={() => setCurrentStep(currentStep - 1)}
@@ -717,9 +787,35 @@ const CreateContestModal = ({ show, contest, onClose, onSave }) => {
                       Cancel
                     </button>
                     <button
+                      type="button"
+                      onClick={() => setCurrentStep(3)}
+                      disabled={problems.length === 0}
+                      className="px-8 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Preview Contest →
+                    </button>
+                    <button
                       type="submit"
                       disabled={problems.length === 0}
                       className="px-8 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Save className="w-5 h-5" />
+                      Create Contest
+                    </button>
+                  </>
+                )}
+                {currentStep === 3 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(2)}
+                      className="px-6 py-2.5 border-2 border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-100 transition-all"
+                    >
+                      ← Back to Edit
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-8 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all flex items-center gap-2"
                     >
                       <Save className="w-5 h-5" />
                       Create Contest

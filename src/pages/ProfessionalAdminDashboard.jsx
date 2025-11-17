@@ -289,10 +289,10 @@ const ProfessionalAdminDashboard = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => navigate(`/contest/${contest._id || contest.id}/problems`)}
-                    className="flex-1 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+                    onClick={() => navigate(`/admin/contest/${contest._id || contest.id}`)}
+                    className="flex-1 px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all text-sm font-medium shadow-md"
                   >
-                    View
+                    Open Contest
                   </motion.button>
                 </div>
               </motion.div>

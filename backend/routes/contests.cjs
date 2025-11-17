@@ -36,6 +36,9 @@ router.get('/:id/leaderboard', ctrl.getLeaderboard);
 // Public: check registration status
 router.get('/:id/registration-status/:userId', ctrl.checkRegistrationStatus);
 
+// Public: get all registrations for a contest (for admin view)
+router.get('/:id/registrations', ctrl.getContestRegistrations);
+
 // Protected: create, update, delete
 router.post('/', requireSupabaseAuth, ctrl.createContest);
 router.put('/:id', requireSupabaseAuth, ctrl.updateContest);

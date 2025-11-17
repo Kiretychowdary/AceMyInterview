@@ -662,3 +662,23 @@ exports.getUserProgress = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Failed to get user progress', details: err.message });
   }
 };
+
+// Get all registrations for a contest (for admin)
+exports.getContestRegistrations = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find all registrations for this contest
+    const Registration = require('../models/Registration.cjs');
+    const registrations = await Registration.find({ contestId: id }).sort({ registeredAt: -1 });
+    
+    return res.json({
+      success: true,
+      data: registrations,
+      count: registrations.length
+    });
+  } catch (err) {
+    console.error('contestsController.getContestRegistrations error:', err.message || err);
+    return res.status(500).json({ success: false, error: 'Failed to get registrations', details: err.message });
+  }
+};
