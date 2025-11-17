@@ -18,6 +18,8 @@ const Contests = () => {
   const [registrations, setRegistrations] = useState({}); // Track registration status
   const [registering, setRegistering] = useState(false);
   const [contestStatuses, setContestStatuses] = useState({}); // Track real-time contest statuses
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [contestToRegister, setContestToRegister] = useState(null);
 
   // Load contests from Firebase
   useEffect(() => {
@@ -70,7 +72,15 @@ const Contests = () => {
       return;
     }
 
-    const contestId = contest._id || contest.id;
+    // Show confirmation modal
+    setContestToRegister(contest);
+    setShowConfirmModal(true);
+  };
+
+  const confirmRegistration = async () => {
+    if (!contestToRegister) return;
+
+    const contestId = contestToRegister._id || contestToRegister.id;
     
     try {
       setRegistering(true);
@@ -80,12 +90,21 @@ const Contests = () => {
       // Update registration status
       const status = await checkRegistrationStatus(contestId, user.uid);
       setRegistrations({ ...registrations, [contestId]: status });
+      
+      // Close modal
+      setShowConfirmModal(false);
+      setContestToRegister(null);
     } catch (error) {
       console.error('Registration error:', error);
       toast.error(error.body || 'Failed to register for contest');
     } finally {
       setRegistering(false);
     }
+  };
+
+  const cancelRegistration = () => {
+    setShowConfirmModal(false);
+    setContestToRegister(null);
   };
 
   // Default contest data (fallback)
@@ -831,6 +850,104 @@ const Contests = () => {
                     Start Contest
                   </motion.button>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Registration Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && contestToRegister && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={cancelRegistration}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
+                    ⚠️
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Confirm Registration</h3>
+                    <p className="text-blue-100 text-sm">Please review before confirming</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">{contestToRegister.title}</h4>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">📅</span>
+                      <span>Start: {new Date(contestToRegister.startTime).toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">⏱️</span>
+                      <span>Duration: {contestToRegister.duration || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">📝</span>
+                      <span>Difficulty: {contestToRegister.difficulty}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    <span className="font-semibold">Important:</span> Once registered, make sure to join the contest at the scheduled time. Late entries may not be allowed.
+                  </p>
+                </div>
+
+                <p className="text-center text-gray-700 font-medium">
+                  Do you want to register for this contest?
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="p-6 bg-gray-50 flex gap-3">
+                <motion.button
+                  onClick={cancelRegistration}
+                  disabled={registering}
+                  className="flex-1 px-6 py-3 rounded-xl bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 transition-all hover:bg-gray-50 font-medium disabled:opacity-50"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={confirmRegistration}
+                  disabled={registering}
+                  className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white transition-all shadow-lg hover:shadow-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {registering ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Registering...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-xl">✓</span>
+                      <span>Yes, Register</span>
+                    </>
+                  )}
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>

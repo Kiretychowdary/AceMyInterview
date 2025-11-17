@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import CreateContestModalNew from '../components/CreateContestModalNew';
 import {
   getAllContests,
   createContest,
@@ -69,41 +70,6 @@ const ProfessionalAdminDashboard = () => {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreateContest = async (e) => {
-    e.preventDefault();
-    
-    // Validate form before submission
-    if (!contestForm.title.trim()) {
-      toast.error('Contest title is required');
-      return;
-    }
-    if (!contestForm.startTime || !contestForm.endTime) {
-      toast.error('Start time and end time are required');
-      return;
-    }
-    if (new Date(contestForm.endTime) <= new Date(contestForm.startTime)) {
-      toast.error('End time must be after start time');
-      return;
-    }
-
-    try {
-      if (editingContest) {
-        await updateContest(editingContest._id || editingContest.id, contestForm);
-        toast.success('Contest updated successfully!');
-      } else {
-        await createContest(contestForm);
-        toast.success('Contest created successfully!');
-      }
-      setShowCreateModal(false);
-      resetForm();
-      loadDashboardData();
-    } catch (error) {
-      console.error('Error creating/updating contest:', error);
-      const errorMessage = error?.body || error?.message || 'Failed to save contest';
-      toast.error(errorMessage);
     }
   };
 
@@ -336,151 +302,31 @@ const ProfessionalAdminDashboard = () => {
       </motion.div>
 
       {/* Create/Edit Contest Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => setShowCreateModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  {editingContest ? 'Edit Contest' : 'Create New Contest'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetForm();
-                  }}
-                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateContest} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contest Title *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={contestForm.title}
-                      onChange={(e) => setContestForm({ ...contestForm, title: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter contest title"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Difficulty
-                    </label>
-                    <select
-                      value={contestForm.difficulty}
-                      onChange={(e) => setContestForm({ ...contestForm, difficulty: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="Easy">Easy</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Hard">Hard</option>
-                      <option value="Expert">Expert</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description *
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={contestForm.description}
-                    onChange={(e) => setContestForm({ ...contestForm, description: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    placeholder="Describe the contest objectives and rules"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Start Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={contestForm.startTime}
-                      onChange={(e) => setContestForm({ ...contestForm, startTime: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      End Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      required
-                      value={contestForm.endTime}
-                      onChange={(e) => setContestForm({ ...contestForm, endTime: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Registration Deadline
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={contestForm.registrationDeadline}
-                    onChange={(e) => setContestForm({ ...contestForm, registrationDeadline: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      resetForm();
-                    }}
-                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    type="submit"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-medium shadow-lg"
-                  >
-                    {editingContest ? 'Update Contest' : 'Create Contest'}
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CreateContestModalNew
+        show={showCreateModal}
+        contest={editingContest}
+        onClose={() => {
+          setShowCreateModal(false);
+          resetForm();
+        }}
+        onSave={async (contestData) => {
+          try {
+            if (editingContest) {
+              await updateContest(editingContest._id || editingContest.id, contestData);
+              toast.success('Contest updated successfully!');
+            } else {
+              await createContest(contestData);
+              toast.success('Contest created successfully!');
+            }
+            setShowCreateModal(false);
+            resetForm();
+            loadDashboardData();
+          } catch (error) {
+            console.error('Error saving contest:', error);
+            toast.error(error?.body || 'Failed to save contest');
+          }
+        }}
+      />
     </div>
   );
 };
