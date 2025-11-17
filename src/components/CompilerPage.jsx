@@ -7,6 +7,9 @@ import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from 'react-router-dom';
 import judge0Client from '../services/judge0Client';
 
+// Import JUDGE0_BASE_URL from the service
+const JUDGE0_BASE_URL = 'https://judge0-ce.p.rapidapi.com';
+
 // Persist submissions by POSTing to our backend API which enforces Supabase auth
 // server-side and writes canonical records into MongoDB. Frontend should not
 // write to Supabase directly — Supabase is used only for authentication.
