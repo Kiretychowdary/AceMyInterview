@@ -12,17 +12,38 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS Configuration with enhanced logging
+// RADHAKRISHNALOVEPERMANENT
+// AMMALOVEBLESSINGSONRECURSION
+
+// CORS FIXED
 const allowedOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
   : [
-      'http://localhost:3000', 
-      'http://localhost:5173', 
-      'http://localhost:5174', 
-      'http://localhost:5175',
-      'http://acemyinterview.app',
-      'https://acemyinterview.app',
-      'https://acemyinterview-backend.onrender.com'
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:5175",
+      "https://acemyinterview.app",
+      "http://acemyinterview.app",
+      "https://acemyinterview-backend.onrender.com"
     ];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.log("❌ CORS Blocked:", origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-secret", "x-admin-token"]
+};
+
+app.use(cors(corsOptions));
+app.use(express.json({ limit: "5mb" }));
+
 
 console.log('🌐 CORS Origins configured:', allowedOrigins);
 
@@ -1273,3 +1294,4 @@ function calculateAverageCorrectRate() {
 
 // NOTE: server is started inside mongooseService.connect() above so we only run
 // when the DB is available.
+
