@@ -124,3 +124,28 @@ export const getUserProgress = async (contestId, userId) => {
 	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/progress/${encodeURIComponent(userId)}`);
 	return resp.data;
 };
+
+// Update contest progress
+export const updateContestProgress = async (contestId, progressData) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/progress`, {
+		method: 'POST',
+		body: JSON.stringify(progressData)
+	});
+	return resp.data;
+};
+
+// Send heartbeat to track active participation
+export const sendHeartbeat = async (contestId, userData) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/heartbeat`, {
+		method: 'POST',
+		body: JSON.stringify(userData)
+	});
+	return resp.data;
+};
+
+// Get active participants count
+export const getActiveParticipants = async (contestId) => {
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/active-count`);
+	return resp.data;
+};
+

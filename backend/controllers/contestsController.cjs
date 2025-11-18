@@ -1,6 +1,7 @@
 const Contest = require('../models/Contest.cjs');
 const Problem = require('../models/Problem.cjs');
 const Registration = require('../models/Registration.cjs');
+const ContestProgress = require('../models/ContestProgress.cjs');
 const mongoose = require('mongoose');
 
 function ensureDbConnected(res) {
@@ -680,5 +681,136 @@ exports.getContestRegistrations = async (req, res) => {
   } catch (err) {
     console.error('contestsController.getContestRegistrations error:', err.message || err);
     return res.status(500).json({ success: false, error: 'Failed to get registrations', details: err.message });
+  }
+};
+
+// Update contest progress (problem solved, attempts, etc.)
+exports.updateProgress = async (req, res) => {
+  try {
+    const { id: contestId } = req.params;
+    const { userId, problemId, status, timeSpent, username, email } = req.body;
+
+    if (!userId || !problemId) {
+      return res.status(400).json({ success: false, error: 'userId and problemId are required' });
+    }
+
+    // Find or create progress document
+    let progress = await ContestProgress.findOne({ contestId, userId });
+    
+    if (!progress) {
+      // Get contest to know total problems
+      const contest = await Contest.findOne({ _id: contestId });
+      progress = new ContestProgress({
+        contestId,
+        userId,
+        username,
+        email,
+        totalProblems: contest?.problems?.length || 0,
+        startedAt: new Date(),
+        lastActiveAt: new Date()
+      });
+    }
+
+    // Update or add problem progress
+    const problemIndex = progress.problemsAttempted.findIndex(p => p.problemId === problemId);
+    
+    if (problemIndex >= 0) {
+      const problem = progress.problemsAttempted[problemIndex];
+      problem.status = status || problem.status;
+      problem.attempts = (problem.attempts || 0) + 1;
+      problem.lastAttemptAt = new Date();
+      if (timeSpent) problem.timeSpent = (problem.timeSpent || 0) + timeSpent;
+      if (status === 'solved' && !problem.solvedAt) {
+        problem.solvedAt = new Date();
+        progress.problemsSolved = (progress.problemsSolved || 0) + 1;
+      }
+    } else {
+      progress.problemsAttempted.push({
+        problemId,
+        problemTitle: req.body.problemTitle || '',
+        status: status || 'in-progress',
+        attempts: 1,
+        lastAttemptAt: new Date(),
+        timeSpent: timeSpent || 0,
+        solvedAt: status === 'solved' ? new Date() : null
+      });
+      if (status === 'solved') {
+        progress.problemsSolved = (progress.problemsSolved || 0) + 1;
+      }
+    }
+
+    progress.totalAttempts = (progress.totalAttempts || 0) + 1;
+    progress.lastActiveAt = new Date();
+    progress.isActive = true;
+
+    await progress.save();
+
+    return res.json({
+      success: true,
+      data: progress
+    });
+  } catch (err) {
+    console.error('updateProgress error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update progress' });
+  }
+};
+
+// Update heartbeat (user is active in contest)
+exports.updateHeartbeat = async (req, res) => {
+  try {
+    const { id: contestId } = req.params;
+    const { userId, username, email } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'userId is required' });
+    }
+
+    // Find or create progress document
+    let progress = await ContestProgress.findOne({ contestId, userId });
+    
+    if (!progress) {
+      const contest = await Contest.findOne({ _id: contestId });
+      progress = new ContestProgress({
+        contestId,
+        userId,
+        username,
+        email,
+        totalProblems: contest?.problems?.length || 0,
+        startedAt: new Date()
+      });
+    }
+
+    progress.lastActiveAt = new Date();
+    progress.isActive = true;
+    await progress.save();
+
+    // Get active count
+    const activeCount = await ContestProgress.getActiveCount(contestId);
+
+    return res.json({
+      success: true,
+      activeCount,
+      data: progress
+    });
+  } catch (err) {
+    console.error('updateHeartbeat error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update heartbeat' });
+  }
+};
+
+// Get active participants count
+exports.getActiveParticipants = async (req, res) => {
+  try {
+    const { id: contestId } = req.params;
+    const activeCount = await ContestProgress.getActiveCount(contestId);
+
+    return res.json({
+      success: true,
+      activeCount,
+      data: { count: activeCount }
+    });
+  } catch (err) {
+    console.error('getActiveParticipants error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to get active participants' });
   }
 };

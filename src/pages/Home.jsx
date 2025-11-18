@@ -105,16 +105,16 @@ const Home = () => {
             transition={{ delay: 0.7 }}
           >
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">100+</div>
-              <div className="text-sm text-gray-600">Success Stories</div>
+              <div className="text-2xl font-bold text-blue-600">🚀</div>
+              <div className="text-sm text-gray-600">AI-Powered</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">500+</div>
-              <div className="text-sm text-gray-600">Practice Questions</div>
+              <div className="text-2xl font-bold text-blue-600">⚡</div>
+              <div className="text-sm text-gray-600">Real-Time</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">95%</div>
-              <div className="text-sm text-gray-600">Success Rate</div>
+              <div className="text-2xl font-bold text-blue-600">🎯</div>
+              <div className="text-sm text-gray-600">Practice Ready</div>
             </div>
           </motion.div>
         </motion.div>

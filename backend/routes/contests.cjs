@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/contestsController.cjs');
 const requireSupabaseAuth = require('../middleware/supabaseAuth.cjs');
+const verifyAdminToken = require('../middleware/adminAuth.cjs');
 
 // Public: list contests (with filters: upcoming, ongoing, completed)
 router.get('/', ctrl.listContests);
@@ -17,6 +18,9 @@ router.get('/check-id', ctrl.checkId);
 
 // Public: get single problem by ID (must be before /:id routes)
 router.get('/problem/:problemId', ctrl.getProblem);
+
+// Public: get all registrations for a contest (for admin view) - BEFORE /:id
+router.get('/:id/registrations', ctrl.getContestRegistrations);
 
 // Public: get by id
 router.get('/:id', ctrl.getContest);
@@ -36,19 +40,16 @@ router.get('/:id/leaderboard', ctrl.getLeaderboard);
 // Public: check registration status
 router.get('/:id/registration-status/:userId', ctrl.checkRegistrationStatus);
 
-// Public: get all registrations for a contest (for admin view)
-router.get('/:id/registrations', ctrl.getContestRegistrations);
+// Protected: create, update, delete (Admin only)
+router.post('/', verifyAdminToken, ctrl.createContest);
+router.put('/:id', verifyAdminToken, ctrl.updateContest);
+router.delete('/:id', verifyAdminToken, ctrl.deleteContest);
 
-// Protected: create, update, delete
-router.post('/', requireSupabaseAuth, ctrl.createContest);
-router.put('/:id', requireSupabaseAuth, ctrl.updateContest);
-router.delete('/:id', requireSupabaseAuth, ctrl.deleteContest);
+// Protected: update problems array (Admin only)
+router.put('/:id/problems', verifyAdminToken, ctrl.updateProblems);
 
-// Protected: update problems array
-router.put('/:id/problems', requireSupabaseAuth, ctrl.updateProblems);
-
-// Protected: publish/unpublish contest
-router.put('/:id/publish', requireSupabaseAuth, ctrl.publishContest);
+// Protected: publish/unpublish contest (Admin only)
+router.put('/:id/publish', verifyAdminToken, ctrl.publishContest);
 
 // User: register for contest (requires Supabase auth)
 router.post('/:id/register', requireSupabaseAuth, ctrl.registerForContest);
@@ -58,5 +59,10 @@ router.delete('/:id/register', requireSupabaseAuth, ctrl.unregisterFromContest);
 
 // User: get registered contests
 router.get('/user/:userId/registrations', ctrl.getUserRegistrations);
+
+// Contest Progress Tracking
+router.post('/:id/progress', requireSupabaseAuth, ctrl.updateProgress);
+router.post('/:id/heartbeat', requireSupabaseAuth, ctrl.updateHeartbeat);
+router.get('/:id/active-count', ctrl.getActiveParticipants);
 
 module.exports = router;

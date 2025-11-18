@@ -5,6 +5,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getContestWithProblems } from '../services/ContestService';
 import { useAuth } from '../components/AuthContext';
+import ActiveParticipantsIndicator from '../components/ActiveParticipantsIndicator';
 import axios from 'axios';
 
 const ContestProblems = () => {
@@ -150,6 +151,16 @@ const ContestProblems = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4 md:px-8">
+      {/* Active Participants Indicator */}
+      {user?.uid && contestId && (
+        <ActiveParticipantsIndicator 
+          contestId={contestId}
+          userId={user.uid}
+          username={user.displayName || user.email}
+          email={user.email}
+        />
+      )}
+      
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div

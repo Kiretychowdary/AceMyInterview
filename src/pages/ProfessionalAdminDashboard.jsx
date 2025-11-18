@@ -148,60 +148,7 @@ const ProfessionalAdminDashboard = () => {
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
-      >
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Total Contests</p>
-              <p className="text-3xl font-bold text-blue-600">{statistics.totalContests}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">🏆</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Active Contests</p>
-              <p className="text-3xl font-bold text-green-600">{statistics.activeContests}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">🎯</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Participants</p>
-              <p className="text-3xl font-bold text-purple-600">{statistics.totalParticipants}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">👥</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600 text-sm font-medium">Success Rate</p>
-              <p className="text-3xl font-bold text-orange-600">87%</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-              <span className="text-2xl">📊</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
 
       {/* Contests Grid */}
       <motion.div

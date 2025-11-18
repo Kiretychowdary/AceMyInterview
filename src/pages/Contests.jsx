@@ -24,6 +24,13 @@ const Contests = () => {
   // Load contests from Firebase
   useEffect(() => {
     loadContests();
+    
+    // Auto-refresh every 30 seconds to show new contests
+    const refreshInterval = setInterval(() => {
+      loadContests();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const loadContests = async () => {
@@ -63,6 +70,13 @@ const Contests = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    toast.info('Refreshing contests...', { autoClose: 1000 });
+    await loadContests();
+    toast.success('Contests updated!', { autoClose: 2000 });
   };
 
   const handleRegister = async (contest) => {
@@ -294,21 +308,18 @@ const Contests = () => {
             compete with developers worldwide, and showcase your coding expertise.
           </p>
           
-          {/* Stats Row */}
-          <div className="flex justify-center space-x-8 mb-8">
-            <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
-              <div className="text-3xl font-bold text-blue-600">{upcomingContests.length}</div>
-              <div className="text-gray-500 text-sm font-medium">Upcoming</div>
-            </div>
-            <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
-              <div className="text-3xl font-bold text-blue-700">{pastContests.length}</div>
-              <div className="text-gray-500 text-sm font-medium">Completed</div>
-            </div>
-            <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
-              <div className="text-3xl font-bold text-blue-800">{Object.keys(registrations).length}</div>
-              <div className="text-gray-500 text-sm font-medium">Registered</div>
-            </div>
-          </div>
+          {/* Refresh Button */}
+          <motion.button
+            onClick={handleRefresh}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl shadow-lg hover:shadow-xl border-2 border-blue-200 hover:border-blue-400 transition-all font-medium"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh Contests
+          </motion.button>
         </motion.div>
 
         {/* Loading State */}
