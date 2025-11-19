@@ -98,7 +98,7 @@ const Home = () => {
           </motion.div>
 
           {/* STATS */}
-          <motion.div
+          {/* <motion.div
             className="flex flex-wrap gap-8 mt-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -116,7 +116,7 @@ const Home = () => {
               <div className="text-2xl font-bold text-blue-600">🎯</div>
               <div className="text-sm text-gray-600">Practice Ready</div>
             </div>
-          </motion.div>
+          </motion.div> */}
         </motion.div>
 
         {/* IMAGE */}

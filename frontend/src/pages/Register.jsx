@@ -4,219 +4,264 @@
 import React, { useState } from 'react';
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAuth } from '../components/AuthContext';
 import "tailwindcss/tailwind.css";
 import "react-toastify/dist/ReactToastify.css";
 
 const Register = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle, signUpWithEmail } = useAuth();
 
   // If already logged in, redirect to home
   React.useEffect(() => {
     if (user) navigate('/');
   }, [user, navigate]);
 
+  const handleEmailSignup = async (e) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await signUpWithEmail(email, password);
+
+      if (error) {
+        if (error.message.includes('already registered') || error.message.includes('already exists')) {
+          toast.error('This email is already registered. Please login instead.', {
+            position: "top-right",
+            autoClose: 4000,
+          });
+        } else {
+          toast.error(`Registration failed: ${error.message}`, {
+            position: "top-right",
+            autoClose: 4000,
+          });
+        }
+        return;
+      }
+
+      toast.success(
+        <div style={{ textAlign: 'left' }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '28px' }}>🎉</span>
+            <span>Welcome to AceMyInterview!</span>
+          </div>
+          <div style={{ fontSize: '15px', lineHeight: '1.6', color: '#166534' }}>
+            Your account has been created successfully.<br/>
+            <span style={{ fontWeight: '600' }}>Redirecting to dashboard...</span>
+          </div>
+        </div>,
+        {
+          autoClose: 3000,
+          position: "top-center",
+          style: {
+            backgroundColor: '#f0fdf4',
+            color: '#14532d',
+            padding: '20px',
+            borderRadius: '16px',
+            border: '3px solid #22c55e',
+            boxShadow: '0 10px 40px rgba(34, 197, 94, 0.3)',
+            maxWidth: '450px'
+          },
+          icon: false
+        }
+      );
+      
+      setTimeout(() => navigate('/dashboard'), 2000);
+    } catch (error) {
+      toast.error('An unexpected error occurred. Please try again.', {
+        position: "top-right",
+        autoClose: 4000,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleSignup = async () => {
     setLoading(true);
     try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-      
-      toast.success("Welcome! Your account has been created successfully!", {
+      const { data, error } = await signInWithGoogle();
+      if (error) {
+        toast.error(`Google Sign-In failed: ${error.message}`, {
+          autoClose: 4000,
+          position: "top-right",
+        });
+      }
+    } catch (error) {
+      toast.error("Google Sign-In failed. Please try again.", {
         autoClose: 4000,
         position: "top-right",
-        style: {
-          backgroundColor: '#f0fdf4',
-          color: '#14532d',
-          fontSize: '16px',
-          fontWeight: '600',
-          padding: '16px',
-          borderRadius: '10px',
-          border: '2px solid #22c55e',
-          boxShadow: '0 6px 20px rgba(34, 197, 94, 0.15)'
-        }
       });
-      // Google OAuth will handle redirect automatically
-    } catch (error) {
-      console.error("Registration error:", error.message);
-      toast.error(error.message || "Signup failed. Please try again.", {
-        autoClose: 5000,
-        position: "top-right",
-        style: {
-          backgroundColor: '#fef2f2',
-          color: '#991b1b',
-          fontSize: '16px',
-          fontWeight: '600',
-          padding: '16px',
-          borderRadius: '10px',
-          border: '2px solid #ef4444',
-          boxShadow: '0 6px 20px rgba(239, 68, 68, 0.15)'
-        }
-      });
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="form-container">
-        <p className="title">Create Your Account</p>
-        <div className="signup-description">
-          <h3 className="signup-subtitle">Join AceMyInterview Today!</h3>
-          <p className="signup-text">
-            Get started with your coding interview preparation journey. 
-            Sign up with Google to access personalized mock interviews, contests, and more.
-          </p>
-        </div>
-        
-        <div className="buttons-container">
-          <div className={`google-signup-button ${loading ? 'disabled' : ''}`} onClick={!loading ? handleGoogleSignup : undefined}>
-            <svg stroke="currentColor" fill="currentColor" strokeWidth="0" version="1.1" x="0px" y="0px" className="google-icon" viewBox="0 0 48 48" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
-    c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24
-    c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path>
-              <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657
-    C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path>
-              <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36
-    c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path>
-              <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
-    c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+    <div className="min-h-screen flex items-center justify-center bg-white relative overflow-hidden p-4">
+      {/* Decorative corner accents matching home page */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-16 w-44 h-44 rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-60 blur-2xl transform -rotate-12 sm:-left-32 sm:-top-24 sm:w-72 sm:h-72 sm:opacity-50"></div>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 -bottom-12 w-52 h-52 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-55 blur-2xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-45"></div>
+      
+      <motion.div 
+        className="w-full max-w-md relative z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <motion.div 
+          className="bg-white rounded-2xl shadow-2xl p-8 space-y-6 border border-blue-100"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {/* Header */}
+          <motion.div 
+            className="text-center"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-2">
+              Create Account
+            </h1>
+            <p className="text-gray-600">
+              Start your interview preparation journey
+            </p>
+          </motion.div>
+
+          {/* Google Sign In Button */}
+          <button
+            onClick={handleGoogleSignup}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
             </svg>
-            <span>{loading ? 'Creating Account...' : 'Sign up with Google'}</span>
+            {loading ? 'Signing up...' : 'Continue with Google'}
+          </button>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-500 font-medium">
+                Or continue with email
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div className="features-list">
-          <h4 className="features-title">What you'll get:</h4>
-          <ul className="features">
-            <li>✨ Personalized mock interviews</li>
-            <li>🏆 Coding contests and challenges</li>
-            <li>📊 Real-time progress tracking</li>
-            <li>🎯 AI-powered interview feedback</li>
-          </ul>
-        </div>
+          {/* Email/Password Form */}
+          <form onSubmit={handleEmailSignup} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                placeholder="your.email@example.com"
+              />
+            </div>
 
-        <p className="sign-up-label">
-          Already have an account?
-          <span className="sign-up-link cursor-pointer" onClick={() => navigate('/Login')}>
-           Login here
-          </span>
-        </p>
-      </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                placeholder="Minimum 6 characters"
+              />
+            </div>
 
-      {/* Inline Styles */}
-      <style>{`
-        .form-container {
-          width: 400px;
-          background-color: #fff;
-          border-radius: 16px;
-          box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
-          padding: 32px 40px;
-          border: 1px solid #e5e7eb;
-        }
-        .title {
-          text-align: center;
-          font-size: 32px;
-          font-weight: 800;
-          margin-bottom: 16px;
-          font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
-          color: #1d4ed8;
-        }
-        .signup-description {
-          text-align: center;
-          margin-bottom: 32px;
-        }
-        .signup-subtitle {
-          font-size: 18px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 8px;
-        }
-        .signup-text {
-          font-size: 14px;
-          color: #6b7280;
-          line-height: 1.5;
-        }
-        .buttons-container {
-          margin-bottom: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .google-signup-button {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          padding: 14px 20px;
-          border-radius: 12px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          border: 2px solid #1d4ed8;
-          background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
-          color: white;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
-        }
-        .google-signup-button:hover:not(.disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(29, 78, 216, 0.4);
-        }
-        .google-signup-button.disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          transform: none;
-        }
-        .google-icon {
-          font-size: 20px;
-        }
-        .features-list {
-          background: #f8fafc;
-          border-radius: 12px;
-          padding: 20px;
-          margin-bottom: 24px;
-          border: 1px solid #e2e8f0;
-        }
-        .features-title {
-          font-size: 16px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 12px;
-        }
-        .features {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .features li {
-          font-size: 14px;
-          color: #4b5563;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .sign-up-label {
-          text-align: center;
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .sign-up-link {
-          color: #1d4ed8;
-          font-weight: 600;
-          cursor: pointer;
-          text-decoration: underline;
-          margin-left: 4px;
-        }
-        .sign-up-link:hover {
-          color: #1e40af;
-        }
-      `}</style>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                placeholder="Re-enter your password"
+              />
+            </div>
+
+            <motion.button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              whileHover={{ scale: loading ? 1 : 1.02 }}
+              whileTap={{ scale: loading ? 1 : 0.98 }}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </motion.button>
+          </form>
+
+          {/* Login Link */}
+          <div className="text-center pt-4 border-t border-gray-200">
+            <p className="text-gray-600">
+              Already have an account?{' '}
+              <button
+                onClick={() => navigate('/login')}
+                className="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-colors"
+              >
+                Sign In
+              </button>
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };

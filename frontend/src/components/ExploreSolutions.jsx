@@ -364,13 +364,13 @@ const ExploreSolutions = () => {
       </div>
 
       {/* Success Stories Ticker */}
-      <motion.div
+      {/* <motion.div
         className="mt-16 bg-white rounded-2xl p-6 shadow-lg border border-gray-100"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
-      >
+      > */}
         {/* <div className="text-center mb-4">
           <h3 className="text-lg font-bold text-gray-900 mb-2">🎉 Recent Success Stories</h3>
           <p className="text-sm text-gray-600">Real-time updates from our community</p>
@@ -395,7 +395,7 @@ const ExploreSolutions = () => {
             ))}
           </motion.div>
         </div> */}
-      </motion.div>
+      {/* </motion.div> */}
 
       {/* Footer Newsletter Signup */}
       <footer className="mt-20">
