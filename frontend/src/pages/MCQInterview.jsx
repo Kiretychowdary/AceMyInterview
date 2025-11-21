@@ -104,12 +104,34 @@ const MCQInterview = () => {
     };
   }, [loading]);
 
-  // Quiz configuration - use selected topic as default
+  // Prevent tab switching during loading and quiz
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && (loading || quizStarted)) {
+        toast.warning('⚠️ Please stay on this tab during the interview!', {
+          position: 'top-center',
+          autoClose: 3000
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading, quizStarted]);
+
+  // Topic hierarchy system - MUST be declared before use in useEffect
+  const [selectedMainTopic, setSelectedMainTopic] = useState(null);
+  const [showSubTopics, setShowSubTopics] = useState(false);
+
+  // Quiz configuration - use selected topic as default with 10-minute timer
   const [quizConfig, setQuizConfig] = useState({
     topic: apiTopic,
     difficulty: 'medium',
-    count: 5,
-    type: 'multiple-choice'
+    count: 10, // Increased to 10 questions for 10-minute interview
+    type: 'multiple-choice',
+    timeLimit: 10 // 10 minutes total
   });
 
   // Debounce timer for auto-fetch when selections change
@@ -133,10 +155,6 @@ const MCQInterview = () => {
       if (fetchTimer.current) clearTimeout(fetchTimer.current);
     };
   }, [quizConfig.topic, quizConfig.difficulty, quizConfig.count, showSubTopics]);
-
-  // Topic hierarchy system
-  const [selectedMainTopic, setSelectedMainTopic] = useState(null);
-  const [showSubTopics, setShowSubTopics] = useState(false);
 
   // Auto-configure based on selected topic from navigation
   useEffect(() => {
@@ -380,14 +398,14 @@ const MCQInterview = () => {
         setQuestions(response.questions);
         if (autoStart) {
           setQuizStarted(true);
-          setTimeLeft(quizConfig.count * 120); // 2 minutes per question
+          setTimeLeft(600); // Fixed 10 minutes (600 seconds) total
         }
       } else {
         // Use fallback or empty response but do not start automatically
         setQuestions(response.questions || []);
         if (autoStart) {
           setQuizStarted(true);
-          setTimeLeft(quizConfig.count * 120);
+          setTimeLeft(600); // Fixed 10 minutes (600 seconds) total
           toast.warn('⚠️ Using sample questions - AI service unavailable', {
             autoClose: 6000,
             position: "top-center",
@@ -468,15 +486,68 @@ const MCQInterview = () => {
     // Save session to progress tracking
     if (user) {
       try {
-        await progressService.saveMCQSession(user.uid, {
+        // Enhanced progress saving with assessment data
+        const sessionData = {
+          userId: user.uid,
+          sessionId: `mcq_${Date.now()}_${user.uid}`,
           topic: selectedTopic,
           difficulty: quizConfig.difficulty,
+          duration: 10, // 10 minutes
+          interviewType: 'mcq',
           totalQuestions: questions.length,
+          answeredQuestions: Object.keys(selectedAnswers).length,
           correctAnswers,
-          timeSpent: (quizConfig.timeLimit * 60) - (timeLeft || 0),
-          questions,
-          answers: userAnswers
-        });
+          timeSpent: 600 - (timeLeft || 0),
+          startTime: new Date(Date.now() - (600 - (timeLeft || 0)) * 1000),
+          endTime: new Date(),
+          questions: questions.map(q => ({
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            category: q.category || 'MCQ'
+          })),
+          answers: userAnswers.map((ua, index) => ({
+            questionIndex: index,
+            question: ua.question,
+            answer: ua.selectedAnswer,
+            isCorrect: ua.isCorrect,
+            timestamp: new Date()
+          })),
+          assessment: {
+            overallScore: Math.round((correctAnswers / questions.length) * 10 * 100) / 100,
+            percentage: Math.round((correctAnswers / questions.length) * 100),
+            summary: `Scored ${correctAnswers}/${questions.length} in ${selectedTopic} MCQ interview`,
+            categoryScores: {
+              accuracy: Math.round((correctAnswers / questions.length) * 10 * 100) / 100,
+              speed: Math.min(10, Math.round(((600 - (600 - (timeLeft || 0))) / 60) * 2 * 100) / 100),
+              completion: Math.round((Object.keys(selectedAnswers).length / questions.length) * 10 * 100) / 100
+            },
+            strengths: correctAnswers > questions.length * 0.8 ? ['Excellent accuracy', 'Strong knowledge'] : 
+                      correctAnswers > questions.length * 0.6 ? ['Good understanding', 'Decent performance'] : 
+                      ['Participated actively', 'Room for improvement'],
+            improvements: correctAnswers < questions.length * 0.8 ? ['Review fundamental concepts', 'Practice more questions'] : 
+                         correctAnswers < questions.length * 0.9 ? ['Fine-tune accuracy'] : 
+                         ['Maintain excellent performance'],
+            detailedFeedback: `You completed ${Object.keys(selectedAnswers).length}/${questions.length} questions with ${Math.round((correctAnswers / questions.length) * 100)}% accuracy in ${selectedTopic}. ${correctAnswers > questions.length * 0.8 ? 'Excellent performance!' : correctAnswers > questions.length * 0.6 ? 'Good work, keep practicing!' : 'Focus on fundamentals and practice more.'}`,
+            nextSteps: ['Review incorrect answers', 'Practice similar topics', 'Take more mock interviews'],
+            interviewReadiness: `${Math.round((correctAnswers / questions.length) * 100)}% - ${correctAnswers > questions.length * 0.8 ? 'Well prepared' : correctAnswers > questions.length * 0.6 ? 'Good foundation, needs practice' : 'Requires more preparation'}`
+          }
+        };
+
+        // Save to both progress service and backend
+        await progressService.saveMCQSession(user.uid, sessionData);
+        
+        // Also save to backend interview storage
+        try {
+          const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+          await fetch(`${API_BASE}/api/interview/store-session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sessionData)
+          });
+        } catch (backendError) {
+          console.warn('Backend storage failed:', backendError);
+        }
         
         toast.success('Progress saved successfully!', {
           autoClose: 4000,
@@ -643,7 +714,7 @@ const MCQInterview = () => {
             transition={{ delay: 0.5 }}
             className="text-4xl font-bold text-white mb-4"
           >
-            AI is Thinking...
+            Questions are Loading...
           </motion.h2>
 
           {/* Dynamic Loading Messages */}
@@ -810,10 +881,10 @@ const MCQInterview = () => {
                   onChange={(e) => setQuizConfig({ ...quizConfig, count: parseInt(e.target.value) })}
                   className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-200 bg-white text-center"
                 >
-                  <option value={5}>5 Questions</option>
-                  <option value={10}>10 Questions</option>
-                  <option value={15}>15 Questions</option>
-                  <option value={20}>20 Questions</option>
+                  <option value={10}>10 Questions (Recommended)</option>
+                  <option value={5}>5 Questions (Quick)</option>
+                  <option value={15}>15 Questions (Extended)</option>
+                  <option value={20}>20 Questions (Comprehensive)</option>
                 </select>
               </div>
             </div>
@@ -825,7 +896,7 @@ const MCQInterview = () => {
               disabled={loading || !showSubTopics || !quizConfig.topic}
               className={`w-full mt-10 py-4 px-8 font-semibold rounded-xl shadow-lg transition-all duration-300 ${showSubTopics && quizConfig.topic && !loading ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
             >
-              {loading ? 'Generating Questions...' : !showSubTopics ? 'Select a Category First' : !quizConfig.topic ? 'Select a Topic First' : 'Start AI Interview'}
+              {loading ? 'Generating Questions...' : !showSubTopics ? 'Select a Category First' : !quizConfig.topic ? 'Select a Topic First' : '🚀 Start 10-Minute MCQ Interview'}
             </motion.button>
           </motion.div>
         </motion.div>
@@ -956,13 +1027,11 @@ const MCQInterview = () => {
                 {quizConfig.topic} • {quizConfig.difficulty}
               </div>
             </div>
-            {timeLeft && (
-              <div className={`text-sm font-medium px-3 py-1 rounded-full ${
-                timeLeft < 60 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-              }`}>
-                ⏱️ {formatTime(timeLeft)}
-              </div>
-            )}
+            <div className={`text-sm font-medium px-3 py-1 rounded-full ${
+              timeLeft < 120 ? 'bg-red-100 text-red-600' : timeLeft < 300 ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'
+            }`}>
+              ⏱️ {formatTime(timeLeft || 0)} {timeLeft < 120 ? '(Hurry!)' : ''}
+            </div>
           </div>
           {/* Progress Bar */}
           <div className="w-full bg-gray-200 rounded-full h-2">

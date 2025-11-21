@@ -138,30 +138,50 @@ class GeminiService {
     console.log(`📚 Topic: ${topic}, Difficulty: ${difficulty}, Count: ${count}`);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/mcq-questions`, {
+      // Call Gemini API directly from frontend
+      const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
+      const GEMINI_KEY = GEMINI_API_KEY || 'AIzaSyB1-4W8tH-Eozlv_16veMff9g7z1GYDFpc';
+
+      const prompt = `Generate ${count} multiple-choice questions for ${topic} at ${difficulty} difficulty level.
+
+Each question should have:
+- A clear, specific question
+- 4 options (A, B, C, D)
+- One correct answer
+- Brief explanation
+
+Format as JSON array:
+[
+  {
+    "question": "Question text",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0,
+    "explanation": "Why this is correct"
+  }
+]
+
+Return ONLY the JSON array, no markdown formatting.`;
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_KEY}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic,
-          difficulty,
-          count
+          contents: [{ parts: [{ text: prompt }] }]
         })
       });
 
       const data = await response.json();
-      console.log('✅ MCQ Response:', data);
+      let questionsText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      questionsText = questionsText.replace(/```json/g, '').replace(/```/g, '').trim();
+      
+      const questions = JSON.parse(questionsText);
+      console.log('✅ MCQ Questions Generated:', questions.length);
 
-      if (data.success) {
-        return {
-          success: true,
-          questions: data.questions,
-          source: 'gemini-direct'
-        };
-      } else {
-        throw new Error(data.error || 'Failed to generate questions');
-      }
+      return {
+        success: true,
+        questions: questions,
+        source: 'gemini-direct'
+      };
     } catch (error) {
       console.error('❌ MCQ Generation Error:', error);
       

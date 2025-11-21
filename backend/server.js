@@ -121,6 +121,14 @@ try {
   console.warn('AI Interview routes not available:', e.message);
 }
 
+// Mount interview data storage routes
+try {
+  const interviewRoutes = require('./routes/interview.cjs');
+  app.use('/api/interview', interviewRoutes);
+} catch (e) {
+  console.warn('Interview routes not available:', e.message);
+}
+
 // Connect to MongoDB via Mongoose before starting the server.
 // Start the HTTP server only after successful DB connection. Exit on failure.
 mongooseService.connect()

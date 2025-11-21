@@ -8,8 +8,8 @@ import { useAuth } from '../components/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-const GEMINI_API_KEY = "AIzaSyAPPmXjX3_uY40381jTjoHvYkJR6uLnf9U";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyB1-4W8tH-Eozlv_16veMff9g7z1GYDFpc";
 
 const InterviewRoom = () => {
   const location = useLocation();
