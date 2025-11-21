@@ -1,17 +1,6 @@
 // USER PROGRESS DASHBOARD - COMPREHENSIVE TRACKING SYSTEM
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
-import { db } from '../config/firebase.config';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit 
-} from 'firebase/firestore';
 import { 
   BarChart, 
   Bar, 
@@ -29,7 +18,7 @@ import {
 } from 'recharts';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [dashboardData, setDashboardData] = useState({
     totalMCQAttempts: 0,
     totalCodingAttempts: 0,
@@ -45,93 +34,75 @@ const Dashboard = () => {
     improvements: [],
     recommendations: []
   });
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [selectedTimeframe, setSelectedTimeframe] = useState('all');
 
   useEffect(() => {
-    if (user) {
+    // Only fetch data when auth is complete and user exists
+    if (!authLoading && user?.uid) {
       fetchDashboardData();
     }
-  }, [user, selectedTimeframe]);
+  }, [user, selectedTimeframe, authLoading]);
 
   const fetchDashboardData = async () => {
-    setLoading(true);
+    if (!user?.uid) {
+      console.warn('No user ID available, skipping dashboard data fetch');
+      return;
+    }
+
+    setDataLoading(true);
     try {
       const userId = user.uid;
+      console.log('📊 Fetching dashboard data for user:', userId);
 
-      // Fetch user progress document
-      const progressDoc = await getDoc(doc(db, 'userProgress', userId));
-      const progressData = progressDoc.exists() ? progressDoc.data() : {};
-
-      // Fetch recent interview sessions (simplified query to avoid index requirement)
+      // Fetch data from MongoDB backend API instead of Firestore
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      
       let recentSessions = [];
-      try {
-        const sessionsQuery = query(
-          collection(db, 'interviewSessions'),
-          where('userId', '==', userId),
-          limit(20) // Get more and sort in memory to avoid compound index
-        );
-        const sessionsSnapshot = await getDocs(sessionsQuery);
-        recentSessions = sessionsSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .sort((a, b) => {
-            // Sort by timestamp in memory
-            const timeA = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
-            const timeB = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
-            return new Date(timeB) - new Date(timeA);
-          })
-          .slice(0, 10); // Take top 10 after sorting
-      } catch (error) {
-        console.warn('Error fetching sessions, using fallback approach:', error);
-        // Fallback: fetch all sessions for user without ordering
-        const fallbackQuery = query(
-          collection(db, 'interviewSessions'),
-          where('userId', '==', userId)
-        );
-        const fallbackSnapshot = await getDocs(fallbackQuery);
-        recentSessions = fallbackSnapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
-          .slice(0, 10);
-      }
-
-      // Fetch face-to-face interview assessments (simplified query)
       let assessments = [];
+      
       try {
-        const assessmentsQuery = query(
-          collection(db, 'interviewAssessments'),
-          where('userId', '==', userId),
-          limit(10)
-        );
-        const assessmentsSnapshot = await getDocs(assessmentsQuery);
-        assessments = assessmentsSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-          .sort((a, b) => {
-            const timeA = a.timestamp?.toDate?.() || a.timestamp || new Date(0);
-            const timeB = b.timestamp?.toDate?.() || b.timestamp || new Date(0);
-            return new Date(timeB) - new Date(timeA);
-          })
-          .slice(0, 5);
+        // Fetch interview history from MongoDB backend
+        const historyResponse = await fetch(`${API_BASE}/api/interview/history/${userId}?limit=20`);
+        if (historyResponse.ok) {
+          const historyData = await historyResponse.json();
+          recentSessions = historyData.sessions || [];
+          console.log('✅ Fetched sessions from backend:', recentSessions.length);
+          
+          // Transform backend data to match expected format
+          recentSessions = recentSessions.map(session => ({
+            id: session.sessionId,
+            type: session.interviewType,
+            topic: session.topic,
+            difficulty: session.difficulty,
+            totalQuestions: session.totalQuestions,
+            correctAnswers: session.answeredQuestions,
+            totalProblems: session.totalQuestions,
+            solvedProblems: session.answeredQuestions,
+            timestamp: session.createdAt,
+            assessment: session.assessment
+          }));
+          
+          // Separate face-to-face interviews as assessments
+          assessments = recentSessions.filter(s => s.type === 'face-to-face');
+        } else {
+          console.warn('Backend returned error:', historyResponse.status);
+        }
       } catch (error) {
-        console.warn('Error fetching assessments, using empty array:', error);
-        assessments = [];
+        console.warn('⚠️ Backend not available, using empty data:', error);
       }
 
       // Process and aggregate data
-      const processedData = processProgressData(progressData, recentSessions, assessments);
+      const processedData = processProgressData({}, recentSessions, assessments);
       setDashboardData(processedData);
+      console.log('✅ Dashboard data loaded successfully');
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       
       // Show user-friendly message for index requirement
-      if (error.message?.includes('requires an index')) {
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      if (errorMessage.indexOf('requires an index') !== -1 || errorMessage.indexOf('index') !== -1) {
         console.info('Firestore indexes are being created. Dashboard will show demo data until indexes are ready.');
       }
       
@@ -164,17 +135,21 @@ const Dashboard = () => {
         ]
       });
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
   const processProgressData = (progressData, sessions, assessments) => {
-    const mcqSessions = sessions.filter(s => s.type === 'mcq');
-    const codingSessions = sessions.filter(s => s.type === 'coding');
-    const faceToFaceSessions = assessments;
+    // Add safety checks for input parameters
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
+    const safeAssessments = Array.isArray(assessments) ? assessments : [];
+    
+    const mcqSessions = safeSessions.filter(s => s?.type === 'mcq');
+    const codingSessions = safeSessions.filter(s => s?.type === 'coding');
+    const faceToFaceSessions = safeAssessments;
 
     // If no data exists, provide demo data to showcase dashboard features
-    if (sessions.length === 0 && assessments.length === 0) {
+    if (safeSessions.length === 0 && safeAssessments.length === 0) {
       return {
         totalMCQAttempts: 0,
         totalCodingAttempts: 0,
@@ -222,8 +197,8 @@ const Dashboard = () => {
 
     // Process topic progress
     const topicStats = {};
-    sessions.forEach(session => {
-      if (session.topic) {
+    safeSessions.forEach(session => {
+      if (session?.topic) {
         if (!topicStats[session.topic]) {
           topicStats[session.topic] = { attempts: 0, success: 0 };
         }
@@ -244,9 +219,9 @@ const Dashboard = () => {
 
     // Process difficulty progress
     const difficultyStats = { easy: 0, medium: 0, hard: 0 };
-    sessions.forEach(session => {
-      if (session.difficulty && difficultyStats.hasOwnProperty(session.difficulty)) {
-        difficultyStats[session.difficulty] += 1;
+    safeSessions.forEach(session => {
+      if (session?.difficulty && difficultyStats.hasOwnProperty(session.difficulty.toLowerCase())) {
+        difficultyStats[session.difficulty.toLowerCase()] += 1;
       }
     });
 
@@ -256,13 +231,13 @@ const Dashboard = () => {
     }));
 
     // Calculate overall rating from assessments
-    const overallRating = assessments.length > 0 ? 
-      assessments.reduce((sum, assessment) => sum + (assessment.assessment?.overallRating || 0), 0) / assessments.length : 0;
+    const overallRating = safeAssessments.length > 0 ? 
+      safeAssessments.reduce((sum, assessment) => sum + (assessment?.assessment?.overallRating || 0), 0) / safeAssessments.length : 0;
 
     // Extract strengths and improvements
-    const allStrengths = assessments.flatMap(a => a.assessment?.strengths || []);
-    const allImprovements = assessments.flatMap(a => a.assessment?.improvements || []);
-    const allRecommendations = assessments.flatMap(a => a.assessment?.recommendations || []);
+    const allStrengths = safeAssessments.flatMap(a => a?.assessment?.strengths || []);
+    const allImprovements = safeAssessments.flatMap(a => a?.assessment?.improvements || []);
+    const allRecommendations = safeAssessments.flatMap(a => a?.assessment?.recommendations || []);
 
     return {
       totalMCQAttempts: mcqSessions.length,
@@ -270,10 +245,10 @@ const Dashboard = () => {
       totalFaceToFaceInterviews: faceToFaceSessions.length,
       mcqAccuracy,
       codingSuccess,
-      recentActivity: sessions.slice(0, 5),
+      recentActivity: safeSessions.slice(0, 5),
       topicProgress,
       difficultyProgress,
-      monthlyProgress: generateMonthlyProgress(sessions),
+      monthlyProgress: generateMonthlyProgress(safeSessions),
       overallRating: Math.round(overallRating * 10) / 10,
       strengths: [...new Set(allStrengths)].slice(0, 5),
       improvements: [...new Set(allImprovements)].slice(0, 5),
@@ -282,6 +257,9 @@ const Dashboard = () => {
   };
 
   const generateMonthlyProgress = (sessions) => {
+    // Add safety check for sessions parameter
+    const safeSessions = Array.isArray(sessions) ? sessions : [];
+    
     const monthlyData = {};
     const last6Months = [];
     const now = new Date();
@@ -293,8 +271,11 @@ const Dashboard = () => {
       last6Months.push(monthKey);
     }
 
-    sessions.forEach(session => {
-      const sessionMonth = new Date(session.timestamp?.toDate?.() || session.timestamp).toISOString().slice(0, 7);
+    safeSessions.forEach(session => {
+      if (!session?.timestamp) return; // Skip if no timestamp
+      
+      const sessionDate = session.timestamp?.toDate ? session.timestamp.toDate() : new Date(session.timestamp);
+      const sessionMonth = sessionDate.toISOString().slice(0, 7);
       if (monthlyData[sessionMonth]) {
         if (session.type === 'mcq') monthlyData[sessionMonth].mcq += 1;
         if (session.type === 'coding') monthlyData[sessionMonth].coding += 1;
@@ -312,10 +293,43 @@ const Dashboard = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-  if (loading) {
+  // Show loading state while authentication is initializing
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading your dashboard...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while fetching dashboard data
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user after auth loading is complete, redirect to login
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-gray-600 mb-4">Please log in to view your dashboard</p>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
       </div>
     );
   }

@@ -137,24 +137,9 @@ const MCQInterview = () => {
   // Debounce timer for auto-fetch when selections change
   const fetchTimer = useRef(null);
 
-  // Auto-generate (preload) questions whenever user changes selections
-  useEffect(() => {
-    // Only preload when a specific topic is selected (subtopics shown)
-    if (!showSubTopics || !quizConfig.topic) return;
-
-    // Clear any pending timer
-    if (fetchTimer.current) clearTimeout(fetchTimer.current);
-
-    // Debounce: wait 600ms after last change before fetching
-    fetchTimer.current = setTimeout(() => {
-      // Preload questions but do NOT start the quiz automatically
-      fetchQuestionsFromAI(false);
-    }, 600);
-
-    return () => {
-      if (fetchTimer.current) clearTimeout(fetchTimer.current);
-    };
-  }, [quizConfig.topic, quizConfig.difficulty, quizConfig.count, showSubTopics]);
+  // REMOVED: Auto-generate questions on topic change
+  // Questions will only be generated when user clicks "Start Interview" button
+  // This prevents the loading screen from appearing every time topic/difficulty changes
 
   // Auto-configure based on selected topic from navigation
   useEffect(() => {

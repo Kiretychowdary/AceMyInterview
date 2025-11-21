@@ -12,175 +12,199 @@ class ProgressService {
   // 📊 MCQ SESSION TRACKING
   async saveMCQSession(userId, sessionData) {
     try {
-      const {
-        topic,
-        difficulty,
-        totalQuestions,
-        correctAnswers,
-        timeSpent,
-        questions,
-        answers
-      } = sessionData;
-      const { data, error } = await supabase
-        .from('interviewSessions')
-        .insert([
-          {
-            userId,
-            type: 'mcq',
-            topic,
-            difficulty,
-            totalQuestions,
-            correctAnswers,
-            timeSpent,
-            questions,
-            answers,
-            accuracy: Math.round((correctAnswers / totalQuestions) * 100),
-            timestamp: new Date().toISOString()
-          }
-        ])
-        .select();
-      if (error) throw error;
-      await this.updateUserProgress(userId, {
-        totalMCQAttempts: 1,
-        totalMCQQuestions: totalQuestions,
-        totalCorrectAnswers: correctAnswers,
-        lastActivity: new Date().toISOString()
-      });
-      const response = await fetch(`${this.API_BASE_URL}/api/store-mcq-session`, {
+      console.log('💾 Saving MCQ session to backend...', { userId, topic: sessionData.topic });
+      
+      // Use the enhanced session data structure from MCQInterview
+      const sessionPayload = sessionData.sessionId ? sessionData : {
+        sessionId: `mcq_${Date.now()}_${userId}`,
+        userId,
+        topic: sessionData.topic,
+        difficulty: sessionData.difficulty || 'medium',
+        duration: sessionData.duration || 10,
+        interviewType: 'mcq',
+        totalQuestions: sessionData.totalQuestions || sessionData.questions?.length || 0,
+        answeredQuestions: sessionData.answeredQuestions || Object.keys(sessionData.answers || {}).length,
+        correctAnswers: sessionData.correctAnswers || 0,
+        timeSpent: sessionData.timeSpent || 0,
+        startTime: sessionData.startTime || new Date(),
+        endTime: sessionData.endTime || new Date(),
+        questions: sessionData.questions || [],
+        answers: sessionData.answers || [],
+        assessment: sessionData.assessment || {
+          overallScore: Math.round((sessionData.correctAnswers / sessionData.totalQuestions) * 10 * 100) / 100,
+          percentage: Math.round((sessionData.correctAnswers / sessionData.totalQuestions) * 100)
+        }
+      };
+
+      // Save to MongoDB backend
+      const response = await fetch(`${this.API_BASE_URL}/api/interview/store-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          topic,
-          difficulty,
-          totalQuestions,
-          correctAnswers,
-          timeSpent,
-          questions,
-          answers
-        })
+        body: JSON.stringify(sessionPayload)
       });
+
+      if (!response.ok) {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+
       const result = await response.json();
+      console.log('✅ MCQ session saved successfully:', result);
+
+      // Update user progress summary
+      try {
+        await this.updateUserProgress(userId, {
+          totalMCQAttempts: 1,
+          totalMCQQuestions: sessionPayload.totalQuestions,
+          totalCorrectAnswers: sessionPayload.correctAnswers,
+          lastActivity: new Date().toISOString()
+        });
+      } catch (progressError) {
+        console.warn('⚠️ Failed to update progress summary:', progressError);
+        // Don't throw - session is already saved
+      }
+
       return {
         success: true,
-        sessionId: data[0]?.id,
+        sessionId: result.sessionId || sessionPayload.sessionId,
         data: result
       };
     } catch (error) {
-      console.error('Error saving MCQ session:', error);
-      throw error;
+      console.error('❌ Error saving MCQ session:', error);
+      // Return graceful failure instead of throwing
+      return {
+        success: false,
+        error: error.message,
+        sessionId: null
+      };
     }
   }
 
   // 💻 CODING SESSION TRACKING
   async saveCodingSession(userId, sessionData) {
     try {
-      const {
-        topic,
-        difficulty,
-        language,
-        totalProblems,
-        solvedProblems,
-        timeSpent,
-        problems,
-        solutions
-      } = sessionData;
-      const { data, error } = await supabase
-        .from('interviewSessions')
-        .insert([
-          {
-            userId,
-            type: 'coding',
-            topic,
-            difficulty,
-            language,
-            totalProblems,
-            solvedProblems,
-            timeSpent,
-            problems,
-            solutions,
-            successRate: Math.round((solvedProblems / totalProblems) * 100),
-            timestamp: new Date().toISOString()
-          }
-        ])
-        .select();
-      if (error) throw error;
-      await this.updateUserProgress(userId, {
-        totalCodingAttempts: 1,
-        totalCodingProblems: totalProblems,
-        totalSolvedProblems: solvedProblems,
-        lastActivity: new Date().toISOString()
-      });
-      const response = await fetch(`${this.API_BASE_URL}/api/store-coding-session`, {
+      console.log('💾 Saving coding session to backend...', { userId, topic: sessionData.topic });
+      
+      const sessionPayload = {
+        sessionId: `coding_${Date.now()}_${userId}`,
+        userId,
+        topic: sessionData.topic,
+        difficulty: sessionData.difficulty || 'medium',
+        duration: sessionData.duration || 30,
+        interviewType: 'coding',
+        language: sessionData.language || 'javascript',
+        totalQuestions: sessionData.totalProblems || 1,
+        answeredQuestions: sessionData.solvedProblems || 0,
+        timeSpent: sessionData.timeSpent || 0,
+        startTime: sessionData.startTime || new Date(),
+        endTime: sessionData.endTime || new Date(),
+        questions: sessionData.problems || [],
+        answers: sessionData.solutions || [],
+        assessment: {
+          overallScore: Math.round((sessionData.solvedProblems / sessionData.totalProblems) * 10 * 100) / 100,
+          successRate: Math.round((sessionData.solvedProblems / sessionData.totalProblems) * 100)
+        }
+      };
+
+      // Save to MongoDB backend
+      const response = await fetch(`${this.API_BASE_URL}/api/interview/store-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          topic,
-          difficulty,
-          language,
-          totalProblems,
-          solvedProblems,
-          timeSpent,
-          problems,
-          solutions
-        })
+        body: JSON.stringify(sessionPayload)
       });
+
+      if (!response.ok) {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+
       const result = await response.json();
+      console.log('✅ Coding session saved successfully:', result);
+
+      // Update user progress summary
+      try {
+        await this.updateUserProgress(userId, {
+          totalCodingAttempts: 1,
+          totalCodingProblems: sessionPayload.totalQuestions,
+          totalSolvedProblems: sessionPayload.answeredQuestions,
+          lastActivity: new Date().toISOString()
+        });
+      } catch (progressError) {
+        console.warn('⚠️ Failed to update progress summary:', progressError);
+      }
+
       return {
         success: true,
-        sessionId: data[0]?.id,
+        sessionId: result.sessionId,
         data: result
       };
     } catch (error) {
-      console.error('Error saving coding session:', error);
-      throw error;
+      console.error('❌ Error saving coding session:', error);
+      return {
+        success: false,
+        error: error.message,
+        sessionId: null
+      };
     }
   }
 
   // 🎤 FACE-TO-FACE INTERVIEW ASSESSMENT
   async saveInterviewAssessment(userId, assessmentData) {
     try {
-      const {
-        interviewType,
-        topic,
-        difficulty,
-        duration,
-        interviewQuestions,
-        userResponses,
-        aiAssessment
-      } = assessmentData;
-      const { data, error } = await supabase
-        .from('interviewAssessments')
-        .insert([
-          {
-            userId,
-            type: 'interview',
-            interviewType,
-            topic,
-            difficulty,
-            duration,
-            interviewQuestions,
-            userResponses,
-            assessment: aiAssessment,
-            timestamp: new Date().toISOString()
-          }
-        ])
-        .select();
-      if (error) throw error;
-      await this.updateUserProgress(userId, {
-        totalFaceToFaceInterviews: 1,
-        lastAssessmentRating: aiAssessment.overallRating,
-        lastActivity: new Date().toISOString()
+      console.log('💾 Saving interview assessment to backend...', { userId, topic: assessmentData.topic });
+      
+      const sessionPayload = {
+        sessionId: `interview_${Date.now()}_${userId}`,
+        userId,
+        topic: assessmentData.topic,
+        difficulty: assessmentData.difficulty || 'medium',
+        duration: assessmentData.duration || 10,
+        interviewType: assessmentData.interviewType || 'face-to-face',
+        totalQuestions: assessmentData.interviewQuestions?.length || 0,
+        answeredQuestions: assessmentData.userResponses?.length || 0,
+        timeSpent: assessmentData.timeSpent || 0,
+        startTime: assessmentData.startTime || new Date(),
+        endTime: assessmentData.endTime || new Date(),
+        questions: assessmentData.interviewQuestions || [],
+        answers: assessmentData.userResponses || [],
+        assessment: assessmentData.aiAssessment || assessmentData.assessment
+      };
+
+      // Save to MongoDB backend
+      const response = await fetch(`${this.API_BASE_URL}/api/interview/store-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sessionPayload)
       });
+
+      if (!response.ok) {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Interview assessment saved successfully:', result);
+
+      // Update user progress summary
+      try {
+        await this.updateUserProgress(userId, {
+          totalFaceToFaceInterviews: 1,
+          lastAssessmentRating: sessionPayload.assessment?.overallScore || 0,
+          lastActivity: new Date().toISOString()
+        });
+      } catch (progressError) {
+        console.warn('⚠️ Failed to update progress summary:', progressError);
+      }
+
       return {
         success: true,
-        assessmentId: data[0]?.id,
-        assessment: aiAssessment
+        assessmentId: result.sessionId,
+        assessment: sessionPayload.assessment
       };
     } catch (error) {
-      console.error('Error saving interview assessment:', error);
-      throw error;
+      console.error('❌ Error saving interview assessment:', error);
+      return {
+        success: false,
+        error: error.message,
+        assessmentId: null
+      };
     }
   }
 
