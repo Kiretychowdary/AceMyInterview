@@ -5,6 +5,8 @@ frontend/
 .git/
 .gitignore
 *.md
-.env
+.env*
 .vscode/
 .idea/
+vercel.json
+netlify.toml

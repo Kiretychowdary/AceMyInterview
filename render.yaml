@@ -5,14 +5,12 @@ services:
     region: oregon
     plan: free
     rootDir: backend
-    buildCommand: npm install --prefix . && npm list
-    startCommand: node server.js
+    buildCommand: rm -rf ../node_modules ../package-lock.json 2>/dev/null || true && npm install --no-workspaces --ignore-scripts && npm rebuild
+    startCommand: NODE_PATH=./node_modules node server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: NODE_PATH
-        value: /opt/render/project/src/backend/node_modules
       - key: PORT
         value: 10000
       - key: MONGODB_URI
