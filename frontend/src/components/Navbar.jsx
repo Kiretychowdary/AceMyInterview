@@ -54,12 +54,13 @@ const Navbar = () => {
         {/* Desktop Buttons */}
         {user ? (
           <div className="hidden md:flex items-center space-x-3 flex-shrink-0">
-            <span className="text-blue-700 font-medium text-sm">
-              Welcome, {user.email?.split('@')[0] || 'User'}
-            </span>
+            {/* User Profile Circle */}
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-xl shadow-lg border-2 border-white cursor-pointer hover:scale-110 transition-transform">
+              {user.email?.charAt(0).toUpperCase() || 'U'}
+            </div>
             <button 
               onClick={logout}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition font-medium"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition font-medium shadow-md hover:shadow-lg"
             >
               Logout
             </button>
@@ -79,29 +80,27 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* Toggle Button: Only show if user is logged in */}
-        {user && (
-          <button
-            className={`flex items-center justify-center w-10 h-10 rounded-full border transition font-sans
-              ${menuOpen ? "bg-blue-700 border-blue-700 shadow-lg text-white" : "bg-white border-blue-700 hover:bg-blue-50 text-blue-700"}`}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMenuOpen((v) => !v)}
+        {/* Mobile Menu Toggle Button (Always visible) */}
+        <button
+          className={`md:hidden flex items-center justify-center w-10 h-10 rounded-full border transition font-sans
+            ${menuOpen ? "bg-blue-700 border-blue-700 shadow-lg text-white" : "bg-white border-blue-700 hover:bg-blue-50 text-blue-700"}`}
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <svg
+            className={`w-7 h-7 transition-transform duration-300 ${menuOpen ? "rotate-90 text-white" : "text-blue-700"}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className={`w-7 h-7 transition-transform duration-300 ${menuOpen ? "rotate-90 text-white" : "text-blue-700"}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 8h16M4 16h16"}
-              />
-            </svg>
-          </button>
-        )}
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d={menuOpen ? "M6 18L18 6M6 6l12 12" : "M4 8h16M4 16h16"}
+            />
+          </svg>
+        </button>
       </nav>
 
       {/* Mobile Menu */}

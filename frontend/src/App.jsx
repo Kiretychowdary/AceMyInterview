@@ -21,7 +21,6 @@ import MCQInterview from './pages/MCQInterview.jsx';
 import Compiler from './pages/Compiler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
-import FaceToFaceAIInterview from './pages/FaceToFaceAIInterview.jsx';
 import InterviewPreparation from './pages/InterviewPreparation.jsx';
 import { AuthProvider, useAuth } from './components/AuthContext.jsx';
 import ProfessionalAdminDashboard from './pages/ProfessionalAdminDashboard.jsx';
@@ -99,7 +98,6 @@ function AppContent() {
           <Route path="/mcq-interview" element={<ProtectedRoute><MCQInterview /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
-          <Route path="/ai-face-interview" element={<ProtectedRoute><FaceToFaceAIInterview /></ProtectedRoute>} />
 
           {/* ✅ Public Routes */}
           <Route path="/Login" element={<Login />} />

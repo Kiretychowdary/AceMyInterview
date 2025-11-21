@@ -46,28 +46,39 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     if (!user?.uid) {
-      console.warn('No user ID available, skipping dashboard data fetch');
+      console.warn('❌ [Dashboard] No user ID available, skipping dashboard data fetch');
       return;
     }
 
     setDataLoading(true);
     try {
       const userId = user.uid;
-      console.log('📊 Fetching dashboard data for user:', userId);
+      console.log('📊 [Dashboard] Starting data fetch...');
+      console.log('👤 [Dashboard] Supabase User ID:', userId);
+      console.log('👤 [Dashboard] User Email:', user.email);
 
-      // Fetch data from MongoDB backend API instead of Firestore
+      // Fetch data from MongoDB backend API (NOT Firestore/Supabase tables)
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      console.log('🌐 [Dashboard] Backend API:', API_BASE);
       
       let recentSessions = [];
       let assessments = [];
       
       try {
-        // Fetch interview history from MongoDB backend
-        const historyResponse = await fetch(`${API_BASE}/api/interview/history/${userId}?limit=20`);
+        // Fetch interview history from MongoDB backend using Supabase user ID
+        const historyUrl = `${API_BASE}/api/interview/history/${userId}?limit=20`;
+        console.log('🚀 [Dashboard] Fetching from:', historyUrl);
+        
+        const historyResponse = await fetch(historyUrl);
+        console.log('📡 [Dashboard] Response status:', historyResponse.status);
+        console.log('📡 [Dashboard] Response status:', historyResponse.status);
+        
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
           recentSessions = historyData.sessions || [];
-          console.log('✅ Fetched sessions from backend:', recentSessions.length);
+          console.log('✅ [Dashboard] Successfully fetched sessions from MongoDB');
+          console.log('📊 [Dashboard] Total sessions retrieved:', recentSessions.length);
+          console.log('📋 [Dashboard] Sessions data:', recentSessions.slice(0, 2)); // Log first 2 for debugging
           
           // Transform backend data to match expected format
           recentSessions = recentSessions.map(session => ({
@@ -86,16 +97,29 @@ const Dashboard = () => {
           // Separate face-to-face interviews as assessments
           assessments = recentSessions.filter(s => s.type === 'face-to-face');
         } else {
-          console.warn('Backend returned error:', historyResponse.status);
+          const errorText = await historyResponse.text();
+          console.error('❌ [Dashboard] Backend returned error:', historyResponse.status);
+          console.error('❌ [Dashboard] Error details:', errorText);
         }
       } catch (error) {
-        console.warn('⚠️ Backend not available, using empty data:', error);
+        console.error('❌ [Dashboard] Backend fetch failed:', error.message);
+        console.warn('⚠️ [Dashboard] Using empty data - backend not available');
       }
 
       // Process and aggregate data
+      console.log('🔄 [Dashboard] Processing data...');
+      console.log('📋 [Dashboard] Processing sessions count:', recentSessions.length);
+      console.log('📋 [Dashboard] Processing assessments count:', assessments.length);
+      
       const processedData = processProgressData({}, recentSessions, assessments);
       setDashboardData(processedData);
-      console.log('✅ Dashboard data loaded successfully');
+      
+      console.log('✅ [Dashboard] Data loaded and processed successfully');
+      console.log('📊 [Dashboard] Final stats:', {
+        mcqAttempts: processedData.totalMCQAttempts,
+        codingAttempts: processedData.totalCodingAttempts,
+        faceToFaceInterviews: processedData.totalFaceToFaceInterviews
+      });
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

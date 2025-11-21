@@ -279,4 +279,88 @@ router.put('/update-assessment/:sessionId', async (req, res) => {
   }
 });
 
+// 🗑️ DELETE - Clear all interview sessions (for database cleanup)
+router.delete('/clear-all', async (req, res) => {
+  try {
+    console.log('🗑️ Clearing all interview sessions from database...');
+    
+    const result = await InterviewSession.deleteMany({});
+    
+    console.log(`✅ Deleted ${result.deletedCount} interview sessions`);
+    
+    res.json({
+      success: true,
+      message: `Successfully cleared ${result.deletedCount} interview sessions`,
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error('❌ Error clearing interview sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear interview sessions',
+      details: error.message
+    });
+  }
+});
+
+// 🗑️ DELETE - Clear interview sessions for specific user
+router.delete('/clear-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🗑️ Clearing all interview sessions for user: ${userId}`);
+    
+    const result = await InterviewSession.deleteMany({ userId });
+    
+    console.log(`✅ Deleted ${result.deletedCount} sessions for user ${userId}`);
+    
+    res.json({
+      success: true,
+      message: `Successfully cleared ${result.deletedCount} sessions for user`,
+      deletedCount: result.deletedCount,
+      userId
+    });
+
+  } catch (error) {
+    console.error('❌ Error clearing user sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear user sessions',
+      details: error.message
+    });
+  }
+});
+
+// 🗑️ DELETE - Clear old sessions (older than specified days)
+router.delete('/clear-old/:days', async (req, res) => {
+  try {
+    const { days } = req.params;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+    
+    console.log(`🗑️ Clearing interview sessions older than ${days} days (before ${daysAgo.toISOString()})`);
+    
+    const result = await InterviewSession.deleteMany({
+      createdAt: { $lt: daysAgo }
+    });
+    
+    console.log(`✅ Deleted ${result.deletedCount} old sessions`);
+    
+    res.json({
+      success: true,
+      message: `Successfully cleared ${result.deletedCount} sessions older than ${days} days`,
+      deletedCount: result.deletedCount,
+      cutoffDate: daysAgo.toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Error clearing old sessions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear old sessions',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;

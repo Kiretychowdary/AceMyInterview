@@ -12,7 +12,9 @@ class ProgressService {
   // 📊 MCQ SESSION TRACKING
   async saveMCQSession(userId, sessionData) {
     try {
-      console.log('💾 Saving MCQ session to backend...', { userId, topic: sessionData.topic });
+      console.log('💾 [ProgressService] Saving MCQ session to MongoDB backend...');
+      console.log('📋 User ID from Supabase:', userId);
+      console.log('📋 Session Data:', { topic: sessionData.topic, difficulty: sessionData.difficulty, totalQuestions: sessionData.totalQuestions });
       
       // Use the enhanced session data structure from MCQInterview
       const sessionPayload = sessionData.sessionId ? sessionData : {
@@ -36,7 +38,10 @@ class ProgressService {
         }
       };
 
-      // Save to MongoDB backend
+      // Save to MongoDB backend with Supabase user ID
+      console.log('🌐 Sending to MongoDB:', `${this.API_BASE_URL}/api/interview/store-session`);
+      console.log('📦 Payload userId:', sessionPayload.userId);
+      
       const response = await fetch(`${this.API_BASE_URL}/api/interview/store-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,11 +49,15 @@ class ProgressService {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Backend API error:', response.status, errorText);
         throw new Error(`Backend API error: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('✅ MCQ session saved successfully:', result);
+      console.log('✅ MCQ session saved successfully to MongoDB');
+      console.log('📊 Session ID:', result.sessionId);
+      console.log('👤 Stored for user:', sessionPayload.userId);
 
       // Update user progress summary
       try {
@@ -82,7 +91,9 @@ class ProgressService {
   // 💻 CODING SESSION TRACKING
   async saveCodingSession(userId, sessionData) {
     try {
-      console.log('💾 Saving coding session to backend...', { userId, topic: sessionData.topic });
+      console.log('💾 [ProgressService] Saving coding session to MongoDB backend...');
+      console.log('📋 User ID from Supabase:', userId);
+      console.log('📋 Session Data:', { topic: sessionData.topic, difficulty: sessionData.difficulty, totalProblems: sessionData.totalProblems });
       
       const sessionPayload = {
         sessionId: `coding_${Date.now()}_${userId}`,
@@ -105,7 +116,10 @@ class ProgressService {
         }
       };
 
-      // Save to MongoDB backend
+      // Save to MongoDB backend with Supabase user ID
+      console.log('🌐 Sending to MongoDB:', `${this.API_BASE_URL}/api/interview/store-session`);
+      console.log('📦 Payload userId:', sessionPayload.userId);
+      
       const response = await fetch(`${this.API_BASE_URL}/api/interview/store-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,11 +127,15 @@ class ProgressService {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Backend API error:', response.status, errorText);
         throw new Error(`Backend API error: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('✅ Coding session saved successfully:', result);
+      console.log('✅ Coding session saved successfully to MongoDB');
+      console.log('📊 Session ID:', result.sessionId);
+      console.log('👤 Stored for user:', sessionPayload.userId);
 
       // Update user progress summary
       try {
@@ -149,7 +167,9 @@ class ProgressService {
   // 🎤 FACE-TO-FACE INTERVIEW ASSESSMENT
   async saveInterviewAssessment(userId, assessmentData) {
     try {
-      console.log('💾 Saving interview assessment to backend...', { userId, topic: assessmentData.topic });
+      console.log('💾 [ProgressService] Saving interview assessment to MongoDB backend...');
+      console.log('📋 User ID from Supabase:', userId);
+      console.log('📋 Assessment Data:', { topic: assessmentData.topic, difficulty: assessmentData.difficulty, interviewType: assessmentData.interviewType });
       
       const sessionPayload = {
         sessionId: `interview_${Date.now()}_${userId}`,
@@ -168,7 +188,10 @@ class ProgressService {
         assessment: assessmentData.aiAssessment || assessmentData.assessment
       };
 
-      // Save to MongoDB backend
+      // Save to MongoDB backend with Supabase user ID
+      console.log('🌐 Sending to MongoDB:', `${this.API_BASE_URL}/api/interview/store-session`);
+      console.log('📦 Payload userId:', sessionPayload.userId);
+      
       const response = await fetch(`${this.API_BASE_URL}/api/interview/store-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,11 +199,15 @@ class ProgressService {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Backend API error:', response.status, errorText);
         throw new Error(`Backend API error: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('✅ Interview assessment saved successfully:', result);
+      console.log('✅ Interview assessment saved successfully to MongoDB');
+      console.log('📊 Session ID:', result.sessionId);
+      console.log('👤 Stored for user:', sessionPayload.userId);
 
       // Update user progress summary
       try {
