@@ -3,19 +3,14 @@
   "version": "1.0.0",
   "description": "AI-Powered Interview Preparation Platform",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
-    "install:frontend": "npm install --workspace=frontend",
-    "install:backend": "npm install --workspace=backend",
-    "install:all": "npm install",
-    "build": "npm run build --workspace=frontend",
-    "start:frontend": "npm run dev --workspace=frontend",
-    "start:backend": "npm run start --workspace=backend",
-    "dev": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
-    "vercel-build": "npm install && npm run build --workspace=frontend"
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && npm install",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "build": "cd frontend && npm run build",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:backend": "cd backend && npm start",
+    "dev": "concurrently \"npm run start:frontend\" \"npm run start:backend\""
   },
   "keywords": [
     "interview",
