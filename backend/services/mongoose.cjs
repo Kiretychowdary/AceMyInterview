@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Accept multiple common env var names used by different hosts (Render, Heroku, local .env)
 const rawUri = process.env.MONGODB_URI || process.env.DATABASE_URL || process.env.MONGO_URI || process.env.MONGO_URL || process.env.MONGODB_URL;

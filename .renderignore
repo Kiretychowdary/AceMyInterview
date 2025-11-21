@@ -1,0 +1,10 @@
+package.json
+package-lock.json
+node_modules/
+frontend/
+.git/
+.gitignore
+*.md
+.env
+.vscode/
+.idea/
