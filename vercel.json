@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build --workspace=frontend",
+  "buildCommand": "cd frontend && npm install && npm run build",
   "outputDirectory": "frontend/dist",
-  "installCommand": "npm install",
+  "installCommand": "echo 'Skipping root install'",
   "framework": null,
   "rewrites": [
     {
