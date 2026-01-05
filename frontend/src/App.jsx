@@ -5,27 +5,24 @@
 import React from "react";
 import 'tailwindcss/tailwind.css';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import Navbar from './components/Navbar.jsx';
+import Navbar from './components/layout/Navbar.jsx';
 import Home from './pages/Home.jsx';
-import MockInterviews from './pages/MockInterviews.jsx';
-import Login from './pages/Login.jsx';
-import InterviewRoom from './pages/InterviewRoom.jsx';
-import Contests from './pages/Contests.jsx';
-import ContestProblems from './pages/ContestProblems.jsx';
+import MockInterviews from './pages/interview/MockInterviews.jsx';
+import Login from './pages/auth/Login.jsx';
+import Contests from './pages/contest/Contests.jsx';
+import ContestProblems from './pages/contest/ContestProblems.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import DeviceSetup from './pages/DeviceSetup.jsx';
-import Register from './pages/Register.jsx';
-import InterviewModeSelect from './pages/InterviewModeSelect.jsx';
-import MCQInterview from './pages/MCQInterview.jsx';
-import Compiler from './pages/Compiler.jsx';
+import Register from './pages/auth/Register.jsx';
+import MCQInterview from './pages/interview/MCQInterview.jsx';
+import Compiler from './pages/interview/Compiler.jsx';
 import Dashboard from './pages/Dashboard.jsx';
-import FaceToFaceInterview from './pages/FaceToFaceInterview.jsx';
-import InterviewPreparation from './pages/InterviewPreparation.jsx';
-import { AuthProvider, useAuth } from './components/AuthContext.jsx';
-import ProfessionalAdminDashboard from './pages/ProfessionalAdminDashboard.jsx';
-import AdminLogin from './pages/AdminLogin.jsx';
-import AdminContestView from './pages/AdminContestView.jsx';
+import FaceToFaceInterview from './pages/interview/FaceToFaceInterview.jsx';
+import InterviewPreparation from './pages/interview/InterviewPreparation.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+import AdminLogin from './pages/admin/AdminLogin.jsx';
+import AdminContestView from './pages/admin/AdminContestView.jsx';
 
 // ✅ ProtectedRoute component
 function ProtectedRoute({ children }) {
@@ -49,10 +46,7 @@ function ProtectedRoute({ children }) {
 function AppContent() {
   const location = useLocation();
 
-  const hideNavbar =
-    location.pathname === "/interview-room" ||
-    location.pathname === "/device-interview" ||
-    location.pathname === "/device-setup";
+  const hideNavbar = false; // Simplified - navbar shows on all pages
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -90,22 +84,19 @@ function AppContent() {
           <Route path="/contest/:contestId/problems" element={<ProtectedRoute><ContestProblems /></ProtectedRoute>} />
           <Route path="/interview-preparation" element={<InterviewPreparation />} />
 
-          {/* ✅ Protected Routes */}
+          {/* ✅ Protected Interview Routes */}
           <Route path="/compiler" element={<ProtectedRoute><Compiler /></ProtectedRoute>} />
-          <Route path="/device-setup" element={<ProtectedRoute><DeviceSetup /></ProtectedRoute>} />
-          <Route path="/interview-room" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
-          <Route path="/interview-mode" element={<ProtectedRoute><InterviewModeSelect /></ProtectedRoute>} />
           <Route path="/mcq-interview" element={<ProtectedRoute><MCQInterview /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
 
-          {/* ✅ Public Routes */}
+          {/* ✅ Public Auth Routes */}
           <Route path="/Login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
           {/* ✅ Admin Routes */}
           <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/admin-dashboard" element={<ProfessionalAdminDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/admin/contest/:contestId" element={<AdminContestView />} />
         </Routes>
       </main>

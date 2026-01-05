@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/contestsController.cjs');
-const requireSupabaseAuth = require('../middleware/supabaseAuth.cjs');
+const requireAuth = require('../middleware/firebaseAuth.cjs');
 const verifyAdminToken = require('../middleware/adminAuth.cjs');
 
 // Public: list contests (with filters: upcoming, ongoing, completed)
@@ -51,18 +51,18 @@ router.put('/:id/problems', verifyAdminToken, ctrl.updateProblems);
 // Protected: publish/unpublish contest (Admin only)
 router.put('/:id/publish', verifyAdminToken, ctrl.publishContest);
 
-// User: register for contest (requires Supabase auth)
-router.post('/:id/register', requireSupabaseAuth, ctrl.registerForContest);
+// User: register for contest (requires Firebase auth)
+router.post('/:id/register', requireAuth, ctrl.registerForContest);
 
 // User: unregister from contest (requires auth)
-router.delete('/:id/register', requireSupabaseAuth, ctrl.unregisterFromContest);
+router.delete('/:id/register', requireAuth, ctrl.unregisterFromContest);
 
 // User: get registered contests
 router.get('/user/:userId/registrations', ctrl.getUserRegistrations);
 
 // Contest Progress Tracking
-router.post('/:id/progress', requireSupabaseAuth, ctrl.updateProgress);
-router.post('/:id/heartbeat', requireSupabaseAuth, ctrl.updateHeartbeat);
+router.post('/:id/progress', requireAuth, ctrl.updateProgress);
+router.post('/:id/heartbeat', requireAuth, ctrl.updateHeartbeat);
 router.get('/:id/active-count', ctrl.getActiveParticipants);
 
 module.exports = router;

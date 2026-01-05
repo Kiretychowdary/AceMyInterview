@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import Logo from '../assets/Logo.jpg';
 import image from '../assets/image.png';
-import ExploreSolutions from '../components/ExploreSolutions';
-import PageFeatures from '../components/PageFeatures';
-import { useAuth } from "../components/AuthContext";
+import ExploreSolutions from '../components/layout/ExploreSolutions';
+import PageFeatures from '../components/layout/PageFeatures';
+import { useAuth } from "../contexts/AuthContext";
 
 const navLinks = [
   { name: 'Questions', href: '#' },

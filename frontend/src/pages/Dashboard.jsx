@@ -1,6 +1,6 @@
 // USER PROGRESS DASHBOARD - COMPREHENSIVE TRACKING SYSTEM
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../components/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   BarChart, 
   Bar, 
@@ -54,10 +54,10 @@ const Dashboard = () => {
     try {
       const userId = user.uid;
       console.log('📊 [Dashboard] Starting data fetch...');
-      console.log('👤 [Dashboard] Supabase User ID:', userId);
+      console.log('👤 [Dashboard] Firebase User ID:', userId);
       console.log('👤 [Dashboard] User Email:', user.email);
 
-      // Fetch data from MongoDB backend API (NOT Firestore/Supabase tables)
+      // Fetch data from MongoDB backend API (NOT Firestore)
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       console.log('🌐 [Dashboard] Backend API:', API_BASE);
       
@@ -65,7 +65,7 @@ const Dashboard = () => {
       let assessments = [];
       
       try {
-        // Fetch interview history from MongoDB backend using Supabase user ID
+        // Fetch interview history from MongoDB backend using Firebase user ID
         const historyUrl = `${API_BASE}/api/interview/history/${userId}?limit=20`;
         console.log('🚀 [Dashboard] Fetching from:', historyUrl);
         

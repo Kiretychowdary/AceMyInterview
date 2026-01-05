@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/submissionsController.cjs');
-const requireSupabaseAuth = require('../middleware/supabaseAuth.cjs');
+const requireAuth = require('../middleware/firebaseAuth.cjs');
 
-// POST /api/submissions -> create a submission (requires Supabase auth token)
-router.post('/', requireSupabaseAuth, ctrl.createSubmission);
+// POST /api/submissions -> create a submission (requires Firebase auth token)
+router.post('/', requireAuth, ctrl.createSubmission);
 
 // GET /api/submissions -> list (optional query: contestId, skip, limit)
 router.get('/', ctrl.listSubmissions);
