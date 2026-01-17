@@ -22,6 +22,9 @@ const allowedOrigins = process.env.CORS_ORIGIN
       'http://localhost:5175',
       'http://acemyinterview.app',
       'https://acemyinterview.app',
+      'http://www.acemyinterview.app',
+      'https://www.acemyinterview.app',
+      'https://acemyinterview.onrender.com',
       'https://acemyinterview-backend.onrender.com'
     ];
 
