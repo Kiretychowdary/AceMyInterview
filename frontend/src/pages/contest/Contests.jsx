@@ -235,106 +235,97 @@ const Contests = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200 rounded-full filter blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"/>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full filter blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"/>
+    <div className="min-h-screen bg-white relative">
+      {/* Clean Background */}
+      <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-b from-blue-50 to-transparent"/>
       
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="text-center mb-16"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            whileHover={{ scale: 1.05 }}
-            className="inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-blue-100 to-blue-50 border-2 border-blue-300 rounded-full px-8 py-2.5 mb-6 shadow-md hover:shadow-lg transition-shadow min-w-[220px]"
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-full font-semibold text-sm shadow-md mb-6"
           >
-            <motion.div 
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="text-2xl"
-            >
-              🏆
-            </motion.div>
-            <span className="text-blue-700 font-bold text-sm tracking-wide">CODING CONTESTS</span>
+            <span className="text-xl">🚀</span>
+            <span className="tracking-wide">CODING CONTESTS</span>
           </motion.div>
           
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-5xl md:text-6xl font-extrabold mb-5"
+            transition={{ delay: 0.3, duration: 0.8 }}
+            className="text-4xl font-bold mb-4 text-gray-900"
           >
-            <span className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 bg-clip-text text-transparent">
-              Compete & Excel
-            </span>
+            Compete & Excel
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed"
+            transition={{ delay: 0.5 }}
+            className="text-gray-600 text-base max-w-2xl mx-auto"
           >
-            Join live coding contests, solve challenging problems, and climb the leaderboard
+            Join live coding contests, solve challenging problems, and climb the leaderboard to showcase your skills
           </motion.p>
         </motion.div>
 
-        {/* Upcoming Contests */}
+        {/* Upcoming Contests Section */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-20"
+          transition={{ delay: 0.3 }}
+          className="mb-24"
         >
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <motion.span 
-                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="text-3xl"
-              >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-xl">
                 🚀
-              </motion.span>
-              Upcoming Contests
-            </h2>
-            <motion.button
-              whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(37, 99, 235, 0.2)" }}
-              whileTap={{ scale: 0.95 }}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Upcoming Contests</h2>
+                <p className="text-gray-600 text-sm">Register now and prepare to compete</p>
+              </div>
+            </div>
+            <button
               onClick={loadContests}
-              className="bg-white text-blue-600 border-2 border-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm"
+              className="bg-white text-blue-600 border border-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
             >
               <span className="flex items-center gap-2">
-                <motion.span animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }}>🔄</motion.span>
-                Refresh
+                🔄 Refresh
               </span>
-            </motion.button>
+            </button>
           </div>
 
           {loading ? (
             <div className="grid md:grid-cols-2 gap-6">
               {[1, 2].map(i => (
-                <div key={i} className="bg-white rounded-2xl p-8 animate-pulse">
+                <div key={i} className="bg-white rounded-xl p-6 animate-pulse shadow-md border border-gray-200">
                   <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"/>
                   <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"/>
-                  <div className="h-24 bg-gray-200 rounded"/>
+                  <div className="h-24 bg-gray-200 rounded mb-4"/>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="h-20 bg-slate-200 rounded-xl"/>
+                    <div className="h-20 bg-slate-200 rounded-xl"/>
+                    <div className="h-20 bg-slate-200 rounded-xl"/>
+                  </div>
                 </div>
               ))}
             </div>
           ) : upcomingContests.length === 0 ? (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-3xl p-16 text-center shadow-xl border-2 border-blue-100"
+              className="bg-white rounded-xl p-12 text-center shadow-md border border-gray-200"
             >
-              <div className="text-6xl mb-4">📅</div>
-              <p className="text-gray-600 text-lg">No upcoming contests at the moment</p>
-              <p className="text-gray-500 mt-2">Check back soon for new challenges!</p>
+              <div className="text-5xl mb-4">📅</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">No Upcoming Contests</h3>
+              <p className="text-gray-600">Check back soon for new challenges!</p>
             </motion.div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
@@ -345,127 +336,84 @@ const Contests = () => {
                 return (
                   <motion.div
                     key={contestId}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
-                    whileHover={{ 
-                      y: -8, 
-                      scale: 1.02,
-                      transition: { duration: 0.3, ease: "easeOut" }
-                    }}
-                    className="group bg-white rounded-2xl p-7 shadow-lg hover:shadow-2xl border-2 border-blue-100 hover:border-blue-400 transition-all duration-300 cursor-pointer relative overflow-hidden min-h-[520px] flex flex-col"
-                    style={{ borderRadius: "1rem" }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                    className="group bg-white rounded-xl shadow-md hover:shadow-lg border border-gray-200 hover:border-blue-500 transition-all cursor-pointer"
                     onClick={() => setSelectedContest(contest)}
                   >
-                    {/* Gradient Overlay */}
-                    <motion.div 
-                      className="absolute inset-0 bg-gradient-to-br from-blue-50/0 to-blue-100/0 opacity-0 group-hover:opacity-100"
-                      animate={{ 
-                        background: ['linear-gradient(to bottom right, rgba(239, 246, 255, 0), rgba(219, 234, 254, 0))', 'linear-gradient(to bottom right, rgba(239, 246, 255, 0.5), rgba(219, 234, 254, 0.3))']
-                      }}
-                      transition={{ duration: 0.3 }}
-                    />
-                    
-                    <div className="relative z-10">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-5">
-                        <div className="flex-1 pr-2">
-                          <div className="flex items-center gap-2 mb-3 flex-wrap">
-                            <motion.span 
-                              whileHover={{ scale: 1.05 }}
-                              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold border-2 ${getDifficultyColor(contest.difficulty)} transition-all min-w-[70px] text-center`}
-                            >
-                              {contest.difficulty}
-                            </motion.span>
-                            <motion.span 
-                              whileHover={{ scale: 1.05 }}
-                              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md transition-all min-w-[70px] text-center"
-                            >
-                              {contest.type}
-                            </motion.span>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors duration-300 mb-2.5 line-clamp-2 min-h-[3.5rem] leading-7">
-                            {contest.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed min-h-[2.5rem]">{contest.description}</p>
+                    <div className="p-6">
+                      {/* Header Section */}
+                      <div className="mb-5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getDifficultyColor(contest.difficulty)}`}>
+                            {contest.difficulty}
+                          </span>
+                          <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white">
+                            {contest.type}
+                          </span>
                         </div>
+                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2 line-clamp-2">
+                          {contest.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm line-clamp-2">{contest.description}</p>
                       </div>
 
-                      {/* Timer */}
-                      <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ duration: 0.2 }}
-                        className="mb-5 p-5 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow min-h-[140px] flex flex-col justify-center"
-                      >
-                        <div className="text-xs text-blue-700 font-semibold mb-3 uppercase tracking-wide text-center">Starts In</div>
-                        <div className="flex justify-center">
+                      {/* Countdown Timer Section */}
+                      <div className="mb-5 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="text-xs text-blue-700 font-semibold mb-3 text-center">
+                          Starts In
+                        </div>
+                        <div className="flex justify-center mb-3">
                           <CountdownTimer startTime={contest.startTime} />
                         </div>
-                        <div className="mt-3 space-y-1">
-                          <div className="text-xs text-blue-600 font-medium text-center flex items-center justify-center gap-1.5">
-                            <span className="font-semibold">Start:</span>
-                            <span>{formatTime(contest.startTime)}</span>
-                          </div>
-                          <div className="text-xs text-blue-600 font-medium text-center flex items-center justify-center gap-1.5">
-                            <span className="font-semibold">End:</span>
-                            <span>{formatTime(calculateEndTime(contest.startTime, contest.duration))}</span>
+                        <div className="space-y-1.5 pt-3 border-t border-blue-200">
+                          <div className="flex items-center justify-center gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded border border-blue-200">
+                              <span className="text-gray-600">Start:</span>
+                              <span className="font-semibold text-gray-800">{formatTime(contest.startTime)}</span>
+                            </div>
+                            <span className="text-gray-400">→</span>
+                            <div className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded border border-blue-200">
+                              <span className="text-gray-600">End:</span>
+                              <span className="font-semibold text-gray-800">{formatTime(calculateEndTime(contest.startTime, contest.duration))}</span>
+                            </div>
                           </div>
                         </div>
-                      </motion.div>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-3 gap-3 mb-5">
-                        <motion.div 
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.2 }}
-                          className="bg-gradient-to-br from-blue-50 to-white rounded-lg p-3 border border-blue-200 text-center shadow-sm hover:shadow-md transition-shadow min-h-[90px] flex flex-col justify-center"
-                        >
-                          <div className="text-2xl mb-1">⏱️</div>
-                          <div className="text-xs text-gray-600 font-medium mb-1">Duration</div>
-                          <div className="text-sm font-bold text-blue-700">{formatDuration(contest.duration)}</div>
-                        </motion.div>
-                        <motion.div 
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.2 }}
-                          className="bg-gradient-to-br from-blue-50 to-white rounded-lg p-3 border border-blue-200 text-center shadow-sm hover:shadow-md transition-shadow min-h-[90px] flex flex-col justify-center"
-                        >
-                          <div className="text-2xl mb-1">📝</div>
-                          <div className="text-xs text-gray-600 font-medium mb-1">Problems</div>
-                          <div className="text-sm font-bold text-blue-700">
-                            {Array.isArray(contest.problems) ? contest.problems.length : contest.problems || 0}
-                          </div>
-                        </motion.div>
-                        <motion.div 
-                          whileHover={{ scale: 1.05, y: -2 }}
-                          transition={{ duration: 0.2 }}
-                          className="bg-gradient-to-br from-blue-50 to-white rounded-lg p-3 border border-blue-200 text-center shadow-sm hover:shadow-md transition-shadow min-h-[90px] flex flex-col justify-center"
-                        >
-                          <div className="text-2xl mb-1">👥</div>
-                          <div className="text-xs text-gray-600 font-medium mb-1">Registered</div>
-                          <div className="text-sm font-bold text-blue-700">{contest.participants || 0}</div>
-                        </motion.div>
                       </div>
 
-                      {/* Prize */}
-                      <motion.div 
-                        whileHover={{ scale: 1.02 }}
-                        transition={{ duration: 0.2 }}
-                        className="bg-gradient-to-r from-blue-50 to-white rounded-lg p-3.5 border-2 border-blue-200 mb-5 shadow-sm hover:shadow-md transition-shadow min-h-[50px] flex items-center justify-center"
-                      >
-                        <div className="text-sm font-semibold text-blue-800 flex items-center gap-2.5">
-                          <span className="text-lg">🏆</span>
-                          {contest.prize}
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-3 gap-3 mb-5">
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 text-center">
+                          <div className="text-xl mb-1">⏱️</div>
+                          <div className="text-xs text-blue-700 font-medium mb-0.5">Duration</div>
+                          <div className="text-sm font-bold text-blue-900">{formatDuration(contest.duration)}</div>
                         </div>
-                      </motion.div>
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 text-center">
+                          <div className="text-xl mb-1">📝</div>
+                          <div className="text-xs text-blue-700 font-medium mb-0.5">Problems</div>
+                          <div className="text-sm font-bold text-blue-900">
+                            {Array.isArray(contest.problems) ? contest.problems.length : contest.problems || 0}
+                          </div>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 text-center">
+                          <div className="text-xl mb-1">👥</div>
+                          <div className="text-xs text-blue-700 font-medium mb-0.5">Registered</div>
+                          <div className="text-sm font-bold text-blue-900">{contest.participants || 0}</div>
+                        </div>
+                      </div>
 
-                      {/* Register Button */}
-                      <motion.button
-                        whileHover={{ 
-                          scale: 1.02,
-                          boxShadow: "0 10px 30px rgba(37, 99, 235, 0.25)"
-                        }}
-                        whileTap={{ scale: 0.98 }}
-                        transition={{ duration: 0.2 }}
+                      {/* Prize Section */}
+                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 mb-5">
+                        <div className="flex items-center justify-center gap-2 text-sm">
+                          <span className="text-xl">🏆</span>
+                          <span className="font-semibold text-blue-900">{contest.prize}</span>
+                        </div>
+                      </div>
+
+                      {/* Action Button */}
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           const status = getContestStatus(contest.startTime, contest.duration);
@@ -475,41 +423,23 @@ const Contests = () => {
                             handleRegisterClick(contest);
                           }
                         }}
-                        className={`w-full py-3 rounded-lg font-semibold text-base shadow-md transition-all mt-auto min-h-[48px] flex items-center justify-center ${
+                        className={`w-full py-3 rounded-lg font-semibold text-sm shadow-md hover:shadow-lg transition-all ${
                           isRegistered 
-                            ? 'bg-gradient-to-r from-green-100 to-green-50 text-green-700 border-2 border-green-300' 
-                            : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
+                            ? 'bg-green-500 text-white hover:bg-green-600' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                       >
                         {(() => {
                           const status = getContestStatus(contest.startTime, contest.duration);
                           if (status === 'ongoing') {
-                            return (
-                              <span className="flex items-center justify-center gap-2">
-                                <span>Start Contest</span>
-                                <motion.span animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                                  →
-                                </motion.span>
-                              </span>
-                            );
+                            return 'Start Contest →';
                           }
                           if (isRegistered) {
-                            return (
-                              <span className="flex items-center justify-center gap-2">
-                                ✅ Registered
-                              </span>
-                            );
+                            return '✓ Registered';
                           }
-                          return (
-                            <span className="flex items-center justify-center gap-2">
-                              <span>Register Now</span>
-                              <motion.span animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                                →
-                              </motion.span>
-                            </span>
-                          );
+                          return 'Register Now';
                         })()}
-                      </motion.button>
+                      </button>
                     </div>
                   </motion.div>
                 );
@@ -524,45 +454,97 @@ const Contests = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
+            className="mb-12"
           >
-            <h2 className="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-3">
-              <motion.span 
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="text-4xl"
-              >
-                📚
-              </motion.span>
-              Past Contests
-            </h2>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {pastContests.slice(0, 6).map((contest, index) => (
-                <motion.div
-                  key={contest._id || contest.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05, type: "spring", stiffness: 100 }}
-                  whileHover={{ 
-                    scale: 1.03, 
-                    y: -4,
-                    transition: { duration: 0.2 }
-                  }}
-                  className="bg-white rounded-xl p-5 shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-blue-400 transition-all cursor-pointer min-h-[160px] flex flex-col"
-                  onClick={() => setSelectedContest(contest)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${getDifficultyColor(contest.difficulty)}`}>
-                      {contest.difficulty}
-                    </span>
-                    <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2.5 py-1 rounded-full">Ended</span>
+            <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
+              {/* Section Header */}
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-xl">
+                    📚
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 mb-2.5 line-clamp-2 min-h-[3.5rem] leading-7">{contest.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mt-auto">
-                    <span>👥 {contest.participants} participated</span>
-                  </div>
-                </motion.div>
-              ))}
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Past Contests
+                  </h2>
+                </div>
+                <p className="text-gray-600 text-sm">
+                  Review completed challenges and check your performance history
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pastContests.map((contest, index) => {
+                  const contestId = contest._id || contest.id;
+                  const isRegistered = registrations[contestId];
+                  
+                  return (
+                    <motion.div
+                      key={contestId}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ y: -4 }}
+                      className="group bg-white rounded-xl p-6 shadow-md hover:shadow-lg border border-gray-200 transition-all cursor-pointer"
+                      onClick={() => setSelectedContest(contest)}
+                    >
+                      {/* Completed Badge */}
+                      <div className="absolute top-0 right-0 bg-blue-600 text-white px-3 py-1.5 rounded-bl-xl font-semibold text-xs">
+                        <span className="flex items-center gap-1.5">
+                          ✓ Completed
+                        </span>
+                      </div>
+
+                      <div className="pt-6">
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
+                          <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getDifficultyColor(contest.difficulty)}`}>
+                            {contest.difficulty}
+                          </span>
+                          <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white">
+                            {contest.type}
+                          </span>
+                        </div>
+                        
+                        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                          {contest.title}
+                        </h3>
+                        
+                        <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+                          {contest.description}
+                        </p>
+                        
+                        <div className="space-y-2 mb-4">
+                          <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                            <span>📅</span>
+                            <span className="font-semibold">{formatTime(contest.startTime)}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-blue-50 rounded-lg px-3 py-2 border border-blue-200 text-center">
+                              <div className="text-xs text-blue-700 font-medium mb-0.5">Duration</div>
+                              <div className="text-sm font-bold text-blue-900">{formatDuration(contest.duration)}</div>
+                            </div>
+                            <div className="bg-blue-50 rounded-lg px-3 py-2 border border-blue-200 text-center">
+                              <div className="text-xs text-blue-700 font-medium mb-0.5">Problems</div>
+                              <div className="text-sm font-bold text-blue-900">
+                                {Array.isArray(contest.problems) ? contest.problems.length : contest.problems || 0}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedContest(contest);
+                          }}
+                          className="w-full py-2.5 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </motion.div>
         )}
@@ -576,75 +558,104 @@ const Contests = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-lg z-50 flex items-center justify-center p-6"
             onClick={() => setShowRegisterModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
+              initial={{ scale: 0.85, y: 40, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              exit={{ scale: 0.85, y: 40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-7 max-w-lg w-full shadow-2xl border border-gray-100"
+              className="bg-white rounded-3xl p-10 max-w-xl w-full shadow-2xl border-2 border-slate-200 relative overflow-hidden"
             >
-              <div className="text-center mb-6">
-                <motion.div
-                  animate={{ scale: [1, 1.15, 1] }}
-                  transition={{ duration: 0.5 }}
-                  className="text-5xl mb-3"
-                >
-                  🎯
-                </motion.div>
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Confirm Registration</h3>
-                <p className="text-gray-600 text-sm">You're about to register for:</p>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 rounded-lg p-5 mb-6 border-2 border-blue-300 shadow-sm">
-                <h4 className="text-lg font-bold text-blue-800 mb-3">{contestToRegister.title}</h4>
-                <div className="space-y-2.5 text-sm">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <span className="text-green-600">🚀</span>
-                    <span className="font-semibold">Start:</span>
-                    <span>{formatTime(contestToRegister.startTime)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <span className="text-red-600">🏁</span>
-                    <span className="font-semibold">End:</span>
-                    <span>{formatTime(calculateEndTime(contestToRegister.startTime, contestToRegister.duration))}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <span>⏱️</span>
-                    <span>{formatDuration(contestToRegister.duration)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <span>📝</span>
-                    <span>{Array.isArray(contestToRegister.problems) ? contestToRegister.problems.length : contestToRegister.problems || 0} Problems</span>
-                  </div>
+              {/* Decorative Background Elements */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full blur-3xl opacity-30 -mr-16 -mt-16" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-indigo-100 to-blue-100 rounded-full blur-3xl opacity-30 -ml-16 -mb-16" />
+              
+              <div className="relative z-10">
+                <div className="text-center mb-8">
+                  <motion.div
+                    animate={{ 
+                      scale: [1, 1.2, 1],
+                      rotate: [0, 10, -10, 0]
+                    }}
+                    transition={{ duration: 0.6 }}
+                    className="text-7xl mb-5"
+                  >
+                    🎯
+                  </motion.div>
+                  <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-3">
+                    Confirm Registration
+                  </h3>
+                  <p className="text-slate-600 text-lg font-medium">You're about to join this challenge!</p>
                 </div>
-              </div>
 
-              <div className="flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02, backgroundColor: "rgb(229, 231, 235)" }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={() => setShowRegisterModal(false)}
-                  className="flex-1 py-3 rounded-lg font-semibold bg-gray-100 text-gray-700 border-2 border-gray-200 transition-all min-h-[48px] flex items-center justify-center"
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 mb-8 border-2 border-indigo-200 shadow-lg"
                 >
-                  Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ 
-                    scale: 1.02,
-                    boxShadow: "0 10px 25px rgba(37, 99, 235, 0.3)"
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={confirmRegistration}
-                  className="flex-1 py-3 rounded-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md transition-all min-h-[48px] flex items-center justify-center"
-                >
-                  ✅ Confirm Registration
-                </motion.button>
+                  <h4 className="text-xl font-bold text-slate-800 mb-5 pb-4 border-b-2 border-indigo-200">{contestToRegister.title}</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 bg-white rounded-xl p-3 shadow-sm">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center text-xl shadow-md">
+                        🚀
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs text-slate-600 font-semibold uppercase tracking-wide mb-0.5">Start Time</div>
+                        <div className="text-sm font-bold text-slate-800">{formatTime(contestToRegister.startTime)}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 bg-white rounded-xl p-3 shadow-sm">
+                      <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-rose-500 rounded-lg flex items-center justify-center text-xl shadow-md">
+                        🏁
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs text-slate-600 font-semibold uppercase tracking-wide mb-0.5">End Time</div>
+                        <div className="text-sm font-bold text-slate-800">{formatTime(calculateEndTime(contestToRegister.startTime, contestToRegister.duration))}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
+                        <div className="text-2xl">⏱️</div>
+                        <div>
+                          <div className="text-xs text-slate-600 font-semibold">Duration</div>
+                          <div className="text-sm font-bold text-slate-800">{formatDuration(contestToRegister.duration)}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 bg-white rounded-xl p-3 shadow-sm">
+                        <div className="text-2xl">📝</div>
+                        <div>
+                          <div className="text-xs text-slate-600 font-semibold">Problems</div>
+                          <div className="text-sm font-bold text-slate-800">{Array.isArray(contestToRegister.problems) ? contestToRegister.problems.length : contestToRegister.problems || 0}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowRegisterModal(false)}
+                    className="flex-1 py-3 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 transition-all hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmRegistration}
+                    className="flex-1 py-3 rounded-lg font-semibold text-sm bg-blue-600 hover:bg-blue-700 text-white transition-all"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Confirm
+                    </span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -666,143 +677,113 @@ const Contests = () => {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 50 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-2xl p-8 max-w-4xl w-full shadow-2xl border border-gray-100 my-8 max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-xl p-6 max-w-3xl w-full shadow-lg border border-gray-200 my-8 max-h-[90vh] overflow-y-auto"
             >
               {/* Close Button */}
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
+              <button
                 onClick={() => setSelectedContest(null)}
-                className="absolute top-6 right-6 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                className="absolute top-4 right-4 w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all"
               >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </motion.button>
+              </button>
 
               {/* Header */}
               <div className="mb-6">
-                <div className="flex flex-wrap gap-2.5 mb-4">
-                  <motion.span 
-                    whileHover={{ scale: 1.05 }}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-bold border-2 ${getDifficultyColor(selectedContest.difficulty)}`}
-                  >
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getDifficultyColor(selectedContest.difficulty)}`}>
                     {selectedContest.difficulty}
-                  </motion.span>
-                  <motion.span 
-                    whileHover={{ scale: 1.05 }}
-                    className="px-4 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm"
-                  >
+                  </span>
+                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white">
                     {selectedContest.type}
-                  </motion.span>
+                  </span>
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-3 leading-tight">{selectedContest.title}</h2>
-                <p className="text-gray-600">{selectedContest.description}</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  {selectedContest.title}
+                </h2>
+                <p className="text-gray-600 text-sm">{selectedContest.description}</p>
               </div>
 
               {/* Contest Info Grid */}
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="grid md:grid-cols-2 gap-3 mb-6">
                 {/* Start Time */}
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border-2 border-blue-200 min-h-[110px] flex items-center shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-md">
-                      🚀
-                    </div>
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🚀</div>
                     <div className="flex-1">
-                      <div className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1.5">Start Time</div>
-                      <div className="text-sm font-bold text-gray-800">{formatDateTime(selectedContest.startTime).date}</div>
-                      <div className="text-base font-bold text-blue-700">{formatDateTime(selectedContest.startTime).time}</div>
+                      <div className="text-xs text-blue-700 font-medium mb-1">Start Time</div>
+                      <div className="text-xs text-gray-600">{formatDateTime(selectedContest.startTime).date}</div>
+                      <div className="text-sm font-semibold text-blue-900">{formatDateTime(selectedContest.startTime).time}</div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
                 
                 {/* End Time */}
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border-2 border-blue-200 min-h-[110px] flex items-center shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-md">
-                      🏁
-                    </div>
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">🏁</div>
                     <div className="flex-1">
-                      <div className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1.5">End Time</div>
-                      <div className="text-sm font-bold text-gray-800">{formatDateTime(calculateEndTime(selectedContest.startTime, selectedContest.duration)).date}</div>
-                      <div className="text-base font-bold text-blue-700">{formatDateTime(calculateEndTime(selectedContest.startTime, selectedContest.duration)).time}</div>
+                      <div className="text-xs text-blue-700 font-medium mb-1">End Time</div>
+                      <div className="text-xs text-gray-600">{formatDateTime(calculateEndTime(selectedContest.startTime, selectedContest.duration)).date}</div>
+                      <div className="text-sm font-semibold text-blue-900">{formatDateTime(calculateEndTime(selectedContest.startTime, selectedContest.duration)).time}</div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
                 
                 {/* Duration */}
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border-2 border-blue-200 min-h-[110px] flex items-center shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-md">
-                      ⏱️
-                    </div>
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">⏱️</div>
                     <div className="flex-1">
-                      <div className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1.5">Duration</div>
-                      <div className="text-base font-bold text-gray-800">{formatDuration(selectedContest.duration)}</div>
+                      <div className="text-xs text-blue-700 font-medium mb-1">Duration</div>
+                      <div className="text-sm font-semibold text-blue-900">{formatDuration(selectedContest.duration)}</div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
                 
                 {/* Problems */}
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-5 border-2 border-blue-200 min-h-[110px] flex items-center shadow-sm hover:shadow-md transition-all"
-                >
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-md">
-                      📝
-                    </div>
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">📝</div>
                     <div className="flex-1">
-                      <div className="text-xs text-blue-700 font-bold uppercase tracking-wide mb-1.5">Problems</div>
-                      <div className="text-base font-bold text-gray-800">
+                      <div className="text-xs text-blue-700 font-medium mb-1">Problems</div>
+                      <div className="text-sm font-semibold text-blue-900">
                         {Array.isArray(selectedContest.problems) ? selectedContest.problems.length : selectedContest.problems || 0} Challenges
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               </div>
 
               {/* Prize */}
-              <motion.div 
-                whileHover={{ scale: 1.01 }}
-                className="bg-gradient-to-r from-blue-50 via-blue-50 to-white rounded-xl p-5 border-2 border-blue-200 mb-6 shadow-sm hover:shadow-md transition-all"
-              >
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="text-3xl">🏆</div>
+                  <div className="text-2xl">🏆</div>
                   <div className="flex-1">
-                    <div className="text-xs text-blue-700 font-semibold uppercase tracking-wide mb-1">Contest Prize</div>
-                    <div className="text-base font-bold text-gray-800">{selectedContest.prize}</div>
+                    <div className="text-xs text-blue-700 font-medium mb-0.5">Contest Prize</div>
+                    <div className="text-base font-semibold text-blue-900">{selectedContest.prize}</div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Topics */}
               {selectedContest.tags && selectedContest.tags.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4">Topics Covered</h3>
-                  <div className="flex flex-wrap gap-2.5">
+                  <h3 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <span>🏷️</span>
+                    Topics Covered
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
                     {selectedContest.tags.map((tag, i) => {
                       const label = typeof tag === 'string' ? tag : (tag.label || tag.name || tag.title || JSON.stringify(tag));
                       return (
-                        <motion.span
+                        <span
                           key={`tag-${i}`}
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ delay: i * 0.05 }}
-                          className="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 border-2 border-blue-300 font-semibold text-sm shadow-sm hover:shadow-md transition-all"
+                          className="px-3 py-1 rounded-lg bg-blue-100 text-blue-800 border border-blue-300 font-medium text-xs"
                         >
                           {label}
-                        </motion.span>
+                        </span>
                       );
                     })}
                   </div>
@@ -812,123 +793,102 @@ const Contests = () => {
               {/* Problems List */}
               {Array.isArray(selectedContest.problems) && selectedContest.problems.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2.5">
-                    <span className="text-xl">📝</span>
-                    <span>Contest Problems ({selectedContest.problems.length})</span>
+                  <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>📝</span>
+                    <span>Contest Problems</span>
+                    <span className="text-sm font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-lg">
+                      {selectedContest.problems.length}
+                    </span>
                   </h3>
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {selectedContest.problems.map((problem, index) => {
                       const problemId = `${selectedContest._id || selectedContest.id}-${index}`;
                       const status = problemProgress[problemId] || 'not-started';
                       
                       return (
-                        <motion.div
+                        <div
                           key={`problem-${index}`}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.08, type: "spring", stiffness: 100 }}
-                          whileHover={{ 
-                            scale: 1.02, 
-                            x: 4,
-                            transition: { duration: 0.2 }
-                          }}
-                          className="bg-gradient-to-r from-blue-50 via-white to-white p-5 rounded-lg border-2 border-blue-200 hover:border-blue-400 cursor-pointer transition-all shadow-sm hover:shadow-md min-h-[80px] flex items-center"
+                          className="bg-blue-50 p-4 rounded-lg border border-blue-200 hover:border-blue-400 cursor-pointer transition-all"
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3 flex-1">
                               {/* Status Indicator */}
-                              <div className="flex items-center justify-center w-7">
+                              <div className="flex items-center justify-center w-6 h-6">
                                 {getStatusIcon(status)}
                               </div>
                               
                               {/* Problem Info */}
                               <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1.5">
-                                  <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-lg text-xs font-bold">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-semibold">
                                     #{index + 1}
                                   </span>
-                                  <h4 className="text-base font-bold text-gray-800">
+                                  <h4 className="text-sm font-semibold text-gray-900">
                                     {problem.title || `Problem ${index + 1}`}
                                   </h4>
                                 </div>
                                 {problem.description && (
-                                  <p className="text-gray-600 text-sm line-clamp-2">{problem.description}</p>
+                                  <p className="text-gray-600 text-xs line-clamp-2">{problem.description}</p>
                                 )}
                               </div>
                             </div>
                             
                             {/* Difficulty Badge */}
                             {problem.difficulty && (
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${getDifficultyColor(problem.difficulty)}`}>
+                              <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getDifficultyColor(problem.difficulty)}`}>
                                 {problem.difficulty}
                               </span>
                             )}
                           </div>
-                        </motion.div>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
               )}
 
-              {/* Action Button */}
-              <motion.button
-                whileHover={{ 
-                  scale: 1.02,
-                  boxShadow: "0 10px 30px rgba(37, 99, 235, 0.3)"
-                }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const status = getContestStatus(selectedContest.startTime, selectedContest.duration);
-                  const contestId = selectedContest._id || selectedContest.id;
-                  if (status === 'ongoing') {
-                    navigate(`/contest/${contestId}/problems`);
-                  } else {
-                    handleRegisterClick(selectedContest);
-                  }
-                }}
-                className={`w-full py-3.5 rounded-xl font-semibold text-base shadow-md transition-all min-h-[52px] flex items-center justify-center ${
-                  registrations[selectedContest._id || selectedContest.id]
-                    ? 'bg-green-100 text-green-700 border-2 border-green-300'
-                    : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white'
-                }`}
-              >
-                {(() => {
-                  const status = getContestStatus(selectedContest.startTime, selectedContest.duration);
-                  const isRegistered = registrations[selectedContest._id || selectedContest.id];
-                  
-                  if (status === 'ongoing') {
-                    return (
-                      <span className="flex items-center justify-center gap-2">
-                        <span>Start Contest</span>
-                        <motion.span animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                          →
-                        </motion.span>
-                      </span>
-                    );
-                  }
-                  
-                  if (isRegistered) {
-                    return (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="text-lg">✅</span>
-                        <span>Already Registered</span>
-                      </span>
-                    );
-                  }
-                  
-                  return (
-                    <span className="flex items-center justify-center gap-2">
-                      <span>Register for Contest</span>
-                      <motion.span animate={{ x: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                        →
-                      </motion.span>
-                    </span>
-                  );
-                })()}
-              </motion.button>
+              {/* Action Button - Only show for upcoming and ongoing contests */}
+              {(() => {
+                const status = getContestStatus(selectedContest.startTime, selectedContest.duration);
+                
+                // Don't show register button for completed contests
+                if (status === 'completed') {
+                  return null;
+                }
+                
+                return (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const contestId = selectedContest._id || selectedContest.id;
+                      if (status === 'ongoing') {
+                        navigate(`/contest/${contestId}/problems`);
+                      } else {
+                        handleRegisterClick(selectedContest);
+                      }
+                    }}
+                    className={`w-full py-3 rounded-lg font-semibold text-sm transition-all ${
+                      registrations[selectedContest._id || selectedContest.id]
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {(() => {
+                      const isRegistered = registrations[selectedContest._id || selectedContest.id];
+                      
+                      if (status === 'ongoing') {
+                        return 'Start Contest Now →';
+                      }
+                      
+                      if (isRegistered) {
+                        return '✓ Successfully Registered';
+                      }
+                      
+                      return 'Register for Contest';
+                    })()}
+                  </button>
+                );
+              })()}
             </motion.div>
           </motion.div>
         )}

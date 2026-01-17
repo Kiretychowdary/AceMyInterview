@@ -62,7 +62,7 @@ router.get('/user/:userId/registrations', ctrl.getUserRegistrations);
 
 // Contest Progress Tracking
 router.post('/:id/progress', requireAuth, ctrl.updateProgress);
-router.post('/:id/heartbeat', requireAuth, ctrl.updateHeartbeat);
+router.post('/:id/heartbeat', ctrl.updateHeartbeat); // Removed auth requirement for heartbeat
 router.get('/:id/active-count', ctrl.getActiveParticipants);
 
 module.exports = router;

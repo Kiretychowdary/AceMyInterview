@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUND_MODES, getRoundsForTrack, isModeImplemented } from '../../config/roundsConfig';
 import { tracksConfig, getTrackByKey } from '../../config/tracksConfig';
+import ChooseYourPath from '../../components/interview/ChooseYourPath';
 
 // Professional multi-step: Category (tech/non) -> Role selection -> Rounds list with START button
 export default function InterviewPreparation() {
@@ -108,77 +109,9 @@ export default function InterviewPreparation() {
   // Main render
   return (
     <div className="max-w-7xl mx-auto py-10">
-      {/* Main Heading and Subtitle */}
+      {/* Step 1: Choose Category (Tech/Non-Tech) */}
       {!category && !selectedRoleKey && (
-        <>
-          <motion.h1
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-blue-700 to-purple-600 text-center mb-4"
-          >
-            Choose Your Path
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-xl md:text-2xl text-gray-600 text-center mb-12 max-w-3xl mx-auto"
-          >
-            Begin your journey with a specialized track. Master technical skills or excel in strategic roles with our comprehensive interview preparation platform.
-          </motion.p>
-        </>
-      )}
-      {!category && !selectedRoleKey && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 gap-10">
-          {[
-            {
-              key: 'tech',
-              title: 'Tech Tracks',
-              emoji: '💻',
-              desc: 'Software engineering, cybersecurity, data science — build technical excellence with structured preparation.',
-              roles: tracksConfig.tech
-            },
-            {
-              key: 'nonTech',
-              title: 'Non-Tech Tracks',
-              emoji: '🧠',
-              desc: 'Product, design, leadership & communication — prepare for strategic and people-focused roles.',
-              roles: tracksConfig.nonTech
-            }
-          ].map(card => (
-            <motion.div
-              key={card.key}
-              initial={{ opacity: 0, y: 25 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative overflow-hidden rounded-2xl border border-blue-100 bg-white p-10 text-left shadow-md hover:shadow-lg transition-all group"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-3xl select-none" aria-hidden>{card.emoji}</span>
-                <h2 className="text-2xl font-bold text-blue-800 tracking-tight">{card.title}</h2>
-              </div>
-              <p className="text-gray-600 leading-relaxed text-sm md:text-base max-w-md mb-6 pr-4">
-                {card.desc}
-              </p>
-              <div className="flex flex-wrap gap-3 mb-6">
-                {card.roles.map(r => (
-                  <button
-                    key={r.key}
-                    onClick={() => { setCategory(card.key); setSelectedRoleKey(r.key); }}
-                    className="px-4 py-1.5 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-semibold tracking-wide border border-blue-200 transition-colors"
-                  >
-                    {r.title}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => setCategory(card.key)}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md transition-colors text-sm"
-              >
-                Explore {card.key === 'tech' ? 'Tech' : 'Non-Tech'} →
-              </button>
-            </motion.div>
-          ))}
-        </motion.div>
+        <ChooseYourPath onSelectTrack={(trackType) => setCategory(trackType)} />
       )}
 
       {/* Step 2: Role Selection */}

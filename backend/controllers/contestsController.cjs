@@ -57,6 +57,21 @@ exports.createContest = async (req, res) => {
     const problemsData = payload.problems || [];
     const problemIds = [];
 
+    // Determine contest status based on current time
+    let contestStatus = 'draft';
+    let isPublished = false;
+    
+    if (now >= startTime && now <= endTime) {
+      contestStatus = 'ongoing';
+      isPublished = true;
+    } else if (now < startTime) {
+      contestStatus = 'scheduled';
+      isPublished = true;
+    } else if (now > endTime) {
+      contestStatus = 'completed';
+      isPublished = true;
+    }
+
     // Create contest document
     const contestDoc = new Contest({
       title: payload.title,
@@ -71,8 +86,8 @@ exports.createContest = async (req, res) => {
       prizes: payload.prizes || '',
       difficulty: payload.difficulty || 'mixed',
       tags: payload.tags || [],
-      status: 'draft',
-      isPublished: false
+      status: contestStatus,
+      isPublished: isPublished
     });
 
     const savedContest = await contestDoc.save({ session });
@@ -205,18 +220,29 @@ exports.getContestWithProblems = async (req, res) => {
     const contest = await Contest.findOne({ $or: queryOr }).lean();
     if (!contest) return res.status(404).json({ success: false, error: 'Contest not found' });
     
-    // Check if user is registered (optional check)
+    // Check if user is registered or if contest allows open access
     if (userId) {
-      const registration = await Registration.findOne({ 
-        contestId: contest._id, 
-        userId: userId 
-      }).lean();
+      // Check if user is the contest creator
+      const isCreator = contest.createdBy === userId;
       
-      if (!registration) {
-        return res.status(403).json({ 
-          success: false, 
-          error: 'You must register for this contest to view problems' 
-        });
+      // Check if contest is ongoing (allow access without registration for ongoing contests)
+      const now = new Date();
+      const startTime = new Date(contest.startTime);
+      const endTime = new Date(contest.endTime);
+      const isOngoing = now >= startTime && now <= endTime;
+      
+      if (!isCreator && !isOngoing) {
+        const registration = await Registration.findOne({ 
+          contestId: contest._id, 
+          userId: userId 
+        }).lean();
+        
+        if (!registration) {
+          return res.status(403).json({ 
+            success: false, 
+            error: 'You must register for this contest to view problems' 
+          });
+        }
       }
     }
     
@@ -305,12 +331,15 @@ exports.updateProblems = async (req, res) => {
   }
 };
 
-// Get upcoming contests
+// Get upcoming contests (including ongoing ones)
 exports.getUpcomingContests = async (req, res) => {
   try {
     const now = new Date();
     const contests = await Contest.find({
-      startTime: { $gt: now },
+      $or: [
+        { startTime: { $gt: now } }, // Future contests
+        { startTime: { $lte: now }, endTime: { $gte: now } } // Ongoing contests
+      ],
       isPublished: true,
       status: { $ne: 'cancelled' }
     })

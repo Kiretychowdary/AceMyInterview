@@ -85,6 +85,8 @@ function CompilerPage(props) {
   const [selectedMainTopic, setSelectedMainTopic] = useState('algorithms');
   const [configuredTopic, setConfiguredTopic] = useState(problemConfig.topic);
   const [customInput, setCustomInput] = useState(''); // Custom input for Execute Code
+  const [inputHeight, setInputHeight] = useState(35); // Percentage height for custom input section
+  const [isDragging, setIsDragging] = useState(false);
   const loadingMessages = [
     'Initializing UI...',
     'Preparing test harness...',
@@ -176,6 +178,41 @@ function CompilerPage(props) {
   }, [code, language, problemDetails, problemData]);
 
   useEffect(() => { setCode(language && language.template ? language.template : ''); setProblemConfig((prev) => ({ ...prev, language: language ? language.name : '' })); }, [language]);
+
+  // Handle drag for resizing custom input/output sections
+  const handleMouseDown = () => {
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (isDragging) {
+        const container = document.getElementById('custom-output-container');
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const newHeight = ((e.clientY - rect.top) / rect.height) * 100;
+          // Constrain between 2% and 95% - allows nearly full collapse or expansion
+          if (newHeight >= 2 && newHeight <= 95) {
+            setInputHeight(newHeight);
+          }
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   // Handler for language select change
   const handleLanguageChange = (lang) => {
@@ -635,38 +672,30 @@ function CompilerPage(props) {
             <div style={{ height: isMobile ? 'auto' : `calc(${100 - editorHeight}% - 3px)` }} className="flex-1 min-h-[300px] flex flex-col bg-gradient-to-br from-gray-50 to-blue-50 border-t-2 border-blue-300">
               
               {/* Tab Navigation */}
-              <div className="flex items-center gap-2 p-3 bg-white border-b-2 border-blue-200 shadow-sm">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+              <div className="flex items-center gap-2 p-3 bg-blue-50 border-b-2 border-blue-200">
+                <button
                   onClick={() => setActiveOutputTab('custom')}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  className={`px-4 py-2 rounded font-semibold text-sm transition-all ${
                     activeOutputTab === 'custom'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    <span>💻</span>
-                    <span>Custom Input/Output</span>
-                  </span>
-                </motion.button>
+                  Custom Input/Output
+                </button>
                 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   onClick={() => setActiveOutputTab('tests')}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all relative ${
+                  className={`px-4 py-2 rounded font-semibold text-sm transition-all relative ${
                     activeOutputTab === 'tests'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span>🧪</span>
                     <span>Test Results</span>
                     {testResults && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                      <span className={`text-xs px-2 py-0.5 rounded font-bold ${
                         testResults.passed === testResults.total 
                           ? 'bg-green-500 text-white' 
                           : 'bg-red-500 text-white'
@@ -675,83 +704,71 @@ function CompilerPage(props) {
                       </span>
                     )}
                   </span>
-                </motion.button>
+                </button>
               </div>
 
               {/* Custom Input/Output Tab */}
               {activeOutputTab === 'custom' && (
-                <div className="flex-1 flex flex-col overflow-hidden p-4 gap-4">
+                <div id="custom-output-container" className="flex-1 flex flex-col overflow-hidden p-4 gap-3">
                   
-                  {/* Custom Input Section - Larger */}
-                  <div className="flex flex-col h-1/2 min-h-[180px]">
+                  {/* Custom Input Section - Compact */}
+                  <div className="flex flex-col" style={{ height: '140px' }}>
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
-                        <span>📝</span> Custom Input
+                      <h3 className="text-sm font-bold text-blue-800">
+                        Custom Input
                       </h3>
                       <div className="flex gap-2">
-                        <motion.button 
-                          whileHover={{ scale: 1.05 }} 
-                          whileTap={{ scale: 0.95 }} 
+                        <button 
                           onClick={runCode} 
                           disabled={isRunning}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm rounded-lg transition font-bold shadow-lg"
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs rounded transition font-semibold"
                         >
-                          {isRunning ? '⏳ Executing...' : '▶ Execute Code'}
-                        </motion.button>
+                          {isRunning ? 'Executing...' : 'Execute Code'}
+                        </button>
                         {currentTestCasesNormalized && currentTestCasesNormalized.length > 0 && (
-                          <motion.button 
-                            whileHover={{ scale: 1.05 }} 
-                            whileTap={{ scale: 0.95 }} 
+                          <button 
                             onClick={() => {
                               const firstTestInput = currentTestCasesNormalized[0]?.input || '';
                               setCustomInput(typeof firstTestInput === 'string' ? firstTestInput : JSON.stringify(firstTestInput));
                               toast.info('Loaded first test case input');
                             }} 
-                            className="px-3 py-2 bg-green-50 border-2 border-green-400 hover:bg-green-600 hover:text-white text-green-700 text-sm rounded-lg transition font-semibold"
+                            className="px-2.5 py-1.5 bg-white border border-green-600 hover:bg-green-600 hover:text-white text-green-700 text-xs rounded transition font-semibold"
                           >
                             Use Sample
-                          </motion.button>
+                          </button>
                         )}
-                        <motion.button 
-                          whileHover={{ scale: 1.05 }} 
-                          whileTap={{ scale: 0.95 }} 
+                        <button 
                           onClick={() => setCustomInput('')} 
-                          className="px-3 py-2 bg-red-50 border-2 border-red-300 hover:bg-red-600 hover:text-white text-red-600 text-sm rounded-lg transition font-semibold"
+                          className="px-2.5 py-1.5 bg-white border border-gray-400 hover:bg-gray-100 text-gray-700 text-xs rounded transition font-semibold"
                         >
                           Clear
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
                     <textarea
                       value={customInput}
                       onChange={(e) => setCustomInput(e.target.value)}
-                      placeholder="Enter input values here (one per line or space-separated)&#10;Example:&#10;2 3&#10;or&#10;5&#10;10"
-                      className="flex-1 p-4 border-2 border-blue-300 rounded-xl font-mono text-base resize-none focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 bg-white shadow-inner"
+                      placeholder="Enter input (one per line or space-separated)"
+                      className="flex-1 p-2.5 border border-gray-300 rounded font-mono text-xs resize-none focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 bg-white overflow-y-auto"
                       style={{fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace'}}
                     />
-                    <p className="text-sm text-gray-600 mt-2 flex items-center gap-2">
-                      <span>💡</span>
-                      <span>Click "Execute Code" to run with this custom input. Use "Run Sample Tests" or "Run All Tests" for test cases.</span>
-                    </p>
                   </div>
 
-                  {/* Program Output Section - Larger */}
-                  <div className="flex flex-col h-1/2 min-h-[180px]">
+                  {/* Program Output Section - Expanded */}
+                  <div className="flex-1 flex flex-col" style={{ minHeight: '300px' }}>
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-bold text-blue-800 flex items-center gap-2">
-                        <span>📤</span> Program Output
+                      <h3 className="text-base font-bold text-blue-800">
+                        Program Output
                       </h3>
-                      <motion.button 
-                        whileHover={{ scale: 1.05 }} 
-                        whileTap={{ scale: 0.95 }} 
+                      <button 
                         onClick={() => setOutput('')} 
-                        className="px-3 py-2 bg-red-50 border-2 border-red-300 hover:bg-red-600 hover:text-white text-red-600 text-sm rounded-lg transition font-semibold"
+                        className="px-3 py-2 bg-white border border-gray-400 hover:bg-gray-100 text-gray-700 text-sm rounded transition font-semibold"
                       >
                         Clear Output
-                      </motion.button>
+                      </button>
                     </div>
-                    <div className="flex-1 bg-gray-900 rounded-xl p-4 overflow-y-auto border-2 border-gray-700 shadow-inner">
-                      <pre className="text-base font-mono text-green-400 whitespace-pre-wrap" style={{fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace'}}>
+                    <div className="flex-1 bg-gray-900 rounded p-4 overflow-y-auto border border-gray-700">
+                      <pre className="text-sm font-mono text-green-400 whitespace-pre-wrap" style={{fontFamily: 'Fira Mono, Menlo, Monaco, Consolas, monospace'}}>
                         {output || '// Run code to see output...\n// Your program output will appear here'}
                       </pre>
                     </div>

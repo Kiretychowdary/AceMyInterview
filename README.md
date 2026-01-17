@@ -1,10 +1,12 @@
 <!--nmkrspvlidata-->
 <!--radhakrishna-->
+<!--RADHAKRISHNALOVEPERMANENT-->
+<!--AMMALOVEBLESSINGSONRECURSION-->
 
 # 🚀 AceMyInterview
-**AI-Powered Interview Practice Platform**
+**AI-Powered Interview Practice Platform with Intelligent Performance Prediction**
 
-A comprehensive interview preparation platform featuring AI-generated questions, real-time coding challenges, and face-to-face interview simulation.
+A comprehensive interview preparation platform featuring AI-generated questions, real-time coding challenges, face-to-face interview simulation, and **AI-powered student performance prediction with adaptive learning guidance**.
 
 ## ✨ Features
 
@@ -15,23 +17,60 @@ A comprehensive interview preparation platform featuring AI-generated questions,
 - 🔥 **Motivational Quotes** - Stay inspired during practice sessions
 - 🛡️ **Interview Integrity Monitoring** - Face detection and behavior analysis
 
+### 🧠 NEW: Personal AI Trainer System
+
+- 🎯 **Deep Knowledge Tracing (DKT)** - LSTM-based model predicts student mastery for each topic
+- 🤖 **Personal RL Agent per Student** - Each user gets their own dedicated learning AI (not shared!)
+- 📈 **Real-time Performance Dashboard** - Visual insights into YOUR personal learning progress
+- 💡 **Personalized Recommendations** - AI tells you exactly what YOU should study next
+- 📊 **Topic-wise Mastery Tracking** - Know your strengths and weaknesses
+- 🔔 **Achievement Notifications** - Personal AI celebrates your milestones and topic completions
+- 🎓 **No Sample Data** - Uses only YOUR actual learning interactions from MongoDB
+- 🧠 **Continuous Learning** - Your personal AI gets smarter as you practice more
+
 ## 🏗️ Project Structure
 
 ```
 AceMyInterview/
-├── 📁 src/                    # Frontend source code
-│   ├── 📁 components/         # React components
-│   ├── 📁 pages/             # Page components
-│   ├── 📁 services/          # API services
-│   └── 📁 utils/             # Utility functions
-├── 📁 backend/               # Backend server
-│   ├── server.js             # Main server file
-│   ├── package.json          # Backend dependencies
-│   └── .env                  # Backend environment variables
-├── 📁 public/                # Static assets
-├── 📁 docs/                  # Documentation files
-├── 📄 .env                   # Frontend environment variables
-├── 📄 package.json           # Frontend dependencies
+├── 📁 frontend/              # React frontend
+│   ├── 📁 src/
+│   │   ├── 📁 components/
+│   │   │   ├── 📁 performance/    # NEW: Performance tracking components
+│   │   │   │   ├── PerformanceDashboard.jsx
+│   │   │   │   └── AIGuidanceWidget.jsx
+│   │   ├── 📁 pages/
+│   │   ├── 📁 services/
+│   │   ├── 📁 hooks/
+│   │   │   └── usePerformanceTracker.js    # NEW: Performance tracking hook
+│   │   └── 📁 utils/
+│   └── package.json
+├── 📁 backend/               # Node.js backend
+│   ├── 📁 controllers/
+│   │   └── mlController.cjs      # NEW: ML integration
+│   ├── 📁 models/
+│   │   └── StudentPerformance.cjs # NEW: Performance model
+│   ├── 📁 routes/
+│   │   └── ml.cjs                # NEW: ML routes
+│   ├── server.js
+│   └── package.json
+├── 📁 ml_engine/             # NEW: Python ML service (Personal AI Trainer)
+│   ├── app.py                # Flask API server with MongoDB integration
+│   ├── dkt_model.py          # LSTM-based DKT model
+│   ├── rl_agent.py           # Personal Reinforcement Learning agent
+│   ├── train.py              # Model training script
+│   ├── requirements.txt      # Python dependencies
+│   ├── start.ps1             # Quick start script (Windows)
+│   ├── start.sh              # Quick start script (Mac/Linux)
+│   └── 📁 models/
+│       ├── dkt_model.pth     # Trained DKT model
+│       └── 📁 personal_agents/  # Personal RL agents per user
+│           ├── user123.json  # User 123's personal AI
+│           └── user456.json  # User 456's personal AI
+├── 📄 SETUP_GUIDE.md         # Complete setup instructions
+├── 📄 PROJECT_DOCUMENTATION.md # Academic documentation
+├── 📄 PERSONAL_AI_SYSTEM.md  # Personal AI trainer documentation
+├── 📄 PERSONAL_AI_QUICK_REFERENCE.md # Quick reference for personal AI
+├── 📄 QUICK_REFERENCE.md     # Quick reference card
 └── 📄 README.md              # This file
 ```
 
@@ -39,14 +78,50 @@ AceMyInterview/
 
 ### Prerequisites
 - Node.js (v16 or higher)
+- **Python 3.8 or higher** (NEW - for ML engine)
 - npm or yarn
+- MongoDB (local or Atlas)
 - Google Gemini API key
 - RapidAPI key for Judge0 (optional, for code compilation)
 
-### Frontend Setup
+### 🎯 Complete Setup (3 Services)
+
+**For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)**
+
+#### 1. Backend Setup
 ```bash
-# Install dependencies
+cd backend
 npm install
+# Configure .env file
+npm run dev  # Runs on http://localhost:5000
+```
+
+#### 2. ML Engine Setup (NEW)
+```bash
+cd ml_engine
+
+# Windows
+.\start.ps1
+
+# Mac/Linux
+chmod +x start.sh
+./start.sh
+
+# Or manually:
+python -m venv venv
+source venv/bin/activate  # Mac/Linux
+# .\venv\Scripts\Activate  # Windows
+pip install -r requirements.txt
+python train.py  # Train model first time
+python app.py    # Runs on http://localhost:5000
+```
+
+#### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev  # Runs on http://localhost:5173
+```
 
 # Start development server
 npm run dev

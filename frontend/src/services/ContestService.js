@@ -26,13 +26,27 @@ export const getAllContests = async () => {
 export const getUpcomingContests = async () => {
 	const all = await getAllContests();
 	const now = new Date();
-	return all.filter(c => c.startTime && new Date(c.startTime) > now && c.status !== 'ended');
+	// Return contests that haven't started yet OR are currently ongoing
+	return all.filter(c => {
+		if (!c.startTime) return false;
+		const startTime = new Date(c.startTime);
+		const endTime = c.endTime ? new Date(c.endTime) : new Date(startTime.getTime() + (c.duration || 0) * 60000);
+		// Include if not started yet OR currently ongoing
+		return (startTime > now || (startTime <= now && endTime >= now)) && c.status !== 'ended';
+	});
 };
 
 export const getPastContests = async () => {
 	const all = await getAllContests();
 	const now = new Date();
-	return all.filter(c => !c.startTime || new Date(c.startTime) <= now || c.status === 'ended');
+	// Return only contests that have actually ended
+	return all.filter(c => {
+		if (!c.endTime && !c.startTime) return true;
+		const startTime = c.startTime ? new Date(c.startTime) : now;
+		const endTime = c.endTime ? new Date(c.endTime) : new Date(startTime.getTime() + (c.duration || 0) * 60000);
+		// Include if ended or has 'ended' status
+		return endTime < now || c.status === 'ended' || c.status === 'completed';
+	});
 };
 
 export const createContest = async (contest) => {
@@ -100,7 +114,7 @@ export const registerForContest = async (contestId, userId) => {
 };
 
 export const checkRegistrationStatus = async (contestId, userId) => {
-	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/registration-status?userId=${encodeURIComponent(userId)}`);
+	const resp = await apiFetch(`/contests/${encodeURIComponent(contestId)}/registration-status/${encodeURIComponent(userId)}`);
 	return resp.data;
 };
 

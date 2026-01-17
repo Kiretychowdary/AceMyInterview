@@ -48,7 +48,7 @@ function initializeFirebase() {
 // Try to initialize on module load
 initializeFirebase();
 
-module.exports = async function requireFirebaseAuth(req, res, next) {
+async function requireFirebaseAuth(req, res, next) {
   try {
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
     const adminSecretHeader = req.headers['x-admin-secret'] || req.headers['x-admin-token'];
@@ -64,6 +64,7 @@ module.exports = async function requireFirebaseAuth(req, res, next) {
       const payload = adminCtrl.verify(adminToken);
       if (payload) {
         req.firebaseUser = { uid: 'admin', role: 'admin', note: 'cookie-admin' };
+        req.user = req.firebaseUser;
         return next();
       }
     }
@@ -72,6 +73,7 @@ module.exports = async function requireFirebaseAuth(req, res, next) {
     const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.VITE_ADMIN_SECRET;
     if (!authHeader && adminSecretHeader && ADMIN_SECRET && adminSecretHeader === ADMIN_SECRET) {
       req.firebaseUser = { uid: 'admin', role: 'admin', note: 'admin-secret-auth' };
+      req.user = req.firebaseUser;
       return next();
     }
 
@@ -79,10 +81,30 @@ module.exports = async function requireFirebaseAuth(req, res, next) {
       return res.status(401).json({ success: false, error: 'Missing Authorization header' });
     }
 
-    // Dev mode: If Firebase is not initialized, accept token but don't validate
+    // Dev mode: If Firebase is not initialized, try to decode token without verification
     if (!isFirebaseInitialized || !admin) {
       console.warn('⚠️ Firebase not initialized, accepting token without validation (dev mode)');
-      req.firebaseUser = { uid: null, note: 'dev-accepted' };
+      
+      // Extract token from "Bearer <token>" format
+      const token = authHeader.startsWith('Bearer ') 
+        ? authHeader.substring(7) 
+        : authHeader;
+      
+      // Try to decode JWT without verification to get user info
+      let uid = `dev_user_${Date.now()}`;
+      try {
+        // JWT has 3 parts: header.payload.signature
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+          uid = payload.user_id || payload.uid || payload.sub || uid;
+        }
+      } catch (decodeError) {
+        console.warn('Could not decode token, using random UID:', decodeError.message);
+      }
+      
+      req.firebaseUser = { uid, note: 'dev-accepted' };
+      req.user = req.firebaseUser; // Backward compatibility
       return next();
     }
 
@@ -104,6 +126,7 @@ module.exports = async function requireFirebaseAuth(req, res, next) {
         picture: decodedToken.picture,
         firebase: decodedToken
       };
+      req.user = req.firebaseUser;
       
       return next();
     } catch (error) {
@@ -122,4 +145,9 @@ module.exports = async function requireFirebaseAuth(req, res, next) {
       details: err.message 
     });
   }
-};
+}
+
+// Export as both default and named export for compatibility
+module.exports = requireFirebaseAuth;
+module.exports.verifyToken = requireFirebaseAuth;
+module.exports.requireFirebaseAuth = requireFirebaseAuth;

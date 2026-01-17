@@ -116,6 +116,48 @@ try {
   console.warn('Interview routes not available:', e.message);
 }
 
+// Mount ML service routes (Student Performance & AI Guidance)
+try {
+  const mlRoutes = require('./routes/ml.cjs');
+  if (mlRoutes && typeof mlRoutes === 'function') {
+    app.use('/api/ml', mlRoutes);
+    console.log('✅ ML Service routes mounted at /api/ml');
+  } else {
+    console.warn('⚠️ ML routes loaded but not a valid router');
+  }
+} catch (e) {
+  console.warn('ML routes not available:', e.message);
+  console.error(e.stack);
+}
+
+// Mount Agentic AI routes (Conversational AI Learning Companion)
+try {
+  const agenticAIRoutes = require('./routes/agenticAI.cjs');
+  if (agenticAIRoutes && typeof agenticAIRoutes === 'function') {
+    app.use('/api/ai-agent', agenticAIRoutes);
+    console.log('✅ Agentic AI routes mounted at /api/ai-agent');
+  } else {
+    console.warn('⚠️ Agentic AI routes loaded but not a valid router');
+  }
+} catch (e) {
+  console.warn('Agentic AI routes not available:', e.message);
+  console.error(e.stack);
+}
+
+// Mount Enhanced Agentic AI routes (Multi-Agent System: Planner + Action + Evaluator)
+try {
+  const enhancedAgenticRoutes = require('./routes/enhancedAgentic.cjs');
+  if (enhancedAgenticRoutes && typeof enhancedAgenticRoutes === 'function') {
+    app.use('/api/agentic', enhancedAgenticRoutes);
+    console.log('✅ Enhanced Multi-Agent System routes mounted at /api/agentic');
+  } else {
+    console.warn('⚠️ Enhanced Agentic routes loaded but not a valid router');
+  }
+} catch (e) {
+  console.warn('Enhanced Agentic routes not available:', e.message);
+  console.error(e.stack);
+}
+
 // Connect to MongoDB via Mongoose before starting the server.
 // Start the HTTP server only after successful DB connection. Exit on failure.
 mongooseService.connect()
