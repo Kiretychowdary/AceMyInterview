@@ -26,4 +26,4 @@ services:
       - key: REQUEST_TIMEOUT
         value: 30000
       - key: CORS_ORIGIN
-        value: http://localhost:5173,http://localhost:5174,http://localhost:5175,http://acemyinterview.app,https://acemyinterview.app,https://acemyinterview-*.vercel.app
+        value: http://localhost:5173,http://localhost:5174,http://localhost:5175,http://acemyinterview.app,https://acemyinterview.app,https://www.acemyinterview.app,http://www.acemyinterview.app,https://acemyinterview.onrender.com,https://acemyinterview-*.vercel.app
