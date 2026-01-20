@@ -18,6 +18,19 @@ export default function InterviewPreparation() {
   const totalRounds = rounds.length;
   const readyRounds = implementedRounds.length;
 
+  // Start full interview - navigate to first implemented round
+  const startFullInterview = () => {
+    if (implementedRounds.length > 0) {
+      const firstRound = implementedRounds[0];
+      navigate(modeRoute(firstRound.mode), { 
+        state: { 
+          trackKey: selectedRoleKey,
+          roundNumber: firstRound.number 
+        } 
+      });
+    }
+  };
+
   const modeRoute = (mode) => {
     switch(mode){
       case ROUND_MODES.CODING: return '/compiler';
