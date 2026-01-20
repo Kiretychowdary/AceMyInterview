@@ -78,8 +78,12 @@ exports.signup = async (req, res) => {
 
     // Set cookie
     const cookieOpts = [`HttpOnly`, `Path=/`, `Max-Age=${Math.floor(COOKIE_MAX_AGE/1000)}`];
-    if (process.env.NODE_ENV === 'production') cookieOpts.push('Secure');
-    cookieOpts.push('SameSite=Lax');
+    if (process.env.NODE_ENV === 'production') {
+      cookieOpts.push('Secure');
+      cookieOpts.push('SameSite=None');
+    } else {
+      cookieOpts.push('SameSite=Lax');
+    }
 
     res.setHeader('Set-Cookie', `${COOKIE_NAME}=${token}; ${cookieOpts.join('; ')}`);
     
@@ -146,8 +150,12 @@ exports.login = async (req, res) => {
 
     // Set cookie
     const cookieOpts = [`HttpOnly`, `Path=/`, `Max-Age=${Math.floor(COOKIE_MAX_AGE/1000)}`];
-    if (process.env.NODE_ENV === 'production') cookieOpts.push('Secure');
-    cookieOpts.push('SameSite=Lax');
+    if (process.env.NODE_ENV === 'production') {
+      cookieOpts.push('Secure');
+      cookieOpts.push('SameSite=None');
+    } else {
+      cookieOpts.push('SameSite=Lax');
+    }
 
     res.setHeader('Set-Cookie', `${COOKIE_NAME}=${token}; ${cookieOpts.join('; ')}`);
     
