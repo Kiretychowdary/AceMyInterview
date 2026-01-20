@@ -67,6 +67,10 @@ const AdminLogin = () => {
       const body = await res.json().catch(() => ({}));
       
       if (res.ok && body && body.success) {
+        // Store admin token in localStorage for cross-domain authentication
+        if (body.token) {
+          localStorage.setItem('ace_admin_token', body.token);
+        }
         toast.success(`🎉 Admin ${isSignup ? 'signup' : 'login'} successful!`);
         navigate('/admin-dashboard');
       } else {

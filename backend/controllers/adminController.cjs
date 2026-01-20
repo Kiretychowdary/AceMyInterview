@@ -90,6 +90,7 @@ exports.signup = async (req, res) => {
     return res.status(201).json({ 
       success: true, 
       message: 'Admin account created successfully',
+      token,
       admin: {
         id: admin._id,
         username: admin.username,
@@ -162,6 +163,7 @@ exports.login = async (req, res) => {
     return res.json({ 
       success: true,
       message: 'Login successful',
+      token,
       admin: {
         id: admin._id,
         username: admin.username,

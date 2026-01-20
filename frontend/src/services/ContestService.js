@@ -3,6 +3,13 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 async function apiFetch(path, options = {}) {
 	const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+	
+	// Add admin token from localStorage if available
+	const adminToken = localStorage.getItem('ace_admin_token');
+	if (adminToken) {
+		headers['Authorization'] = `Bearer ${adminToken}`;
+	}
+	
 	const res = await fetch(`${API_BASE}/api${path}`, {
 		headers,
 		credentials: 'include',
