@@ -7,7 +7,7 @@ import Logo from "../../assets/Logo.jpg";
 import { useAuth } from "../../contexts/AuthContext";
 const navLinks = [
   { name: 'Home', href: '/' },
-  { name: 'Practice', href: '/mock-interviews' },
+  { name: 'Practice', href: '/practice' },
   { name: 'Interview Preparation', href: '/interview-preparation' },
   { name: 'Contests', href: '/contests' },
   { name: 'Dashboard', href: '/dashboard' },

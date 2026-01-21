@@ -22,12 +22,14 @@ const FaceToFaceInterview = () => {
   const synthRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Interview Configuration
-  const interviewConfig = location.state || {
-    topic: 'Software Engineering',
-    difficulty: 'intermediate',
+  // Interview Configuration - Extract topic from location.state
+  const interviewConfig = {
+    topic: location.state?.subject || location.state?.topic || location.state?.jobRole || 'Software Engineering',
+    difficulty: location.state?.difficulty || 'intermediate',
     duration: 10, // Fixed 10 minutes as requested
-    interviewType: 'face-to-face'
+    interviewType: 'face-to-face',
+    jobRole: location.state?.jobRole || 'Software Engineer',
+    subTopicDescription: location.state?.subTopicDescription || ''
   };
 
   // Core State Management
@@ -116,21 +118,27 @@ const FaceToFaceInterview = () => {
   // Generate Topic-Specific Questions using Gemini AI
   const generateQuestions = async () => {
     try {
-      const prompt = `Generate 8-10 interview questions for a ${interviewConfig.topic} interview at ${interviewConfig.difficulty} level.
+      const prompt = `Generate 8-10 interview questions specifically for ${interviewConfig.topic} at ${interviewConfig.difficulty} level.
+
+IMPORTANT: All questions MUST be strictly related to ${interviewConfig.topic}. Do not ask generic questions.
+
+Topic Focus: ${interviewConfig.topic}
+${interviewConfig.subTopicDescription ? `Context: ${interviewConfig.subTopicDescription}` : ''}
 
 Make the questions:
-- Relevant to ${interviewConfig.topic}
-- Progressive in difficulty
-- Mix of technical and behavioral questions
+- Highly specific to ${interviewConfig.topic} concepts, tools, and best practices
+- Progressive in difficulty (start easier, get harder)
+- Mix of technical knowledge, problem-solving, and practical experience
 - Appropriate for a 10-minute face-to-face interview
+- Include both theoretical understanding and hands-on application
 
 Format as JSON array:
 [
   {
-    "question": "Question text here",
-    "category": "Technical/Behavioral/Problem-Solving",
-    "expectedPoints": ["key point 1", "key point 2", "key point 3"],
-    "followUp": "Optional follow-up question"
+    "question": "Specific question about ${interviewConfig.topic}",
+    "category": "Technical/Behavioral/Problem-Solving/Practical",
+    "expectedPoints": ["key technical point 1", "key technical point 2", "key technical point 3"],
+    "followUp": "Optional follow-up question to probe deeper"
   }
 ]
 
@@ -160,11 +168,22 @@ Return ONLY the JSON array, no markdown formatting.`;
     } catch (error) {
       console.error('Error generating questions:', error);
       
+      // Check for specific API errors
+      if (error.response?.status === 403) {
+        toast.error('⚠️ Gemini API key is invalid. Using fallback questions.');
+        console.error('❌ Gemini API Error: Please update VITE_GEMINI_API_KEY in .env file');
+        console.log('Get a new key at: https://aistudio.google.com/app/apikey');
+      } else if (error.response?.status === 429) {
+        toast.warning('⏰ API rate limit reached. Using fallback questions. Please wait a moment before trying again.');
+        console.warn('⚠️ Gemini API rate limit exceeded. Consider upgrading your API plan or wait before making more requests.');
+      } else {
+        toast.warning('Using fallback questions due to API error');
+      }
+      
       // Fallback questions based on topic
       const fallbackQuestions = getFallbackQuestions(interviewConfig.topic);
       setQuestions(fallbackQuestions);
       
-      toast.warning('Using fallback questions due to API error');
       return fallbackQuestions;
     }
   };
@@ -545,10 +564,73 @@ Provide detailed assessment as JSON:
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [interviewPhase, isListening, toggleFullscreen]);
 
+  // Face Detection State
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [faceDetectionActive, setFaceDetectionActive] = useState(false);
+  const faceDetectionIntervalRef = useRef(null);
+
+  // Face Detection Logic
+  const detectFace = useCallback(() => {
+    if (!webcamRef.current || !faceDetectionActive) return;
+
+    const video = webcamRef.current.video;
+    if (!video || video.readyState !== 4) return;
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Simple skin tone detection (basic face detection)
+    let skinPixels = 0;
+    const totalPixels = data.length / 4;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      
+      // Skin tone detection heuristic
+      if (r > 95 && g > 40 && b > 20 &&
+          r > g && r > b &&
+          Math.abs(r - g) > 15) {
+        skinPixels++;
+      }
+    }
+    
+    const skinPercentage = (skinPixels / totalPixels) * 100;
+    
+    // If more than 8% of pixels are skin tone, face is likely detected
+    setFaceDetected(skinPercentage > 8);
+  }, [faceDetectionActive]);
+
+  // Start Face Detection
+  useEffect(() => {
+    if (faceDetectionActive && interviewPhase === 'interview') {
+      faceDetectionIntervalRef.current = setInterval(detectFace, 1000); // Check every second
+    } else {
+      if (faceDetectionIntervalRef.current) {
+        clearInterval(faceDetectionIntervalRef.current);
+      }
+    }
+    
+    return () => {
+      if (faceDetectionIntervalRef.current) {
+        clearInterval(faceDetectionIntervalRef.current);
+      }
+    };
+  }, [faceDetectionActive, interviewPhase, detectFace]);
+
   return (
     <div 
       ref={containerRef}
-      className={`min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 ${
+      className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 ${
         isFullscreen ? 'p-2' : 'p-4'
       }`}
     >
@@ -561,56 +643,94 @@ Provide detailed assessment as JSON:
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center justify-center min-h-screen"
           >
-            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-2xl w-full">
+            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-2xl w-full border border-blue-100">
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-4xl">🎤</span>
+                </div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-2">
                   Face-to-Face AI Interview
                 </h1>
-                <p className="text-gray-600">
-                  Enhanced 10-minute interview with AI-powered assessment
+                <p className="text-gray-600 text-lg mb-3">
+                  Professional 10-minute interview with AI-powered assessment
                 </p>
+                {interviewConfig.subTopicDescription && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3 max-w-md mx-auto">
+                    <p className="text-sm text-blue-800 font-medium">{interviewConfig.subTopicDescription}</p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-6 mb-8">
-                <div className="bg-blue-50 p-4 rounded-xl">
-                  <h3 className="font-semibold text-blue-900 mb-2">Interview Details</h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Topic:</span>
-                      <span className="font-medium text-blue-600">{interviewConfig.topic}</span>
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+                  <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                    <span className="mr-2">📋</span> Interview Details
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Topic:</span>
+                      <span className="font-semibold text-blue-700">{interviewConfig.topic}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Difficulty:</span>
-                      <span className="font-medium text-green-600">{interviewConfig.difficulty}</span>
+                    {interviewConfig.jobRole && interviewConfig.jobRole !== interviewConfig.topic && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-700">Role:</span>
+                        <span className="font-semibold text-blue-700">{interviewConfig.jobRole}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Difficulty:</span>
+                      <span className="font-semibold text-green-700 capitalize">{interviewConfig.difficulty}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Duration:</span>
-                      <span className="font-medium text-purple-600">10 minutes</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Duration:</span>
+                      <span className="font-semibold text-blue-700">10 minutes</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-green-50 p-4 rounded-xl">
-                  <h3 className="font-semibold text-green-900 mb-2">Features</h3>
-                  <ul className="text-sm space-y-1 text-green-800">
-                    <li>✓ AI-Generated Questions</li>
-                    <li>✓ Voice Recognition</li>
-                    <li>✓ Real-time Feedback</li>
-                    <li>✓ Fullscreen Mode</li>
-                    <li>✓ Comprehensive Assessment</li>
+                <div className="bg-green-50 p-6 rounded-xl border border-green-200">
+                  <h3 className="font-semibold text-green-900 mb-3 flex items-center">
+                    <span className="mr-2">✨</span> Features
+                  </h3>
+                  <ul className="text-sm space-y-2 text-green-800">
+                    <li className="flex items-center"><span className="text-green-600 mr-2">✓</span> AI-Generated Questions</li>
+                    <li className="flex items-center"><span className="text-green-600 mr-2">✓</span> Face Detection</li>
+                    <li className="flex items-center"><span className="text-green-600 mr-2">✓</span> Voice Recognition</li>
+                    <li className="flex items-center"><span className="text-green-600 mr-2">✓</span> Real-time Feedback</li>
+                    <li className="flex items-center"><span className="text-green-600 mr-2">✓</span> Comprehensive Assessment</li>
                   </ul>
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <h3 className="font-semibold text-yellow-800 mb-2">📋 Instructions:</h3>
-                <ul className="text-sm text-yellow-800 space-y-1">
-                  <li>• Ensure your camera and microphone are working</li>
-                  <li>• Find a quiet, well-lit environment</li>
-                  <li>• The interview will automatically enter fullscreen mode</li>
-                  <li>• Use Ctrl+Space to start/stop voice recording</li>
-                  <li>• Press F11 to toggle fullscreen manually</li>
-                  <li>• Speak clearly and maintain eye contact with the camera</li>
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-5 mb-6">
+                <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                  <span className="mr-2">💡</span> Instructions
+                </h3>
+                <ul className="text-sm text-blue-800 space-y-2">
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
+                    <span>Ensure your <strong>camera and microphone</strong> are working properly</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
+                    <span>Find a <strong>quiet, well-lit environment</strong> for best results</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
+                    <span>Face detection will monitor your presence during the interview</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
+                    <span>Use <kbd className="px-2 py-0.5 bg-white rounded border border-blue-300">Ctrl+Space</kbd> to start/stop voice recording</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
+                    <span>Press <kbd className="px-2 py-0.5 bg-white rounded border border-blue-300">F11</kbd> to toggle fullscreen mode</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
+                    <span><strong>Speak clearly</strong> and maintain eye contact with the camera</span>
+                  </li>
                 </ul>
               </div>
 
@@ -618,9 +738,10 @@ Provide detailed assessment as JSON:
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={startInterview}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
               >
-                🚀 Start Interview
+                <span className="text-2xl">🚀</span>
+                <span>Start Interview</span>
               </motion.button>
             </div>
           </motion.div>
@@ -631,19 +752,19 @@ Provide detailed assessment as JSON:
           <div className="grid lg:grid-cols-2 gap-4 h-screen">
             
             {/* AI Interviewer Side */}
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 flex justify-between items-center">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-blue-100">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 flex justify-between items-center">
                 <div>
-                  <h2 className="text-xl font-bold">AI Interviewer</h2>
-                  <p className="text-sm opacity-90">{interviewConfig.topic} Interview</p>
+                  <h2 className="text-2xl font-bold">AI Interviewer</h2>
+                  <p className="text-sm opacity-95 mt-1">{interviewConfig.topic} Interview</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold">{formatTime(timeRemaining)}</div>
-                  <div className="text-sm opacity-90">Time Remaining</div>
+                  <div className="text-3xl font-bold tabular-nums">{formatTime(timeRemaining)}</div>
+                  <div className="text-xs opacity-95 uppercase tracking-wide">Time Remaining</div>
                 </div>
               </div>
               
-              <div className="flex-1 flex items-center justify-center p-8">
+              <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-white">
                 <Avatar3D 
                   textToSpeak={questions[currentQuestionIndex]?.question || ''}
                   expression={avatarExpression}
@@ -651,18 +772,18 @@ Provide detailed assessment as JSON:
                 />
               </div>
 
-              <div className="p-4 bg-gray-50 border-t">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">
+              <div className="p-5 bg-gray-50 border-t border-blue-100">
+                <div className="flex justify-between items-center mb-3">
+                  <span className="text-sm font-semibold text-gray-700">
                     Question {currentQuestionIndex + 1} of {questions.length}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
                     {questions[currentQuestionIndex]?.category}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 h-2.5 rounded-full transition-all duration-500"
                     style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                   />
                 </div>
@@ -672,15 +793,29 @@ Provide detailed assessment as JSON:
             {/* User Side */}
             <div className="space-y-4">
               
-              {/* User Camera */}
-              <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-                <div className="bg-gray-800 text-white p-3 flex justify-between items-center">
-                  <h3 className="font-semibold">Your Camera</h3>
+              {/* User Camera with Face Detection */}
+              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-blue-100">
+                <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <h3 className="font-semibold">Your Camera</h3>
+                    <div className="flex items-center gap-2">
+                      {faceDetectionActive && (
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                          faceDetected 
+                            ? 'bg-green-500/20 text-green-300 border border-green-500/50' 
+                            : 'bg-red-500/20 text-red-300 border border-red-500/50'
+                        }`}>
+                          <div className={`w-2 h-2 rounded-full ${faceDetected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+                          {faceDetected ? 'Face Detected' : 'No Face Detected'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={toggleFullscreen}
-                    className="text-xs bg-white/20 px-2 py-1 rounded hover:bg-white/30 transition-colors"
+                    className="text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors font-medium"
                   >
-                    {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F11)'}
+                    {isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Fullscreen (F11)'}
                   </button>
                 </div>
                 
@@ -690,34 +825,40 @@ Provide detailed assessment as JSON:
                     audio={false}
                     className="w-full h-full object-cover"
                     mirrored={true}
+                    onUserMedia={() => setFaceDetectionActive(true)}
                   />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm">
-                    🔴 Recording
+                  <div className="absolute top-4 left-4 bg-red-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg">
+                    <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div>
+                    Recording
                   </div>
                 </div>
               </div>
 
               {/* Current Question & Answer */}
-              <div className="bg-white rounded-2xl shadow-2xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                  <span className="text-blue-600 mr-2">❓</span>
                   Current Question:
                 </h3>
-                <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-gray-800 font-medium">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-5 rounded-xl mb-5 border border-blue-200">
+                  <p className="text-gray-800 font-medium leading-relaxed">
                     {questions[currentQuestionIndex]?.question || 'Loading question...'}
                   </p>
                 </div>
 
-                <h4 className="font-semibold text-gray-700 mb-2">Your Answer:</h4>
-                <div className="bg-gray-50 p-4 rounded-lg mb-4 min-h-[100px] max-h-[150px] overflow-y-auto border">
+                <h4 className="font-bold text-gray-700 mb-3 flex items-center">
+                  <span className="text-green-600 mr-2">💬</span>
+                  Your Answer:
+                </h4>
+                <div className="bg-gray-50 p-5 rounded-xl mb-5 min-h-[120px] max-h-[160px] overflow-y-auto border border-gray-200">
                   {isListening && (
-                    <div className="flex items-center gap-2 text-red-600 font-semibold mb-2">
-                      <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></div>
-                      Recording...
+                    <div className="flex items-center gap-2 text-red-600 font-semibold mb-3 pb-3 border-b border-red-200">
+                      <div className="w-2.5 h-2.5 bg-red-600 rounded-full animate-pulse"></div>
+                      Recording your answer...
                     </div>
                   )}
-                  <p className="text-gray-800">
-                    {currentAnswer || 'Click "Start Recording" to record your answer...'}
+                  <p className="text-gray-800 leading-relaxed">
+                    {currentAnswer || 'Click "Start Recording" below to record your answer using voice...'}
                   </p>
                 </div>
 
@@ -726,30 +867,35 @@ Provide detailed assessment as JSON:
                     <button
                       onClick={startListening}
                       disabled={isAISpeaking}
-                      className="bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="bg-gradient-to-r from-red-600 to-red-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
                     >
-                      🎤 Start Recording
+                      <span className="text-xl">🎤</span>
+                      <span>Start Recording</span>
                     </button>
                   ) : (
                     <button
                       onClick={stopListening}
-                      className="bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 flex items-center justify-center gap-2"
+                      className="bg-gradient-to-r from-gray-600 to-gray-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg flex items-center justify-center gap-2 transition-all"
                     >
-                      ⏸️ Stop Recording
+                      <span className="text-xl">⏸️</span>
+                      <span>Stop Recording</span>
                     </button>
                   )}
                   
                   <button
                     onClick={submitAnswer}
                     disabled={!currentAnswer.trim() || isAISpeaking}
-                    className="bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="bg-gradient-to-r from-green-600 to-green-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
                   >
-                    ✓ Submit Answer
+                    <span className="text-xl">✓</span>
+                    <span>Submit Answer</span>
                   </button>
                 </div>
 
-                <div className="mt-4 text-center text-sm text-gray-500">
-                  <p>💡 Pro tip: Use Ctrl+Space to start/stop recording quickly</p>
+                <div className="mt-5 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-center text-sm text-blue-800 font-medium">
+                    💡 Pro tip: Use <kbd className="px-2 py-1 bg-white rounded border border-blue-300 font-mono text-xs">Ctrl+Space</kbd> to start/stop recording quickly
+                  </p>
                 </div>
               </div>
             </div>
@@ -763,17 +909,27 @@ Provide detailed assessment as JSON:
             animate={{ opacity: 1 }}
             className="flex items-center justify-center min-h-screen"
           >
-            <div className="bg-white rounded-2xl p-8 shadow-2xl max-w-2xl w-full text-center">
-              <div className="animate-spin w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-6"></div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            <div className="bg-white rounded-2xl p-10 shadow-2xl max-w-2xl w-full text-center border border-blue-100">
+              <div className="relative inline-block mb-6">
+                <div className="animate-spin w-20 h-20 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl">🤖</span>
+                </div>
+              </div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4">
                 Generating Your Assessment...
               </h2>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 text-lg mb-6">
                 Our AI is analyzing your responses and preparing a comprehensive evaluation.
               </p>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  🤖 Evaluating technical knowledge, communication skills, and problem-solving approach...
+              <div className="bg-blue-50 p-5 rounded-xl border border-blue-200">
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                </div>
+                <p className="text-sm text-blue-800 font-medium">
+                  Evaluating technical knowledge, communication skills, and problem-solving approach...
                 </p>
               </div>
             </div>
@@ -783,42 +939,42 @@ Provide detailed assessment as JSON:
         {/* Results Phase */}
         {interviewPhase === 'completed' && finalAssessment && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="py-8"
           >
-            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-5xl mx-auto border border-blue-100">
               
               {/* Header */}
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-4xl">🎉</span>
+              <div className="text-center mb-10">
+                <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+                  <span className="text-5xl">🎉</span>
                 </div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-3">
                   Interview Completed!
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-gray-600 text-lg">
                   Here's your comprehensive AI-powered assessment
                 </p>
               </div>
 
               {/* Overall Score */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 mb-8 text-center">
-                <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 mb-10 text-center border-2 border-blue-200 shadow-inner">
+                <div className="text-7xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-3">
                   {finalAssessment.overallScore}/10
                 </div>
-                <p className="text-xl text-gray-700 font-semibold mb-2">Overall Score</p>
-                <p className="text-gray-600">{finalAssessment.summary}</p>
+                <p className="text-2xl text-gray-800 font-bold mb-2">Overall Score</p>
+                <p className="text-gray-700 text-lg">{finalAssessment.summary}</p>
               </div>
 
               {/* Category Scores */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
                 {Object.entries(finalAssessment.categoryScores).map(([category, score]) => (
-                  <div key={category} className="bg-gray-50 p-4 rounded-xl text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">
+                  <div key={category} className="bg-gradient-to-br from-blue-50 to-white p-6 rounded-xl text-center border border-blue-200 hover:shadow-lg transition-shadow">
+                    <div className="text-3xl font-bold text-blue-600 mb-2">
                       {score}/10
                     </div>
-                    <div className="text-sm text-gray-600 capitalize">
+                    <div className="text-sm text-gray-700 capitalize font-medium">
                       {category.replace(/([A-Z])/g, ' $1').trim()}
                     </div>
                   </div>
@@ -826,30 +982,30 @@ Provide detailed assessment as JSON:
               </div>
 
               {/* Strengths and Improvements */}
-              <div className="grid md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-green-50 p-6 rounded-xl">
-                  <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center">
-                    💪 Strengths
+              <div className="grid md:grid-cols-2 gap-6 mb-10">
+                <div className="bg-gradient-to-br from-green-50 to-white p-7 rounded-2xl border border-green-200 shadow-sm">
+                  <h3 className="text-xl font-bold text-green-900 mb-5 flex items-center">
+                    <span className="mr-2">💪</span> Strengths
                   </h3>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {finalAssessment.strengths.map((strength, index) => (
                       <li key={index} className="flex items-start">
-                        <span className="text-green-600 mr-2">✓</span>
-                        <span className="text-green-800">{strength}</span>
+                        <span className="text-green-600 mr-3 text-lg font-bold">✓</span>
+                        <span className="text-green-900 font-medium">{strength}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="bg-orange-50 p-6 rounded-xl">
-                  <h3 className="text-lg font-semibold text-orange-900 mb-4 flex items-center">
-                    🎯 Areas for Improvement
+                <div className="bg-gradient-to-br from-orange-50 to-white p-7 rounded-2xl border border-orange-200 shadow-sm">
+                  <h3 className="text-xl font-bold text-orange-900 mb-5 flex items-center">
+                    <span className="mr-2">🎯</span> Areas for Improvement
                   </h3>
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {finalAssessment.improvements.map((improvement, index) => (
                       <li key={index} className="flex items-start">
-                        <span className="text-orange-600 mr-2">→</span>
-                        <span className="text-orange-800">{improvement}</span>
+                        <span className="text-orange-600 mr-3 text-lg font-bold">→</span>
+                        <span className="text-orange-900 font-medium">{improvement}</span>
                       </li>
                     ))}
                   </ul>
@@ -857,51 +1013,53 @@ Provide detailed assessment as JSON:
               </div>
 
               {/* Detailed Feedback */}
-              <div className="bg-blue-50 p-6 rounded-xl mb-8">
-                <h3 className="text-lg font-semibold text-blue-900 mb-3">
-                  📝 Detailed Feedback
+              <div className="bg-gradient-to-br from-blue-50 to-white p-7 rounded-2xl mb-10 border border-blue-200 shadow-sm">
+                <h3 className="text-xl font-bold text-blue-900 mb-4 flex items-center">
+                  <span className="mr-2">📝</span> Detailed Feedback
                 </h3>
-                <p className="text-blue-800 leading-relaxed">
+                <p className="text-blue-900 leading-relaxed font-medium">
                   {finalAssessment.detailedFeedback}
                 </p>
               </div>
 
               {/* Next Steps */}
-              <div className="bg-purple-50 p-6 rounded-xl mb-8">
-                <h3 className="text-lg font-semibold text-purple-900 mb-4">
-                  🚀 Next Steps
+              <div className="bg-gradient-to-br from-purple-50 to-white p-7 rounded-2xl mb-10 border border-purple-200 shadow-sm">
+                <h3 className="text-xl font-bold text-purple-900 mb-5 flex items-center">
+                  <span className="mr-2">🚀</span> Next Steps
                 </h3>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {finalAssessment.nextSteps.map((step, index) => (
                     <li key={index} className="flex items-start">
-                      <span className="text-purple-600 mr-2">•</span>
-                      <span className="text-purple-800">{step}</span>
+                      <span className="text-purple-600 mr-3 text-lg font-bold">•</span>
+                      <span className="text-purple-900 font-medium">{step}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
               {/* Interview Readiness */}
-              <div className="text-center mb-8">
-                <div className="bg-gray-50 p-4 rounded-xl inline-block">
-                  <h4 className="font-semibold text-gray-800 mb-2">Interview Readiness</h4>
-                  <p className="text-gray-700">{finalAssessment.interviewReadiness}</p>
+              <div className="text-center mb-10">
+                <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl inline-block border-2 border-gray-200 shadow-sm">
+                  <h4 className="font-bold text-gray-800 mb-3 text-lg">📊 Interview Readiness</h4>
+                  <p className="text-gray-700 font-semibold text-lg">{finalAssessment.interviewReadiness}</p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 justify-center">
+              <div className="flex gap-4 justify-center flex-wrap">
                 <button
                   onClick={() => navigate('/mock-interviews')}
-                  className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                  className="px-8 py-4 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                 >
-                  Back to Dashboard
+                  <span>←</span>
+                  <span>Back to Dashboard</span>
                 </button>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:shadow-xl transition-all shadow-md flex items-center gap-2"
                 >
-                  Take Another Interview
+                  <span>🔄</span>
+                  <span>Take Another Interview</span>
                 </button>
               </div>
             </div>

@@ -35,7 +35,7 @@ const MockInterviews = () => {
       name: 'Interview Person to Person',
       desc: 'AI Face-to-Face Interview',
       icon: '🎭',
-      route: '/interview-room'
+      route: '/face-to-face-interview'
     },
     {
       name: 'AI HR Interview',
@@ -94,7 +94,7 @@ const MockInterviews = () => {
     switch(mode){
       case 'MCQ': return '/mcq-interview';
       case 'Coding Compiler': return '/compiler';
-      case 'Person-to-Person': return '/interview-room';
+      case 'Person-to-Person': return '/face-to-face-interview';
       default: return null; // unimplemented
     }
   };

@@ -554,7 +554,7 @@ const Dashboard = () => {
                 </button>
                 <button 
                   className="w-full text-left p-2 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm text-purple-700 transition-colors"
-                  onClick={() => window.location.href = '/interview-room'}
+                  onClick={() => window.location.href = '/face-to-face-interview'}
                 >
                   Start Face-to-Face Interview →
                 </button>
