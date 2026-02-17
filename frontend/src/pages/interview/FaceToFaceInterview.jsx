@@ -1,4 +1,4 @@
-//nmkrspvlidata - Enhanced Face-to-Face Interview with Gemini AI
+//nmkrspvlidata - Enhanced Face-to-Face Interview with Ollama AI
 //radhakrishna
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Avatar3D from '../../components/interview/Avatar3D';
@@ -9,9 +9,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 
-// Gemini API Configuration
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent';
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSyB1-4W8tH-Eozlv_16veMff9g7z1GYDFpc';
+// Backend API Configuration (Ollama-powered)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 const FaceToFaceInterview = () => {
   const navigate = useNavigate();
@@ -25,8 +24,8 @@ const FaceToFaceInterview = () => {
   // Interview Configuration - Extract topic from location.state
   const interviewConfig = {
     topic: location.state?.subject || location.state?.topic || location.state?.jobRole || 'Software Engineering',
-    difficulty: location.state?.difficulty || 'intermediate',
-    duration: 10, // Fixed 10 minutes as requested
+    difficulty: location.state?.difficulty || 'medium',
+    duration: 3, // 3-minute quick interview
     interviewType: 'face-to-face',
     jobRole: location.state?.jobRole || 'Software Engineer',
     subTopicDescription: location.state?.subTopicDescription || ''
@@ -39,9 +38,10 @@ const FaceToFaceInterview = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
-  const [timeRemaining, setTimeRemaining] = useState(600); // 10 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(180); // 3 minutes in seconds
   const [isListening, setIsListening] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false); // NEW: Show evaluation status
   const [avatarExpression, setAvatarExpression] = useState('neutral');
   const [avatarFeedback, setAvatarFeedback] = useState('');
   const [finalAssessment, setFinalAssessment] = useState(null);
@@ -72,7 +72,19 @@ const FaceToFaceInterview = () => {
 
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
-        toast.error('Speech recognition error. Please try again.');
+        
+        if (event.error === 'not-allowed') {
+          toast.error('🎤 Microphone access denied. Please allow microphone permission and try again.', {
+            duration: 5000
+          });
+        } else if (event.error === 'no-speech') {
+          toast.warning('No speech detected. Please try speaking again.');
+        } else if (event.error === 'audio-capture') {
+          toast.error('No microphone detected. Please check your audio settings.');
+        } else {
+          toast.error('Speech recognition error. Please try again.');
+        }
+        
         setIsListening(false);
       };
 
@@ -115,115 +127,85 @@ const FaceToFaceInterview = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Generate Topic-Specific Questions using Gemini AI
+  // Generate Topic-Specific Questions using Ollama AI (via backend)
   const generateQuestions = async () => {
     try {
-      const prompt = `Generate 8-10 interview questions specifically for ${interviewConfig.topic} at ${interviewConfig.difficulty} level.
+      toast.info('🤖 Generating interview questions with AI...');
+      
+      console.log('🚀 Starting interview session...');
+      console.log('📋 Interview Config:', {
+        userId: user?.uid || 'guest',
+        role: interviewConfig.jobRole || interviewConfig.topic,
+        difficulty: interviewConfig.difficulty,
+        topic: interviewConfig.topic
+      });
+      
+      // Start interview session
+      const startResponse = await axios.post(`${API_BASE_URL}/api/interview/start`, {
+        userId: user?.uid || 'guest',
+        role: interviewConfig.jobRole || interviewConfig.topic,
+        difficulty: interviewConfig.difficulty || 'medium',
+        topic: interviewConfig.topic,
+        totalQuestions: 3 // Generate 3 questions for 3-minute interview
+      });
 
-IMPORTANT: All questions MUST be strictly related to ${interviewConfig.topic}. Do not ask generic questions.
+      if (!startResponse.data.success) {
+        throw new Error('Failed to start interview session');
+      }
 
-Topic Focus: ${interviewConfig.topic}
-${interviewConfig.subTopicDescription ? `Context: ${interviewConfig.subTopicDescription}` : ''}
+      const sessionId = startResponse.data.sessionId;
+      console.log('✅ Interview session created:', sessionId);
+      
+      const generatedQuestions = [];
 
-Make the questions:
-- Highly specific to ${interviewConfig.topic} concepts, tools, and best practices
-- Progressive in difficulty (start easier, get harder)
-- Mix of technical knowledge, problem-solving, and practical experience
-- Appropriate for a 10-minute face-to-face interview
-- Include both theoretical understanding and hands-on application
+      // Generate questions one by one
+      for (let i = 0; i < 3; i++) {
+        toast.info(`Generating question ${i + 1} of 3...`);
+        console.log(`📝 Requesting question ${i + 1} for session:`, sessionId);
+        
+        const questionResponse = await axios.post(`${API_BASE_URL}/api/interview/next-question`, {
+          sessionId: sessionId
+        });
 
-Format as JSON array:
-[
-  {
-    "question": "Specific question about ${interviewConfig.topic}",
-    "category": "Technical/Behavioral/Problem-Solving/Practical",
-    "expectedPoints": ["key technical point 1", "key technical point 2", "key technical point 3"],
-    "followUp": "Optional follow-up question to probe deeper"
-  }
-]
-
-Return ONLY the JSON array, no markdown formatting.`;
-
-      const response = await axios.post(
-        `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-        {
-          contents: [{
-            parts: [{ text: prompt }]
-          }]
-        },
-        {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 30000
+        if (questionResponse.data.success && questionResponse.data.question) {
+          const questionData = questionResponse.data.question;
+          
+          // Backend returns {number, total, text, category} - extract the text
+          const questionText = typeof questionData === 'string' ? questionData : questionData.text;
+          const questionCategory = typeof questionData === 'object' ? questionData.category : (questionResponse.data.category || 'Technical');
+          
+          console.log(`✅ Received question ${i + 1}:`, questionText?.substring(0, 100) + '...');
+          
+          generatedQuestions.push({
+            question: questionText,
+            category: questionCategory,
+            expectedPoints: [], // Will be evaluated dynamically
+            followUp: ''
+          });
         }
-      );
+      }
 
-      let questionsText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      questionsText = questionsText.replace(/```json/g, '').replace(/```/g, '').trim();
-      
-      const generatedQuestions = JSON.parse(questionsText);
+      if (generatedQuestions.length === 0) {
+        throw new Error('No questions generated');
+      }
+
       setQuestions(generatedQuestions);
+      setInterviewData(prev => ({ ...prev, sessionId }));
+      console.log('💾 Stored sessionId in interviewData:', sessionId);
       
-      toast.success('Interview questions generated successfully!');
+      toast.success(`✅ ${generatedQuestions.length} interview questions generated successfully!`);
       return generatedQuestions;
+      
     } catch (error) {
-      console.error('Error generating questions:', error);
+      console.error('❌ Error generating questions:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
       
-      // Check for specific API errors
-      if (error.response?.status === 403) {
-        toast.error('⚠️ Gemini API key is invalid. Using fallback questions.');
-        console.error('❌ Gemini API Error: Please update VITE_GEMINI_API_KEY in .env file');
-        console.log('Get a new key at: https://aistudio.google.com/app/apikey');
-      } else if (error.response?.status === 429) {
-        toast.warning('⏰ API rate limit reached. Using fallback questions. Please wait a moment before trying again.');
-        console.warn('⚠️ Gemini API rate limit exceeded. Consider upgrading your API plan or wait before making more requests.');
-      } else {
-        toast.warning('Using fallback questions due to API error');
-      }
-      
-      // Fallback questions based on topic
-      const fallbackQuestions = getFallbackQuestions(interviewConfig.topic);
-      setQuestions(fallbackQuestions);
-      
-      return fallbackQuestions;
+      // Show specific error message if available
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to generate questions';
+      toast.error(`❌ ${errorMessage}. Please try again.`);
+      throw error; // Don't use fallback questions
     }
-  };
-
-  // Fallback Questions Generator
-  const getFallbackQuestions = (topic) => {
-    const baseQuestions = [
-      {
-        question: `Tell me about your experience with ${topic}.`,
-        category: "Experience",
-        expectedPoints: ["hands-on experience", "practical projects", "learning journey"],
-        followUp: "What was the most challenging aspect?"
-      },
-      {
-        question: `What are the key concepts in ${topic} that you find most important?`,
-        category: "Technical",
-        expectedPoints: ["core concepts", "fundamental principles", "best practices"],
-        followUp: "Can you give me a practical example?"
-      },
-      {
-        question: `How do you stay updated with the latest developments in ${topic}?`,
-        category: "Learning",
-        expectedPoints: ["continuous learning", "resources", "community involvement"],
-        followUp: "What recent trend excites you most?"
-      },
-      {
-        question: `Describe a challenging problem you solved using ${topic}.`,
-        category: "Problem-Solving",
-        expectedPoints: ["problem identification", "solution approach", "outcome"],
-        followUp: "What would you do differently now?"
-      },
-      {
-        question: `How would you explain ${topic} concepts to a beginner?`,
-        category: "Communication",
-        expectedPoints: ["clear explanation", "simple examples", "teaching ability"],
-        followUp: "What's the most important thing to understand first?"
-      }
-    ];
-
-    return baseQuestions;
   };
 
   // AI Text-to-Speech
@@ -257,13 +239,38 @@ Return ONLY the JSON array, no markdown formatting.`;
     synthRef.current.speak(utterance);
   };
 
+  // Request Microphone Permission
+  const requestMicrophonePermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Stop the stream immediately, we just needed to get permission
+      stream.getTracks().forEach(track => track.stop());
+      return true;
+    } catch (error) {
+      console.error('Microphone permission denied:', error);
+      toast.error('🎤 Microphone access denied. Please allow microphone access in your browser settings.');
+      return false;
+    }
+  };
+
   // Start Voice Recognition
-  const startListening = () => {
+  const startListening = async () => {
     if (recognitionRef.current && !isListening) {
-      setCurrentAnswer('');
-      recognitionRef.current.start();
-      setIsListening(true);
-      toast.info('🎤 Listening... Speak your answer');
+      // Request permission first if not already granted
+      const hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        return;
+      }
+
+      try {
+        // Don't clear existing text - voice will append to it
+        recognitionRef.current.start();
+        setIsListening(true);
+        toast.info('🎤 Listening... Speak your answer');
+      } catch (error) {
+        console.error('Failed to start speech recognition:', error);
+        toast.error('Failed to start recording. Please try again.');
+      }
     }
   };
 
@@ -286,11 +293,12 @@ Return ONLY the JSON array, no markdown formatting.`;
 
     const answerData = {
       questionIndex: currentQuestionIndex,
+      questionNumber: currentQuestionIndex + 1, // Backend uses 1-based indexing
       question: questions[currentQuestionIndex].question,
       answer: currentAnswer,
       category: questions[currentQuestionIndex].category,
       timestamp: new Date(),
-      timeSpent: 600 - timeRemaining
+      timeSpent: 180 - timeRemaining
     };
 
     setUserAnswers([...userAnswers, answerData]);
@@ -313,45 +321,76 @@ Return ONLY the JSON array, no markdown formatting.`;
     }
   };
 
-  // Provide Immediate AI Feedback
+  // Provide Immediate AI Feedback using Ollama (via backend)
   const provideFeedback = async (answerData) => {
     try {
+      setIsEvaluating(true); // Show "Evaluating..." message
       setAvatarExpression('thinking');
+      setAvatarFeedback('🤔 Evaluating your answer using AI...');
       
-      const feedbackPrompt = `Analyze this interview answer and provide brief feedback:
+      if (!interviewData.sessionId) {
+        console.error('❌ No session ID available for feedback');
+        setIsEvaluating(false);
+        setAvatarExpression('encouraging');
+        setAvatarFeedback('');
+        speakText('Thank you for your answer. Let\'s continue with the next question.');
+        return;
+      }
 
-Question: ${answerData.question}
-Answer: ${answerData.answer}
-Category: ${answerData.category}
+      console.log('📤 Submitting answer for evaluation');
+      console.log('  Session ID:', interviewData.sessionId);
+      console.log('  Question Number:', answerData.questionNumber);
+      console.log('  Answer length:', answerData.answer.length, 'characters');
 
-Provide a JSON response:
-{
-  "score": 4.2,
-  "feedback": "Brief encouraging feedback (1-2 sentences)",
-  "emotion": "happy/neutral/encouraging/disappointed"
-}`;
+      // Call Ollama evaluation API - THIS TAKES TIME (2-5 seconds)
+      const evaluationResponse = await axios.post(`${API_BASE_URL}/api/interview/submit-answer`, {
+        sessionId: interviewData.sessionId,
+        questionNumber: answerData.questionNumber,
+        answer: answerData.answer,
+        timeSpent: answerData.timeSpent || 0
+      });
 
-      const response = await axios.post(
-        `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-        {
-          contents: [{
-            parts: [{ text: feedbackPrompt }]
-          }]
-        },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
-      );
+      console.log('📥 Evaluation response:', evaluationResponse.data);
 
-      let feedbackText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      feedbackText = feedbackText.replace(/```json/g, '').replace(/```/g, '').trim();
+      if (evaluationResponse.data.success && evaluationResponse.data.evaluation) {
+        const evaluation = evaluationResponse.data.evaluation;
+        const score = evaluation.score || 0;
+        
+        console.log('✅ Answer evaluated - Score:', score);
+        
+        // Determine emotion based on score
+        let emotion = 'neutral';
+        if (score >= 8) emotion = 'happy';
+        else if (score >= 6) emotion = 'encouraging';
+        else if (score >= 4) emotion = 'neutral';
+        else emotion = 'disappointed';
+        
+        setAvatarExpression(emotion);
+        
+        // Show score in feedback
+        const feedbackMessage = `Score: ${score}/10 - ${evaluation.feedback || 'Thank you for your answer.'}`;
+        setAvatarFeedback(feedbackMessage);
+        speakText(evaluation.feedback || 'Thank you for your answer.', emotion);
+        
+        // Keep feedback visible for 4 seconds before moving on
+        await new Promise(resolve => setTimeout(resolve, 4000));
+      } else {
+        console.warn('⚠️ No evaluation in response');
+        setAvatarExpression('encouraging');
+        setAvatarFeedback('Thank you for your answer.');
+        speakText('Thank you for your answer. Let\'s continue with the next question.');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
       
-      const feedback = JSON.parse(feedbackText);
-      
-      setAvatarExpression(feedback.emotion || 'neutral');
-      speakText(feedback.feedback, feedback.emotion);
+      setIsEvaluating(false);
+      setAvatarFeedback(''); // Clear feedback message
       
     } catch (error) {
-      console.error('Error providing feedback:', error);
+      console.error('❌ Error providing feedback:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setIsEvaluating(false);
       setAvatarExpression('encouraging');
+      setAvatarFeedback('');
       speakText('Thank you for your answer. Let\'s continue with the next question.');
     }
   };
@@ -360,29 +399,43 @@ Provide a JSON response:
   const endInterview = async () => {
     setInterviewPhase('assessment');
     
+    // Capture the current sessionId BEFORE any state updates
+    const currentSessionId = interviewData.sessionId;
+    
     const sessionData = {
+      sessionId: currentSessionId, // Include sessionId in sessionData
       userId: user?.uid || 'guest',
       topic: interviewConfig.topic,
       difficulty: interviewConfig.difficulty,
-      duration: 10,
+      duration: 3,
       totalQuestions: questions.length,
       answeredQuestions: userAnswers.length,
-      timeSpent: 600 - timeRemaining,
-      startTime: new Date(Date.now() - (600 - timeRemaining) * 1000),
+      timeSpent: 180 - timeRemaining,
+      startTime: new Date(Date.now() - (180 - timeRemaining) * 1000),
       endTime: new Date(),
       questions: questions,
       answers: userAnswers,
       interviewType: 'face-to-face'
     };
 
-    setInterviewData(sessionData);
+    // Merge with existing interviewData
+    setInterviewData(prev => ({ ...prev, ...sessionData }));
+    
+    console.log('📊 Ending interview with sessionId:', currentSessionId);
 
     try {
       // Store interview data first
       await storeInterviewData(sessionData);
       
       // Generate comprehensive AI assessment
+      console.log('🔄 Requesting AI assessment...');
       const assessment = await generateAIAssessment(sessionData);
+      
+      if (!assessment || !assessment.overallScore) {
+        throw new Error('Invalid assessment received');
+      }
+      
+      console.log('✅ Assessment received:', assessment);
       setFinalAssessment(assessment);
       
       setInterviewPhase('completed');
@@ -393,8 +446,10 @@ Provide a JSON response:
       }, 1000);
       
     } catch (error) {
-      console.error('Error ending interview:', error);
-      toast.error('Error processing interview results');
+      console.error('❌ Error ending interview:', error);
+      console.error('Error stack:', error.stack);
+      toast.error('❌ Could not generate interview assessment. Please check console for details.');
+      setInterviewPhase('interview'); // Go back to interview phase
     }
   };
 
@@ -403,94 +458,75 @@ Provide a JSON response:
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       
+      // Use sessionId from sessionData (now passed explicitly)
+      const sessionIdToUse = sessionData.sessionId || `interview_${Date.now()}_${user?.uid || 'guest'}`;
+      
+      console.log('💾 Storing interview data with sessionId:', sessionIdToUse);
+      
       const response = await axios.post(`${API_BASE}/api/interview/store-session`, {
         ...sessionData,
-        sessionId: `interview_${Date.now()}_${user?.uid || 'guest'}`
+        sessionId: sessionIdToUse
       });
 
       if (response.data.success) {
         toast.success('Interview data saved successfully!');
       }
     } catch (error) {
-      console.error('Error storing interview data:', error);
+      console.error('❌ Error storing interview data:', error);
       toast.warning('Interview completed but data could not be saved');
     }
   };
 
-  // Generate Comprehensive AI Assessment
+  // Generate Comprehensive AI Assessment using Ollama (via backend)
   const generateAIAssessment = async (sessionData) => {
     try {
-      const assessmentPrompt = `Conduct a comprehensive interview assessment:
-
-INTERVIEW DETAILS:
-- Topic: ${sessionData.topic}
-- Difficulty: ${sessionData.difficulty}
-- Duration: ${Math.floor(sessionData.timeSpent / 60)} minutes ${sessionData.timeSpent % 60} seconds
-- Questions Answered: ${sessionData.answeredQuestions}/${sessionData.totalQuestions}
-
-QUESTIONS AND ANSWERS:
-${sessionData.answers.map((qa, index) => 
-  `${index + 1}. Q: ${qa.question}
-     A: ${qa.answer}
-     Category: ${qa.category}`
-).join('\n\n')}
-
-Provide detailed assessment as JSON:
-{
-  "overallScore": 7.5,
-  "summary": "Strong performance with good technical knowledge",
-  "categoryScores": {
-    "technical": 8.0,
-    "communication": 7.5,
-    "problemSolving": 7.0,
-    "experience": 8.5
-  },
-  "strengths": [
-    "Clear communication",
-    "Good technical depth",
-    "Practical examples"
-  ],
-  "improvements": [
-    "More specific examples",
-    "Deeper technical details"
-  ],
-  "detailedFeedback": "Comprehensive feedback paragraph",
-  "nextSteps": [
-    "Practice advanced concepts",
-    "Work on more complex projects"
-  ],
-  "interviewReadiness": "85% - Ready for most positions with some improvement areas"
-}`;
-
-      const response = await axios.post(
-        `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-        {
-          contents: [{
-            parts: [{ text: assessmentPrompt }]
-          }]
-        },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 30000 }
-      );
-
-      let assessmentText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      assessmentText = assessmentText.replace(/```json/g, '').replace(/```/g, '').trim();
+      // Use sessionId from sessionData (now passed explicitly)
+      const sessionIdToUse = sessionData.sessionId;
       
-      return JSON.parse(assessmentText);
+      console.log('📝 Generating AI assessment for sessionId:', sessionIdToUse);
+      
+      if (!sessionIdToUse) {
+        console.error('❌ No session ID available for final report');
+        toast.error('Session ID missing - cannot generate assessment');
+        throw new Error('Session ID missing - interview was not started properly');
+      }
+
+      console.log('🚀 Calling backend final-report API...');
+      const reportResponse = await axios.post(`${API_BASE_URL}/api/interview/final-report`, {
+        sessionId: sessionIdToUse
+      });
+
+      console.log('📥 Backend response:', reportResponse.data);
+
+      if (reportResponse.data.success && reportResponse.data.report) {
+        const report = reportResponse.data.report;
+        
+        console.log('✅ Received valid report from Ollama:', report);
+        
+        // Transform backend report format to match UI expectations
+        // NO DEFAULT VALUES - use actual Ollama results
+        return {
+          overallScore: report.overallScore,
+          summary: report.summary,
+          categoryScores: report.categoryBreakdown || {},
+          strengths: report.strengths || [],
+          improvements: report.areasForImprovement || [],
+          detailedFeedback: report.detailedAnalysis,
+          nextSteps: report.recommendations || [],
+          interviewReadiness: `${Math.round(report.overallScore * 10)}% - ${report.summary}`
+        };
+      } else {
+        console.error('❌ Invalid report response from backend');
+        throw new Error('Backend did not return a valid report');
+      }
       
     } catch (error) {
-      console.error('Error generating AI assessment:', error);
+      console.error('❌ Error generating AI assessment:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      toast.error('❌ Failed to generate AI assessment. No default scores will be shown.');
       
-      // Fallback assessment
-      return {
-        overallScore: 7.0,
-        summary: "Interview completed successfully",
-        categoryScores: { technical: 7.0, communication: 7.0, problemSolving: 7.0, experience: 7.0 },
-        strengths: ["Participated actively", "Answered all questions"],
-        improvements: ["Continue practicing"],
-        detailedFeedback: "Thank you for completing the interview. Keep practicing to improve your skills.",
-        nextSteps: ["Review fundamental concepts", "Practice more mock interviews"],
-        interviewReadiness: "70% - Good foundation, continue practicing"
-      };
+      // NO FALLBACK - throw error to show user there's a problem
+      throw error;
     }
   };
 
@@ -515,7 +551,7 @@ Provide detailed assessment as JSON:
       
       // Start with welcome message
       setTimeout(() => {
-        speakText(`Welcome to your ${interviewConfig.topic} interview! I'll be asking you ${generatedQuestions.length} questions over the next 10 minutes. Let's begin with the first question: ${generatedQuestions[0].question}`, 'happy');
+        speakText(`Welcome to your ${interviewConfig.topic} interview! I'll be asking you ${generatedQuestions.length} questions over the next 3 minutes. Let's begin with the first question: ${generatedQuestions[0].question}`, 'happy');
       }, 1000);
     }
   };
@@ -652,7 +688,7 @@ Provide detailed assessment as JSON:
                   Face-to-Face AI Interview
                 </h1>
                 <p className="text-gray-600 text-lg mb-3">
-                  Professional 10-minute interview with AI-powered assessment
+                  Quick 3-minute interview with AI-powered assessment
                 </p>
                 {interviewConfig.subTopicDescription && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3 max-w-md mx-auto">
@@ -683,7 +719,7 @@ Provide detailed assessment as JSON:
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700">Duration:</span>
-                      <span className="font-semibold text-blue-700">10 minutes</span>
+                      <span className="font-semibold text-blue-700">3 minutes</span>
                     </div>
                   </div>
                 </div>
@@ -717,6 +753,10 @@ Provide detailed assessment as JSON:
                   </li>
                   <li className="flex items-start">
                     <span className="mr-2 mt-0.5">•</span>
+                    <span><strong>Type your answers</strong> in the text box OR use voice recording</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2 mt-0.5">•</span>
                     <span>Face detection will monitor your presence during the interview</span>
                   </li>
                   <li className="flex items-start">
@@ -732,6 +772,22 @@ Provide detailed assessment as JSON:
                     <span><strong>Speak clearly</strong> and maintain eye contact with the camera</span>
                   </li>
                 </ul>
+                
+                {/* Test Microphone Button */}
+                <div className="mt-4 pt-4 border-t border-blue-300">
+                  <button
+                    onClick={async () => {
+                      const hasPermission = await requestMicrophonePermission();
+                      if (hasPermission) {
+                        toast.success('✅ Microphone access granted! You\'re ready to start.');
+                      }
+                    }}
+                    className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>🎤</span>
+                    <span>Test Microphone Permission</span>
+                  </button>
+                </div>
               </div>
 
               <motion.button
@@ -846,21 +902,40 @@ Provide detailed assessment as JSON:
                   </p>
                 </div>
 
-                <h4 className="font-bold text-gray-700 mb-3 flex items-center">
-                  <span className="text-green-600 mr-2">💬</span>
-                  Your Answer:
+                <h4 className="font-bold text-gray-700 mb-3 flex items-center justify-between">
+                  <span className="flex items-center">
+                    <span className="text-green-600 mr-2">💬</span>
+                    Your Answer:
+                  </span>
+                  {currentAnswer && !isListening && (
+                    <button
+                      onClick={() => setCurrentAnswer('')}
+                      className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </h4>
-                <div className="bg-gray-50 p-5 rounded-xl mb-5 min-h-[120px] max-h-[160px] overflow-y-auto border border-gray-200">
-                  {isListening && (
-                    <div className="flex items-center gap-2 text-red-600 font-semibold mb-3 pb-3 border-b border-red-200">
+                
+                {/* Voice Answer Display */}
+                {isListening && (
+                  <div className="bg-red-50 p-4 rounded-xl mb-3 border-2 border-red-200">
+                    <div className="flex items-center gap-2 text-red-600 font-semibold mb-2">
                       <div className="w-2.5 h-2.5 bg-red-600 rounded-full animate-pulse"></div>
                       Recording your answer...
                     </div>
-                  )}
-                  <p className="text-gray-800 leading-relaxed">
-                    {currentAnswer || 'Click "Start Recording" below to record your answer using voice...'}
-                  </p>
-                </div>
+                    <p className="text-gray-700 text-sm italic">{currentAnswer || 'Speak now...'}</p>
+                  </div>
+                )}
+                
+                {/* Text Input Box */}
+                <textarea
+                  value={currentAnswer}
+                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  placeholder="Type your answer here, or use voice recording below..."
+                  disabled={isAISpeaking}
+                  className="w-full bg-white p-4 rounded-xl mb-5 min-h-[120px] border-2 border-gray-300 focus:border-blue-500 focus:outline-none resize-none text-gray-800 leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                />
 
                 <div className="grid grid-cols-2 gap-3">
                   {!isListening ? (
@@ -870,7 +945,7 @@ Provide detailed assessment as JSON:
                       className="bg-gradient-to-r from-red-600 to-red-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
                     >
                       <span className="text-xl">🎤</span>
-                      <span>Start Recording</span>
+                      <span>Voice Input</span>
                     </button>
                   ) : (
                     <button
@@ -884,17 +959,26 @@ Provide detailed assessment as JSON:
                   
                   <button
                     onClick={submitAnswer}
-                    disabled={!currentAnswer.trim() || isAISpeaking}
+                    disabled={!currentAnswer.trim() || isAISpeaking || isEvaluating}
                     className="bg-gradient-to-r from-green-600 to-green-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
                   >
-                    <span className="text-xl">✓</span>
-                    <span>Submit Answer</span>
+                    {isEvaluating ? (
+                      <>
+                        <span className="animate-spin text-xl">⏳</span>
+                        <span>Evaluating with AI...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-xl">✓</span>
+                        <span>Submit Answer</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
                 <div className="mt-5 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-center text-sm text-blue-800 font-medium">
-                    💡 Pro tip: Use <kbd className="px-2 py-1 bg-white rounded border border-blue-300 font-mono text-xs">Ctrl+Space</kbd> to start/stop recording quickly
+                    💡 Pro tip: <strong>Type your answer</strong> in the text box above, or use <kbd className="px-2 py-1 bg-white rounded border border-blue-300 font-mono text-xs">Ctrl+Space</kbd> for voice recording
                   </p>
                 </div>
               </div>
@@ -1009,6 +1093,32 @@ Provide detailed assessment as JSON:
                       </li>
                     ))}
                   </ul>
+                </div>
+              </div>
+
+              {/* Interview Transcript - Q&A */}
+              <div className="bg-gradient-to-br from-indigo-50 to-white p-7 rounded-2xl mb-10 border border-indigo-200 shadow-sm">
+                <h3 className="text-xl font-bold text-indigo-900 mb-5 flex items-center">
+                  <span className="mr-2">📋</span> Interview Transcript
+                </h3>
+                <div className="space-y-6">
+                  {userAnswers.map((qa, index) => (
+                    <div key={index} className="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm">
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold">Q{index + 1}</span>
+                          <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full font-medium">{qa.category}</span>
+                        </div>
+                        <p className="text-gray-800 font-semibold leading-relaxed">{qa.question}</p>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-indigo-400">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-indigo-600 font-bold text-sm">Your Answer:</span>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{qa.answer}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

@@ -1,8 +1,43 @@
-// NMKRSPVLIDATA - AI Interview Controller
+// NMKRSPVLIDATA - AI Interview Controller with Ollama Support
 const axios = require('axios');
+const ollamaService = require('../services/ollamaService.cjs');
 
 const GEMINI_API_URL = process.env.GEMINI_API_URL;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const USE_OLLAMA = process.env.USE_OLLAMA === 'true';
+
+/**
+ * Generate text using the configured AI service (Ollama or Gemini)
+ */
+async function generateAIResponse(prompt, options = {}) {
+  if (USE_OLLAMA) {
+    // Use local Ollama model with GPU
+    console.log('🚀 Using Ollama (Local GPU) for generation...');
+    const response = await ollamaService.generateCompletion(prompt, options);
+    return response;
+  } else {
+    // Use Gemini API (Cloud)
+    console.log('☁️ Using Gemini API for generation...');
+    if (!GEMINI_API_KEY) {
+      throw new Error('Gemini API key not configured');
+    }
+    
+    const response = await axios.post(
+      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      },
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
+      }
+    );
+    
+    return response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+}
 
 // Generate interview questions based on role and difficulty
 exports.generateInterviewQuestions = async (req, res) => {
@@ -38,30 +73,19 @@ Make questions:
 
 Return ONLY the JSON array, no markdown formatting.`;
 
-    const response = await axios.post(
-      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-      {
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
-      }
-    );
+    const responseText = await generateAIResponse(prompt, {
+      temperature: 0.8,
+      maxTokens: 3000
+    });
 
-    let questionsText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Clean up response
-    questionsText = questionsText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    const questions = JSON.parse(questionsText);
+    // Parse the response
+    const questions = ollamaService.parseJsonResponse(responseText);
 
     return res.json({
       success: true,
       questions: questions,
-      count: questions.length
+      count: questions.length,
+      source: USE_OLLAMA ? 'ollama-gpu' : 'gemini'
     });
 
   } catch (error) {
@@ -107,27 +131,17 @@ Format as JSON:
 
 Return ONLY the JSON object, no markdown formatting.`;
 
-    const response = await axios.post(
-      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-      {
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
-      }
-    );
+    const responseText = await generateAIResponse(prompt, {
+      temperature: 0.5,
+      maxTokens: 1500
+    });
 
-    let evaluationText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    evaluationText = evaluationText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    const evaluation = JSON.parse(evaluationText);
+    const evaluation = ollamaService.parseJsonResponse(responseText);
 
     return res.json({
       success: true,
-      feedback: evaluation
+      feedback: evaluation,
+      source: USE_OLLAMA ? 'ollama-gpu' : 'gemini'
     });
 
   } catch (error) {
@@ -183,23 +197,12 @@ Format as JSON:
 
 Return ONLY the JSON object, no markdown formatting.`;
 
-    const response = await axios.post(
-      `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`,
-      {
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 30000
-      }
-    );
+    const responseText = await generateAIResponse(prompt, {
+      temperature: 0.6,
+      maxTokens: 3000
+    });
 
-    let reportText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    reportText = reportText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    const report = JSON.parse(reportText);
+    const report = ollamaService.parseJsonResponse(responseText);
 
     // TODO: Save report to database
     // const Interview = require('../models/Interview.cjs');
@@ -207,7 +210,8 @@ Return ONLY the JSON object, no markdown formatting.`;
 
     return res.json({
       success: true,
-      report: report
+      report: report,
+      source: USE_OLLAMA ? 'ollama-gpu' : 'gemini'
     });
 
   } catch (error) {
@@ -216,6 +220,34 @@ Return ONLY the JSON object, no markdown formatting.`;
       success: false,
       error: 'Failed to generate report',
       message: error.message
+    });
+  }
+};
+
+// Health check endpoint for Ollama integration
+exports.checkOllamaHealth = async (req, res) => {
+  try {
+    const isHealthy = await ollamaService.checkHealth();
+    const models = await ollamaService.listModels();
+    
+    return res.json({
+      success: true,
+      ollama: {
+        running: isHealthy,
+        url: ollamaService.OLLAMA_API_URL,
+        model: ollamaService.OLLAMA_MODEL,
+        availableModels: models.map(m => m.name),
+        usingGPU: true
+      },
+      config: {
+        useOllama: USE_OLLAMA,
+        activeService: USE_OLLAMA ? 'Ollama (Local GPU)' : 'Gemini (Cloud API)'
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 };

@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin.cjs');
+const CustomInterview = require('../models/CustomInterview.cjs');
 
 const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_SECRET || 'NMKRSPVLIDATA_JWT_SECRET';
 const COOKIE_NAME = 'ace_admin_token';
@@ -241,3 +242,286 @@ exports.verifyAdmin = (req, res, next) => {
 };
 
 exports.verify = verifyToken;
+
+// ==================== CUSTOM INTERVIEW MANAGEMENT ====================
+
+// Create a new custom interview with unique ID
+exports.createCustomInterview = async (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      role,
+      difficulty,
+      duration,
+      numberOfQuestions,
+      customQuestions,
+      settings,
+      accessType,
+      expiresAt
+    } = req.body;
+
+    // Validation
+    if (!title || !role) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title and role are required'
+      });
+    }
+
+    // Create interview
+    const interview = new CustomInterview({
+      title,
+      description,
+      role,
+      difficulty: difficulty || 'medium',
+      duration: duration || 30,
+      numberOfQuestions: numberOfQuestions || 5,
+      customQuestions: customQuestions || [],
+      settings: settings || {},
+      accessType: accessType || 'public',
+      expiresAt: expiresAt || null,
+      createdBy: req.admin.id
+    });
+
+    await interview.save();
+
+    console.log('✅ Custom interview created:', interview.interviewId);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Interview created successfully',
+      interview: {
+        id: interview._id,
+        interviewId: interview.interviewId,
+        title: interview.title,
+        interviewLink: interview.interviewLink,
+        fullLink: `${req.protocol}://${req.get('host')}${interview.interviewLink}`
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating custom interview:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to create interview',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Get all interviews created by admin
+exports.getMyInterviews = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 10 } = req.query;
+
+    const query = { createdBy: req.admin.id };
+    if (status) query.status = status;
+
+    const skip = (page - 1) * limit;
+
+    const interviews = await CustomInterview.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('-__v');
+
+    const total = await CustomInterview.countDocuments(query);
+
+    return res.status(200).json({
+      success: true,
+      interviews,
+      pagination: {
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching interviews:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch interviews'
+    });
+  }
+};
+
+// Get single interview details
+exports.getInterviewDetails = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+
+    const interview = await CustomInterview.findOne({
+      interviewId,
+      createdBy: req.admin.id
+    });
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      interview
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching interview details:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch interview details'
+    });
+  }
+};
+
+// Update interview
+exports.updateInterview = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+    const updates = req.body;
+
+    // Prevent updating certain fields
+    delete updates.interviewId;
+    delete updates.createdBy;
+    delete updates.createdAt;
+    delete updates.totalAttempts;
+    delete updates.completedAttempts;
+
+    const interview = await CustomInterview.findOneAndUpdate(
+      { interviewId, createdBy: req.admin.id },
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Interview updated successfully',
+      interview
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating interview:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update interview'
+    });
+  }
+};
+
+// Delete interview
+exports.deleteInterview = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+
+    const interview = await CustomInterview.findOneAndDelete({
+      interviewId,
+      createdBy: req.admin.id
+    });
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Interview deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting interview:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to delete interview'
+    });
+  }
+};
+
+// Toggle interview status (active/closed)
+exports.toggleInterviewStatus = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+
+    const interview = await CustomInterview.findOne({
+      interviewId,
+      createdBy: req.admin.id
+    });
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    interview.status = interview.status === 'active' ? 'closed' : 'active';
+    await interview.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Interview ${interview.status}`,
+      status: interview.status
+    });
+
+  } catch (error) {
+    console.error('❌ Error toggling interview status:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to toggle interview status'
+    });
+  }
+};
+
+// Get interview analytics
+exports.getInterviewAnalytics = async (req, res) => {
+  try {
+    const totalInterviews = await CustomInterview.countDocuments({
+      createdBy: req.admin.id
+    });
+
+    const activeInterviews = await CustomInterview.countDocuments({
+      createdBy: req.admin.id,
+      status: 'active'
+    });
+
+    const interviews = await CustomInterview.find({
+      createdBy: req.admin.id
+    }).select('totalAttempts completedAttempts');
+
+    const totalAttempts = interviews.reduce((sum, i) => sum + i.totalAttempts, 0);
+    const completedAttempts = interviews.reduce((sum, i) => sum + i.completedAttempts, 0);
+
+    return res.status(200).json({
+      success: true,
+      analytics: {
+        totalInterviews,
+        activeInterviews,
+        totalAttempts,
+        completedAttempts,
+        completionRate: totalAttempts > 0 ? Math.round((completedAttempts / totalAttempts) * 100) : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching analytics:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch analytics'
+    });
+  }
+};

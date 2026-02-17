@@ -3,6 +3,9 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/aiInterviewController.cjs');
 
+// Health check for Ollama integration
+router.get('/health', ctrl.checkOllamaHealth);
+
 // POST /api/ai/generate-interview-questions - Generate interview questions
 router.post('/generate-interview-questions', ctrl.generateInterviewQuestions);
 
