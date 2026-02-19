@@ -25,6 +25,8 @@ import ProfessionalAdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminContestView from './pages/admin/AdminContestView.jsx';
 import ManageInterviews from './pages/admin/ManageInterviews.jsx';
+import ManageScheduledInterviews from './pages/admin/ManageScheduledInterviews.jsx';
+import ScheduledInterviews from './pages/interview/ScheduledInterviews.jsx';
 
 // ✅ ProtectedRoute component
 function ProtectedRoute({ children }) {
@@ -94,6 +96,7 @@ function AppContent() {
           <Route path="/ai-interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
+          <Route path="/scheduled-interviews" element={<ScheduledInterviews />} />
 
           {/* ✅ Public Routes */}
           <Route path="/Login" element={<Login />} />
@@ -104,6 +107,7 @@ function AppContent() {
           <Route path="/admin-dashboard" element={<ProfessionalAdminDashboard />} />
           <Route path="/admin/contest/:contestId" element={<AdminContestView />} />
           <Route path="/admin/manage-interviews" element={<ManageInterviews />} />
+          <Route path="/admin/scheduled-interviews" element={<ManageScheduledInterviews />} />
         </Routes>
       </main>
     </div>

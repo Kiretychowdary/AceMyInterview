@@ -20,7 +20,11 @@ const Practice = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-white text-black font-sans relative overflow-hidden">
+      {/* Decorative corner accents (responsive) */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-16 w-44 h-44 rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-60 blur-2xl transform -rotate-12 sm:-left-32 sm:-top-24 sm:w-72 sm:h-72 sm:opacity-50"></div>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 -bottom-12 w-52 h-52 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-55 blur-2xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-45"></div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <motion.div 
@@ -28,13 +32,13 @@ const Practice = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="inline-block px-4 py-2 bg-blue-500/20 rounded-lg mb-4">
-            <span className="text-blue-300 text-sm font-medium">📚 Technical</span>
+          <div className="inline-block px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+            <span className="text-blue-700 text-sm font-medium">📚 Technical</span>
           </div>
-          <h1 className="text-5xl font-bold text-white mb-4">
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">
             Tech Tracks
           </h1>
-          <p className="text-xl text-gray-300">
+          <p className="text-xl text-gray-700">
             Choose a specialization to begin structured interview preparation.
           </p>
         </motion.div>

@@ -305,26 +305,42 @@ const FaceToFaceInterview = () => {
 
   // Submit Current Answer
   const submitAnswer = async () => {
-    if (!currentAnswer.trim()) {
+    // Stop listening first and wait for final transcription
+    if (isListening) {
+      stopListening();
+      // Wait a bit for final speech recognition results
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Validate answer
+    const trimmedAnswer = currentAnswer.trim();
+    if (!trimmedAnswer) {
       toast.error('Please provide an answer before submitting.');
       return;
     }
 
-    stopListening();
+    if (trimmedAnswer.length < 5) {
+      toast.warning('Your answer seems very short. Please provide a more detailed response.');
+      return;
+    }
+
+    console.log('📤 Submitting answer (length:', trimmedAnswer.length, 'characters)');
 
     const answerData = {
       questionIndex: currentQuestionIndex,
       questionNumber: currentQuestionIndex + 1, // Backend uses 1-based indexing
       question: questions[currentQuestionIndex].question,
-      answer: currentAnswer,
+      answer: trimmedAnswer,
       category: questions[currentQuestionIndex].category,
       timestamp: new Date(),
-      timeSpent: 180 - timeRemaining
+      timeSpent: (interviewConfig.duration * 60) - timeRemaining
     };
 
-    setUserAnswers([...userAnswers, answerData]);
+    // Store answer first
+    const updatedAnswers = [...userAnswers, answerData];
+    setUserAnswers(updatedAnswers);
 
-    // Provide immediate AI feedback
+    // Provide AI feedback via Ollama (this takes 2-5 seconds)
     await provideFeedback(answerData);
 
     // Move to next question or end interview
@@ -347,10 +363,17 @@ const FaceToFaceInterview = () => {
     try {
       setIsEvaluating(true); // Show "Evaluating..." message
       setAvatarExpression('thinking');
-      setAvatarFeedback('🤔 Evaluating your answer using AI...');
+      setAvatarFeedback('� Analyzing your answer with AI... This may take a few seconds.');
+      
+      // Show toast notification
+      const toastId = toast.info('🤖 AI is evaluating your answer using Ollama model...', {
+        autoClose: false,
+        closeButton: false
+      });
       
       if (!interviewData.sessionId) {
         console.error('❌ No session ID available for feedback');
+        toast.dismiss(toastId);
         setIsEvaluating(false);
         setAvatarExpression('encouraging');
         setAvatarFeedback('');
@@ -358,26 +381,33 @@ const FaceToFaceInterview = () => {
         return;
       }
 
-      console.log('📤 Submitting answer for evaluation');
-      console.log('  Session ID:', interviewData.sessionId);
-      console.log('  Question Number:', answerData.questionNumber);
-      console.log('  Answer length:', answerData.answer.length, 'characters');
+      setAvatarFeedback(`🤖 Checking: Is your answer CORRECT for "${answerData.question.substring(0, 60)}..."?`);
 
-      // Call Ollama evaluation API - THIS TAKES TIME (2-5 seconds)
+      // Call Ollama evaluation API - THIS TAKES TIME (2-8 seconds for thorough evaluation)
+      const startTime = Date.now();
       const evaluationResponse = await axios.post(`${API_BASE_URL}/api/interview/submit-answer`, {
         sessionId: interviewData.sessionId,
         questionNumber: answerData.questionNumber,
         answer: answerData.answer,
         timeSpent: answerData.timeSpent || 0
       });
+      const evaluationTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
-      console.log('📥 Evaluation response:', evaluationResponse.data);
+      // Dismiss loading toast
+      toast.dismiss(toastId);
 
       if (evaluationResponse.data.success && evaluationResponse.data.evaluation) {
         const evaluation = evaluationResponse.data.evaluation;
         const score = evaluation.score || 0;
+        const isCorrect = evaluation.isCorrect || 'INCORRECT';
+        const question = evaluationResponse.data.question || answerData.question;
+        const userAnswer = evaluationResponse.data.userAnswer || answerData.answer;
         
-        console.log('✅ Answer evaluated - Score:', score);
+        // Update answer data with evaluation
+        answerData.score = score;
+        answerData.feedback = evaluation.feedback;
+        answerData.strengths = evaluation.strengths;
+        answerData.improvements = evaluation.improvements;
         
         // Determine emotion based on score
         let emotion = 'neutral';
@@ -387,16 +417,26 @@ const FaceToFaceInterview = () => {
         else emotion = 'disappointed';
         
         setAvatarExpression(emotion);
+        const correctnessLabel = score >= 8 ? '✅ CORRECT!' : 
+                                 score >= 6 ? '✅ Mostly Correct' :
+                                 score >= 4 ? '⚠️ Partially Correct' :
+                                 '❌ Incorrect/Incomplete';
         
-        // Show score in feedback
-        const feedbackMessage = `Score: ${score}/10 - ${evaluation.feedback || 'Thank you for your answer.'}`;
-        setAvatarFeedback(feedbackMessage);
-        speakText(evaluation.feedback || 'Thank you for your answer.', emotion);
+        toast.success(
+          <div>
+            <p className="font-bold">{correctnessLabel}</p>
+            <p className="text-sm">Score: {score}/10</p>
+            <p className="text-xs mt-1">{evaluation.feedback}</p>
+          </div>, 
+          { autoClose: 6000 }
+        );
         
-        // Keep feedback visible for 4 seconds before moving on
-        await new Promise(resolve => setTimeout(resolve, 4000));
+        // Speak the feedback
+        speakText(`You scored ${score} out of 10. ${evaluation.feedback}`, emotion);
+        
+        // Keep feedback visible for 6 seconds so user can read it
+        await new Promise(resolve => setTimeout(resolve, 6000));
       } else {
-        console.warn('⚠️ No evaluation in response');
         setAvatarExpression('encouraging');
         setAvatarFeedback('Thank you for your answer.');
         speakText('Thank you for your answer. Let\'s continue with the next question.');
@@ -407,8 +447,6 @@ const FaceToFaceInterview = () => {
       setAvatarFeedback(''); // Clear feedback message
       
     } catch (error) {
-      console.error('❌ Error providing feedback:', error);
-      console.error('Error details:', error.response?.data || error.message);
       setIsEvaluating(false);
       setAvatarExpression('encouraging');
       setAvatarFeedback('');
@@ -1007,6 +1045,38 @@ const FaceToFaceInterview = () => {
                   )}
                 </h4>
                 
+                {/* AI Evaluation Progress Indicator */}
+                {isEvaluating && (
+                  <div className="mb-4 p-5 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 border-2 border-blue-400 rounded-xl shadow-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="relative flex-shrink-0">
+                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-xl">🤖</span>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold text-blue-900 text-lg mb-2 flex items-center gap-2">
+                          <span>AI is Checking: Is Your Answer CORRECT?</span>
+                          <span className="animate-pulse">...</span>
+                        </p>
+                        <div className="bg-white/70 rounded-lg p-3 mb-2 border border-blue-200">
+                          <p className="text-xs text-blue-600 font-medium mb-1">Question being evaluated:</p>
+                          <p className="text-sm text-blue-900 font-medium italic">
+                            "{questions[currentQuestionIndex]?.question.substring(0, 120)}..."
+                          </p>
+                        </div>
+                        <p className="text-sm text-blue-700 font-medium">
+                          ⚡ Ollama AI is verifying if your answer is factually correct and relevant
+                        </p>
+                        <p className="text-xs text-blue-600 mt-1">
+                          🎯 Strict evaluation in progress... (2-8 seconds)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Voice Answer Display */}
                 {isListening && (
                   <div className="bg-red-50 p-4 rounded-xl mb-3 border-2 border-red-200">
@@ -1050,19 +1120,24 @@ const FaceToFaceInterview = () => {
                   <button
                     onClick={submitAnswer}
                     disabled={!currentAnswer.trim() || isAISpeaking || isEvaluating}
-                    className="bg-gradient-to-r from-green-600 to-green-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                    className="bg-gradient-to-r from-green-600 to-green-700 text-white py-3.5 rounded-xl font-semibold hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all relative overflow-hidden"
                   >
-                    {isEvaluating ? (
-                      <>
-                        <span className="animate-spin text-xl">⏳</span>
-                        <span>Evaluating with AI...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-xl">✓</span>
-                        <span>Submit Answer</span>
-                      </>
+                    {isEvaluating && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 animate-pulse"></div>
                     )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      {isEvaluating ? (
+                        <>
+                          <span className="animate-spin text-xl">🤖</span>
+                          <span>AI Evaluating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-xl">✓</span>
+                          <span>Submit Answer</span>
+                        </>
+                      )}
+                    </span>
                   </button>
                 </div>
 

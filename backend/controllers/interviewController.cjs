@@ -157,15 +157,45 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
 
     const responseText = await generateWithOllama(prompt, {
       temperature: 0.8,
-      maxTokens: 1000
+      maxTokens: 1000,
+      format: 'json' // Force JSON format
     });
 
     console.log('🔍 Raw Ollama Response:', responseText.substring(0, 500));
 
-    // Parse response
-    const questionData = ollamaService.parseJsonResponse(responseText);
-
-    console.log('📝 Parsed Question Data:', JSON.stringify(questionData, null, 2));
+    // Parse response with error handling
+    let questionData;
+    try {
+      questionData = ollamaService.parseJsonResponse(responseText);
+      console.log('📝 Parsed Question Data:', JSON.stringify(questionData, null, 2));
+    } catch (parseError) {
+      console.error('❌ JSON parsing failed:', parseError.message);
+      console.error('Full response was:', responseText);
+      
+      // Try fallback: extract question manually if possible
+      try {
+        const questionMatch = responseText.match(/"question"\s*:\s*"([^"]+)"/);
+        const categoryMatch = responseText.match(/"category"\s*:\s*"([^"]+)"/);
+        const pointsMatch = responseText.match(/"expectedPoints"\s*:\s*\[(.*?)\]/s);
+        
+        if (questionMatch && categoryMatch) {
+          console.log('⚠️ Using manual extraction fallback');
+          questionData = {
+            question: questionMatch[1],
+            category: categoryMatch[1],
+            expectedPoints: pointsMatch ? 
+              JSON.parse(`[${pointsMatch[1]}]`) : 
+              ["Key concepts", "Practical application", "Clear explanation"]
+          };
+          console.log('✅ Manually extracted question data');
+        } else {
+          throw new Error('Could not extract question from malformed response');
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback extraction also failed:', fallbackError.message);
+        throw new Error('Invalid question format from AI - could not parse or extract');
+      }
+    }
 
     if (!questionData || !questionData.question || !questionData.category || !questionData.expectedPoints) {
       console.error('❌ Invalid question format. Response was:', responseText);
@@ -260,73 +290,106 @@ exports.submitAnswer = async (req, res) => {
       ? `\n\nExpected Key Points for a Good Answer:\n${qa.question.expectedPoints.map((point, idx) => `${idx + 1}. ${point}`).join('\n')}`
       : '';
 
-    const evaluationPrompt = `You are an expert interviewer. Evaluate this interview answer and determine if it is correct.
+    const evaluationPrompt = `You are a STRICT technical interviewer. Your job is to verify if the candidate's answer ACTUALLY ANSWERS THE QUESTION.
 
-Question: ${qa.question.text}
-Category: ${qa.question.category}${expectedPointsText}
+══════════════════════════════════════════════════════════
+QUESTION ASKED:
+"${qa.question.text}"
 
-Candidate's Answer: ${answer}
+CATEGORY: ${qa.question.category}${expectedPointsText}
+══════════════════════════════════════════════════════════
 
-Evaluate the answer based on:
-1. Correctness - Does it answer the question accurately?
-2. Completeness - Does it cover the expected key points?
-3. Technical Accuracy - Are the concepts and solutions correct?
-4. Clarity - Is the explanation clear and well-structured?
+CANDIDATE'S ANSWER:
+"${answer}"
 
-Score 0-10:
-- 0-2: Incorrect, off-topic, or no meaningful content
-- 3-4: Partially correct but missing major points
-- 5-6: Correct but incomplete, covers some key points
-- 7-8: Mostly correct, covers most key points with good detail
-- 9-10: Excellent, comprehensive, covers all points with depth
+══════════════════════════════════════════════════════════
 
-Return ONLY this JSON format:
+STEP-BY-STEP VERIFICATION:
+
+STEP 1: Is this the SAME TEXT as the question?
+→ Compare the answer word-by-word with the question
+→ If 80%+ similar: score = 0, isCorrect = "INCORRECT"
+→ Feedback: "You just repeated the question instead of answering it"
+
+STEP 2: Is this GIBBERISH or meaningless text?
+→ Check if it's random characters, nonsense words, or extremely short
+→ If YES: score = 0, isCorrect = "INCORRECT"  
+→ Feedback: "This is not a meaningful answer"
+
+STEP 3: Does this answer RELATE to the question topic?
+→ Question is about: ${qa.question.category}
+→ Does the answer discuss this topic? YES or NO
+→ If NO: score = 0-2, isCorrect = "INCORRECT"
+→ Feedback: "Your answer does not address the question asked"
+
+STEP 4: Does this answer DIRECTLY ADDRESS what was asked?
+→ Read the question carefully - what is being asked?
+→ Does the answer provide that information?
+→ If NO: score = 2-4, isCorrect = "INCORRECT"
+→ If SOMEWHAT: score = 5-6, isCorrect = "PARTIALLY_CORRECT"  
+→ If YES: Continue to Step 5
+
+STEP 5: Is the information TECHNICALLY CORRECT?
+→ Check for factual errors, wrong concepts, misconceptions
+→ Major errors: Deduct 3-4 points, isCorrect = "INCORRECT"
+→ Minor errors: Deduct 1-2 points, keep isCorrect = "PARTIALLY_CORRECT"
+→ Mostly correct: isCorrect = "CORRECT"
+
+STEP 6: How COMPLETE is the answer?
+→ Does it cover the key points needed?
+→ Missing most points: score = 5-6
+→ Covers main points: score = 7-8
+→ Comprehensive: score = 9-10
+
+══════════════════════════════════════════════════════════
+
+FINAL SCORING RULES (BE STRICT):
+- 0-1: Same as question, gibberish, or totally wrong topic
+- 2-3: Wrong or doesn't address the question
+- 4-5: Barely addresses question with major gaps  
+- 6: Addresses question but incomplete/errors
+- 7: Correct but missing details
+- 8: Good, correct, covers most points
+- 9-10: Excellent, comprehensive answer
+
+YOU MUST RETURN VALID JSON:
 {
-  "score": 7,
-  "strengths": ["what was good in the answer"],
-  "improvements": ["what was missing or could be better"],
-  "feedback": "One sentence summary of the evaluation"
+  "score": <0-10>,
+  "isCorrect": "<CORRECT|PARTIALLY_CORRECT|INCORRECT>",
+  "strengths": ["what was good"],
+  "improvements": ["what needs fixing"],
+  "feedback": "why you gave this score"
 }`;
 
-    console.log('📝 Evaluating answer for Q' + questionNumber + '...');
-    console.log('🔍 Expected points:', qa.question.expectedPoints);
-    
     let evaluation;
     try {
+      const startTime = Date.now();
       const evaluationText = await generateWithOllama(evaluationPrompt, {
-        temperature: 0.3, // Lower temperature for objective evaluation
-        maxTokens: 800, // Increased for detailed evaluation
+        temperature: 0.1, // Very low for strict, consistent evaluation
+        maxTokens: 1500, 
         format: 'json' // Force JSON format
       });
+      const evaluationTime = Date.now() - startTime;
       
-      console.log('📥 Received evaluation (length:', evaluationText.length, 'chars)');
-      console.log('🔍 Evaluation response:', evaluationText.substring(0, 300));
-
       evaluation = ollamaService.parseJsonResponse(evaluationText);
       
     } catch (jsonError) {
-      console.warn('⚠️ JSON parsing failed, attempting plain text fallback...');
-      console.warn('   Error:', jsonError.message);
       
       // Fallback: try again without format enforcement
       try {
         const retryText = await generateWithOllama(evaluationPrompt, {
           temperature: 0.3,
-          maxTokens: 500
+          maxTokens: 800
         });
         
-        // Try to parse as plain text
         evaluation = ollamaService.parsePlainTextToJson(retryText, 'evaluation');
-        console.log('✅ Plain text parsed successfully:', evaluation);
         
       } catch (retryError) {
-        console.error('❌ Both JSON and plain text parsing failed');
-        // Use default evaluation
         evaluation = {
-          score: 5,
-          strengths: ['Provided a response'],
-          improvements: ['Could be more detailed'],
-          feedback: 'Thank you for your answer.'
+          score: 2,
+          strengths: ['Response was provided'],
+          improvements: ['Answer format was invalid - please provide clear, structured responses', 'Address the question directly with technical details'],
+          feedback: 'Unable to properly evaluate your answer due to formatting issues. Please provide clearer, more structured responses.'
         };
       }
     }
@@ -335,6 +398,8 @@ Return ONLY this JSON format:
     if (typeof evaluation.score === 'undefined' || !evaluation.feedback) {
       throw new Error('Invalid evaluation response - missing score or feedback');
     }
+
+    // Trust Ollama AI's evaluation - it has verified the answer correctness
 
     // Add evaluation to transcript
     qa.evaluation = {
@@ -347,13 +412,14 @@ Return ONLY this JSON format:
 
     await transcript.save();
 
-    console.log(`✅ Answer evaluated for Q${questionNumber}: Score ${evaluation.score}/10`);
-
     return res.json({
       success: true,
+      question: qa.question.text,
+      userAnswer: answer,
       evaluation: {
         score: evaluation.score,
         maxScore: 10,
+        isCorrect: evaluation.isCorrect || (evaluation.score >= 6 ? 'CORRECT' : evaluation.score >= 4 ? 'PARTIALLY_CORRECT' : 'INCORRECT'),
         strengths: evaluation.strengths || [],
         improvements: evaluation.improvements || [],
         feedback: evaluation.feedback

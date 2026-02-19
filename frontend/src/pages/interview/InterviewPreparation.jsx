@@ -121,11 +121,16 @@ export default function InterviewPreparation() {
 
   // Main render
   return (
-    <div className="max-w-7xl mx-auto py-10">
-      {/* Step 1: Choose Category (Tech/Non-Tech) */}
-      {!category && !selectedRoleKey && (
-        <ChooseYourPath onSelectTrack={(trackType) => setCategory(trackType)} />
-      )}
+    <div className="min-h-screen bg-white text-black font-sans relative overflow-hidden">
+      {/* Decorative corner accents for full page (responsive) */}
+      <div aria-hidden="true" className="pointer-events-none absolute -left-24 -top-16 w-44 h-44 rounded-full bg-gradient-to-br from-blue-100 to-transparent opacity-60 blur-2xl transform -rotate-12 sm:-left-32 sm:-top-24 sm:w-72 sm:h-72 sm:opacity-50"></div>
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 -bottom-12 w-52 h-52 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-55 blur-2xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-45"></div>
+      
+      <div className="max-w-7xl mx-auto py-10 relative z-10 px-4">
+        {/* Step 1: Choose Category (Tech/Non-Tech) */}
+        {!category && !selectedRoleKey && (
+          <ChooseYourPath onSelectTrack={(trackType) => setCategory(trackType)} />
+        )}
 
       {/* Step 2: Role Selection */}
       {category && !selectedRoleKey && (
@@ -303,6 +308,7 @@ export default function InterviewPreparation() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
