@@ -21,14 +21,34 @@ const FaceToFaceInterview = () => {
   const synthRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Interview Configuration - Extract topic from location.state
-  const interviewConfig = {
+  // Check if this is a scheduled interview
+  const scheduledInterview = location.state?.scheduledInterview || null;
+  const isScheduledInterview = scheduledInterview?.isScheduled || false;
+
+  // Interview Configuration - Extract topic from location.state or use scheduled interview data
+  const interviewConfig = scheduledInterview ? {
+    topic: scheduledInterview.interviewType === 'company-based' 
+      ? `${scheduledInterview.companyName} Interview`
+      : scheduledInterview.topics.join(', '),
+    difficulty: scheduledInterview.difficulty || 'medium',
+    duration: scheduledInterview.duration || 3,
+    interviewType: 'face-to-face',
+    jobRole: scheduledInterview.companyName || scheduledInterview.topics[0] || 'General',
+    subTopicDescription: scheduledInterview.interviewType === 'company-based'
+      ? `Company-based interview for ${scheduledInterview.companyName}`
+      : `Topic-based interview on: ${scheduledInterview.topics.join(', ')}`,
+    numberOfQuestions: scheduledInterview.numberOfQuestions || 3,
+    scheduledInterviewId: scheduledInterview.scheduledInterviewId,
+    interviewId: scheduledInterview.interviewId,
+    interviewName: scheduledInterview.interviewName
+  } : {
     topic: location.state?.subject || location.state?.topic || location.state?.jobRole || 'Software Engineering',
     difficulty: location.state?.difficulty || 'medium',
     duration: 3, // 3-minute quick interview
     interviewType: 'face-to-face',
     jobRole: location.state?.jobRole || 'Software Engineer',
-    subTopicDescription: location.state?.subTopicDescription || ''
+    subTopicDescription: location.state?.subTopicDescription || '',
+    numberOfQuestions: 3
   };
 
   // Core State Management
@@ -38,14 +58,14 @@ const FaceToFaceInterview = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
-  const [timeRemaining, setTimeRemaining] = useState(180); // 3 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState(interviewConfig.duration * 60); // Convert minutes to seconds
   const [isListening, setIsListening] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false); // NEW: Show evaluation status
   const [avatarExpression, setAvatarExpression] = useState('neutral');
   const [avatarFeedback, setAvatarFeedback] = useState('');
   const [finalAssessment, setFinalAssessment] = useState(null);
-  const [interviewData, setInterviewData] = useState({});
+  const [interviewData, setInterviewData] = useState({ startTime: null });
 
   // Initialize Speech Recognition and Synthesis
   useEffect(() => {
@@ -146,7 +166,7 @@ const FaceToFaceInterview = () => {
         role: interviewConfig.jobRole || interviewConfig.topic,
         difficulty: interviewConfig.difficulty || 'medium',
         topic: interviewConfig.topic,
-        totalQuestions: 3 // Generate 3 questions for 3-minute interview
+        totalQuestions: interviewConfig.numberOfQuestions || 3 // Use configured number of questions
       });
 
       if (!startResponse.data.success) {
@@ -159,8 +179,9 @@ const FaceToFaceInterview = () => {
       const generatedQuestions = [];
 
       // Generate questions one by one
-      for (let i = 0; i < 3; i++) {
-        toast.info(`Generating question ${i + 1} of 3...`);
+      const totalQuestionsToGenerate = interviewConfig.numberOfQuestions || 3;
+      for (let i = 0; i < totalQuestionsToGenerate; i++) {
+        toast.info(`Generating question ${i + 1} of ${totalQuestionsToGenerate}...`);
         console.log(`📝 Requesting question ${i + 1} for session:`, sessionId);
         
         const questionResponse = await axios.post(`${API_BASE_URL}/api/interview/next-question`, {
@@ -407,11 +428,11 @@ const FaceToFaceInterview = () => {
       userId: user?.uid || 'guest',
       topic: interviewConfig.topic,
       difficulty: interviewConfig.difficulty,
-      duration: 3,
+      duration: interviewConfig.duration,
       totalQuestions: questions.length,
       answeredQuestions: userAnswers.length,
-      timeSpent: 180 - timeRemaining,
-      startTime: new Date(Date.now() - (180 - timeRemaining) * 1000),
+      timeSpent: (interviewConfig.duration * 60) - timeRemaining,
+      startTime: interviewData.startTime || new Date(Date.now() - ((interviewConfig.duration * 60) - timeRemaining) * 1000),
       endTime: new Date(),
       questions: questions,
       answers: userAnswers,
@@ -437,6 +458,12 @@ const FaceToFaceInterview = () => {
       
       console.log('✅ Assessment received:', assessment);
       setFinalAssessment(assessment);
+      
+      // If this is a scheduled interview, submit participation data
+      if (isScheduledInterview && scheduledInterview) {
+        console.log('📤 Submitting participation data for scheduled interview...');
+        await submitScheduledInterviewParticipation(sessionData, assessment);
+      }
       
       setInterviewPhase('completed');
       
@@ -474,6 +501,69 @@ const FaceToFaceInterview = () => {
     } catch (error) {
       console.error('❌ Error storing interview data:', error);
       toast.warning('Interview completed but data could not be saved');
+    }
+  };
+
+  // Submit Scheduled Interview Participation
+  const submitScheduledInterviewParticipation = async (sessionData, assessment) => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      
+      // Build transcript from user answers
+      const transcript = userAnswers.map((answerData, index) => ({
+        questionNumber: index + 1,
+        aiQuestion: answerData.question,
+        userAnswer: answerData.answer,
+        aiEvaluation: {
+          score: answerData.score || 0,
+          feedback: answerData.feedback || '',
+          strengths: [],
+          improvements: []
+        },
+        timestamp: answerData.timestamp
+      }));
+
+      const participationData = {
+        userId: user?.uid || 'guest',
+        userName: user?.displayName || user?.email?.split('@')[0] || 'Anonymous',
+        userEmail: user?.email || 'anonymous@example.com',
+        totalQuestions: questions.length,
+        questionsAnswered: userAnswers.length,
+        score: assessment.overallScore * 10, // Convert 0-10 to 0-100
+        maxScore: 100,
+        transcript: transcript,
+        overallFeedback: {
+          summary: assessment.summary || '',
+          strengths: assessment.strengths || [],
+          areasForImprovement: assessment.improvements || [],
+          recommendations: assessment.nextSteps || [],
+          rating: assessment.overallScore >= 8 ? 'Excellent' : 
+                  assessment.overallScore >= 6 ? 'Good' :
+                  assessment.overallScore >= 4 ? 'Average' : 'Needs Improvement'
+        },
+        startedAt: interviewData.startTime || new Date(Date.now() - (interviewConfig.duration * 60 - timeRemaining) * 1000),
+        completedAt: new Date()
+      };
+
+      console.log('📤 Submitting participation for interview:', scheduledInterview.interviewId);
+      
+      const response = await axios.post(
+        `${API_BASE}/api/public/scheduled-interviews/${scheduledInterview.interviewId}/participate`,
+        participationData,
+        {
+          headers: {
+            'Authorization': `Bearer ${user?.accessToken || ''}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        toast.success('✅ Your interview results have been recorded!');
+        console.log('✅ Participation submitted successfully:', response.data.participation);
+      }
+    } catch (error) {
+      console.error('❌ Error submitting participation:', error);
+      toast.warning('Interview completed but participation could not be recorded');
     }
   };
 

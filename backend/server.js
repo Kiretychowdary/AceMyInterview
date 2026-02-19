@@ -87,6 +87,15 @@ try {
   console.warn('Admin routes not available:', e.message);
 }
 
+// Mount scheduled interview routes (admin)
+try {
+  const scheduledInterviewRoutes = require('./routes/scheduledInterviews.cjs');
+  app.use('/api/admin', scheduledInterviewRoutes);
+  console.log('✅ Scheduled Interview routes mounted at /api/admin');
+} catch (e) {
+  console.warn('Scheduled Interview routes not available:', e.message);
+}
+
 // Mount backend API routes
 try {
   const submissionsRoutes = require('./routes/submissions.cjs');
@@ -117,6 +126,15 @@ try {
   app.use('/api/interview', interviewRoutes);
 } catch (e) {
   console.warn('Interview routes not available:', e.message);
+}
+
+// Mount public scheduled interview routes (for students)
+try {
+  const publicInterviewRoutes = require('./routes/publicInterviews.cjs');
+  app.use('/api/public', publicInterviewRoutes);
+  console.log('✅ Public Interview routes mounted at /api/public');
+} catch (e) {
+  console.warn('Public Interview routes not available:', e.message);
 }
 
 // Mount ML service routes (Student Performance & AI Guidance)
