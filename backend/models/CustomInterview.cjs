@@ -145,11 +145,58 @@ const CustomInterviewSchema = new mongoose.Schema({
     default: Date.now
   },
   
-  expiresAt: {
+  // Availability Window
+  availableFrom: {
+    type: Date,
+    default: null // null = available immediately
+  },
+  
+  availableUntil: {
     type: Date,
     default: null // null = never expires
+  },
+  
+  expiresAt: {
+    type: Date,
+    default: null // Deprecated, use availableUntil instead
   }
 });
+
+// Check if interview is currently available
+CustomInterviewSchema.methods.isAvailable = function() {
+  const now = new Date();
+  
+  // Check if started
+  if (this.availableFrom && now < this.availableFrom) {
+    return false;
+  }
+  
+  // Check if expired
+  if (this.availableUntil && now > this.availableUntil) {
+    return false;
+  }
+  
+  // Legacy check
+  if (this.expiresAt && now > this.expiresAt) {
+    return false;
+  }
+  
+  return this.status === 'active';
+};
+
+// Update status based on availability
+CustomInterviewSchema.methods.updateStatus = function() {
+  if (!this.isAvailable() && this.status === 'active') {
+    const now = new Date();
+    if (this.availableFrom && now < this.availableFrom) {
+      this.status = 'draft'; // Not yet started
+    } else if ((this.availableUntil && now > this.availableUntil) || (this.expiresAt && now > this.expiresAt)) {
+      this.status = 'closed'; // Expired
+    }
+  } else if (this.isAvailable() && this.status === 'draft') {
+    this.status = 'active'; // Now available
+  }
+};
 
 // Generate interview link before saving
 CustomInterviewSchema.pre('save', function(next) {

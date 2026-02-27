@@ -94,39 +94,78 @@ router.post('/store-session', async (req, res) => {
       });
     }
 
-    // Create new interview session
-    const interviewSession = new InterviewSession({
-      ...sessionData,
+    // Ensure all required fields have values with defaults if needed
+    const sessionToStore = {
+      sessionId: sessionData.sessionId,
+      userId: sessionData.userId,
+      topic: sessionData.topic,
+      difficulty: sessionData.difficulty || 'medium',
+      duration: sessionData.duration || 30,
+      interviewType: sessionData.interviewType || 'face-to-face',
+      startTime: sessionData.startTime || new Date(Date.now() - (sessionData.timeSpent || 0) * 1000),
+      endTime: sessionData.endTime || new Date(),
+      timeSpent: sessionData.timeSpent || 0,
+      totalQuestions: sessionData.totalQuestions || 0,
+      answeredQuestions: sessionData.answeredQuestions || 0,
+      questions: sessionData.questions || [],
+      answers: sessionData.answers || [],
+      assessment: sessionData.assessment || {},
       updatedAt: new Date()
-    });
+    };
 
-    await interviewSession.save();
+    // Use findOneAndUpdate with upsert to avoid duplicate key errors
+    // This will update existing session or create new one
+    const interviewSession = await InterviewSession.findOneAndUpdate(
+      { sessionId: sessionToStore.sessionId },
+      sessionToStore,
+      { 
+        upsert: true, // Create if doesn't exist
+        new: true,     // Return the updated document
+        setDefaultsOnInsert: true
+      }
+    );
     
     console.log('✅ Interview session stored successfully');
-    console.log(`📊 Session ID: ${sessionData.sessionId}`);
-    console.log(`👤 User: ${sessionData.userId}`);
-    console.log(`📚 Topic: ${sessionData.topic}`);
-    console.log(`⏱️  Duration: ${sessionData.timeSpent}s`);
+    console.log(`📊 Session ID: ${sessionToStore.sessionId}`);
+    console.log(`👤 User: ${sessionToStore.userId}`);
+    console.log(`📚 Topic: ${sessionToStore.topic}`);
+    console.log(`⏱️  Duration: ${sessionToStore.timeSpent}s`);
     
     res.json({
       success: true,
       message: 'Interview session stored successfully',
-      sessionId: sessionData.sessionId,
+      sessionId: sessionToStore.sessionId,
       data: {
-        totalQuestions: sessionData.totalQuestions,
-        answeredQuestions: sessionData.answeredQuestions,
-        timeSpent: sessionData.timeSpent,
-        overallScore: sessionData.assessment?.overallScore
+        totalQuestions: sessionToStore.totalQuestions,
+        answeredQuestions: sessionToStore.answeredQuestions,
+        timeSpent: sessionToStore.timeSpent,
+        overallScore: sessionToStore.assessment?.overallScore
       }
     });
 
   } catch (error) {
     console.error('❌ Error storing interview session:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Check for validation errors
+    if (error.name === 'ValidationError') {
+      console.error('Validation errors:', JSON.stringify(error.errors, null, 2));
+    }
+    
+    // Check for duplicate key errors
+    if (error.code === 11000) {
+      console.error('Duplicate key error:', error.keyPattern);
+      console.error('Duplicate value:', error.keyValue);
+    }
     
     res.status(500).json({
       success: false,
       error: 'Failed to store interview session',
-      details: error.message
+      details: error.message,
+      errorType: error.name,
+      errorCode: error.code
     });
   }
 });

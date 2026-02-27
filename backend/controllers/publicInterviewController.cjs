@@ -1,5 +1,6 @@
 const ScheduledInterview = require('../models/ScheduledInterview.cjs');
 const InterviewParticipation = require('../models/InterviewParticipation.cjs');
+const InterviewRegistration = require('../models/InterviewRegistration.cjs');
 
 // Get all public scheduled interviews (for students)
 exports.getPublicScheduledInterviews = async (req, res) => {
@@ -136,6 +137,19 @@ exports.submitInterviewParticipation = async (req, res) => {
 
     await participation.save();
 
+    // Update registration status to mark as attended
+    const registration = await InterviewRegistration.findOne({
+      userId,
+      interviewId
+    });
+
+    if (registration) {
+      registration.hasAttended = true;
+      registration.attendedAt = new Date(startedAt) || new Date();
+      registration.participationId = participation._id;
+      await registration.save();
+    }
+
     res.status(201).json({
       success: true,
       message: 'Interview participation recorded successfully',
@@ -214,3 +228,176 @@ exports.getUserParticipationDetails = async (req, res) => {
     });
   }
 };
+
+// Register for an interview
+exports.registerForInterview = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+    const { userId, userName, userEmail } = req.body;
+
+    // Validation
+    if (!userId || !userName || !userEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Please provide userId, userName, and userEmail'
+      });
+    }
+
+    // Find the scheduled interview
+    const scheduledInterview = await ScheduledInterview.findOne({ interviewId });
+
+    if (!scheduledInterview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    // Update interview status
+    scheduledInterview.updateStatus();
+    await scheduledInterview.save();
+
+    // Check if interview is available for registration
+    if (scheduledInterview.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        error: 'This interview has already ended'
+      });
+    }
+
+    if (scheduledInterview.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: 'This interview has been cancelled'
+      });
+    }
+
+    // Check if user is already registered
+    const existingRegistration = await InterviewRegistration.findOne({
+      userId,
+      interviewId
+    });
+
+    if (existingRegistration) {
+      return res.status(400).json({
+        success: false,
+        error: 'You are already registered for this interview',
+        registration: existingRegistration
+      });
+    }
+
+    // Create registration
+    const registration = new InterviewRegistration({
+      scheduledInterviewId: scheduledInterview._id,
+      interviewId: scheduledInterview.interviewId,
+      userId,
+      userName,
+      userEmail,
+      registeredAt: new Date()
+    });
+
+    await registration.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Successfully registered for the interview!',
+      registration: {
+        id: registration._id,
+        interviewId: registration.interviewId,
+        registeredAt: registration.registeredAt
+      }
+    });
+  } catch (error) {
+    console.error('Register for interview error:', error);
+    
+    // Handle duplicate registration error (from unique index)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'You are already registered for this interview'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to register for interview: ' + error.message
+    });
+  }
+};
+
+// Check registration status
+exports.checkRegistrationStatus = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId is required'
+      });
+    }
+
+    const registration = await InterviewRegistration.findOne({
+      userId,
+      interviewId
+    });
+
+    res.json({
+      success: true,
+      isRegistered: !!registration,
+      registration: registration || null
+    });
+  } catch (error) {
+    console.error('Check registration status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check registration status'
+    });
+  }
+};
+
+// Get interview registrations (for a specific interview)
+exports.getInterviewRegistrations = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+
+    const registrations = await InterviewRegistration.find({ interviewId })
+      .sort({ registeredAt: -1 });
+
+    res.json({
+      success: true,
+      count: registrations.length,
+      registrations
+    });
+  } catch (error) {
+    console.error('Get interview registrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch registrations'
+    });
+  }
+};
+
+// Get user's registrations
+exports.getUserRegistrations = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const registrations = await InterviewRegistration.find({ userId })
+      .populate('scheduledInterviewId', 'interviewName scheduledDate availableFromDate availableToDate startTime endTime status')
+      .sort({ registeredAt: -1 });
+
+    res.json({
+      success: true,
+      registrations
+    });
+  } catch (error) {
+    console.error('Get user registrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch user registrations'
+    });
+  }
+};
+

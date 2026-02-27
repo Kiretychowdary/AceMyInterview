@@ -20,11 +20,12 @@ import Dashboard from './pages/Dashboard.jsx';
 import FaceToFaceInterview from './pages/interview/FaceToFaceInterview.jsx';
 import AIInterview from './pages/interview/AIInterview.jsx';
 import InterviewPreparation from './pages/interview/InterviewPreparation.jsx';
+import InterviewLanding from './pages/interview/InterviewLanding.jsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import ProfessionalAdminDashboard from './pages/admin/AdminDashboard.jsx';
 import AdminLogin from './pages/admin/AdminLogin.jsx';
 import AdminContestView from './pages/admin/AdminContestView.jsx';
-import ManageInterviews from './pages/admin/ManageInterviews.jsx';
+// import ManageInterviews from './pages/admin/ManageInterviews.jsx'; // Disabled - Using Scheduled Interviews only
 import ManageScheduledInterviews from './pages/admin/ManageScheduledInterviews.jsx';
 import ScheduledInterviews from './pages/interview/ScheduledInterviews.jsx';
 
@@ -96,6 +97,8 @@ function AppContent() {
           <Route path="/ai-interview" element={<ProtectedRoute><AIInterview /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/face-to-face-interview" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
+          <Route path="/interview/:interviewId/start" element={<ProtectedRoute><FaceToFaceInterview /></ProtectedRoute>} />
+          <Route path="/interview/:interviewId" element={<InterviewLanding />} />
           <Route path="/scheduled-interviews" element={<ScheduledInterviews />} />
 
           {/* ✅ Public Routes */}
@@ -106,7 +109,8 @@ function AppContent() {
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin-dashboard" element={<ProfessionalAdminDashboard />} />
           <Route path="/admin/contest/:contestId" element={<AdminContestView />} />
-          <Route path="/admin/manage-interviews" element={<ManageInterviews />} />
+          {/* <Route path="/admin/manage-interviews" element={<ManageInterviews />} /> */}
+          <Route path="/admin/interviews" element={<ManageScheduledInterviews />} />
           <Route path="/admin/scheduled-interviews" element={<ManageScheduledInterviews />} />
         </Routes>
       </main>

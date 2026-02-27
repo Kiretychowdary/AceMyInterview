@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Users, BookOpen, Building2, Plus, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = null }) => {
   const [formData, setFormData] = useState({
     interviewName: '',
-    scheduledDate: '',
-    startTime: '',
-    endTime: '',
+    availableFromDate: '',
+    availableFromTime: '',
+    availableToDate: '',
+    availableToTime: '',
     duration: 30,
     interviewType: 'topic-based',
     topics: [''],
@@ -23,14 +25,28 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
   useEffect(() => {
     if (interview) {
       // Edit mode
-      const date = new Date(interview.scheduledDate);
-      const formattedDate = date.toISOString().split('T')[0];
+      let availableFromDate = '', availableToDate = '';
+      
+      if (interview.availableFromDate) {
+        availableFromDate = new Date(interview.availableFromDate).toISOString().split('T')[0];
+      } else if (interview.scheduledDate) {
+        // Legacy support
+        availableFromDate = new Date(interview.scheduledDate).toISOString().split('T')[0];
+      }
+      
+      if (interview.availableToDate) {
+        availableToDate = new Date(interview.availableToDate).toISOString().split('T')[0];
+      } else if (interview.scheduledDate) {
+        // Legacy support
+        availableToDate = new Date(interview.scheduledDate).toISOString().split('T')[0];
+      }
       
       setFormData({
         interviewName: interview.interviewName || '',
-        scheduledDate: formattedDate,
-        startTime: interview.startTime || '',
-        endTime: interview.endTime || '',
+        availableFromDate: availableFromDate,
+        availableFromTime: interview.availableFromTime || interview.startTime || '',
+        availableToDate: availableToDate,
+        availableToTime: interview.availableToTime || interview.endTime || '',
         duration: interview.duration || 30,
         interviewType: interview.interviewType || 'topic-based',
         topics: interview.topics || [''],
@@ -47,9 +63,10 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
   const resetForm = () => {
     setFormData({
       interviewName: '',
-      scheduledDate: '',
-      startTime: '',
-      endTime: '',
+      availableFromDate: '',
+      availableFromTime: '',
+      availableToDate: '',
+      availableToTime: '',
       duration: 30,
       interviewType: 'topic-based',
       topics: [''],
@@ -68,20 +85,31 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
       newErrors.interviewName = 'Interview name is required';
     }
 
-    if (!formData.scheduledDate) {
-      newErrors.scheduledDate = 'Date is required';
+    if (!formData.availableFromDate) {
+      newErrors.availableFromDate = 'Start date is required';
     }
 
-    if (!formData.startTime) {
-      newErrors.startTime = 'Start time is required';
+    if (!formData.availableFromTime) {
+      newErrors.availableFromTime = 'Start time is required';
     }
 
-    if (!formData.endTime) {
-      newErrors.endTime = 'End time is required';
+    if (!formData.availableToDate) {
+      newErrors.availableToDate = 'End date is required';
     }
 
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
-      newErrors.endTime = 'End time must be after start time';
+    if (!formData.availableToTime) {
+      newErrors.availableToTime = 'End time is required';
+    }
+
+    // Validate that end datetime is after start datetime
+    if (formData.availableFromDate && formData.availableFromTime && 
+        formData.availableToDate && formData.availableToTime) {
+      const startDateTime = new Date(`${formData.availableFromDate}T${formData.availableFromTime}`);
+      const endDateTime = new Date(`${formData.availableToDate}T${formData.availableToTime}`);
+      
+      if (endDateTime <= startDateTime) {
+        newErrors.availableToDate = 'End date/time must be after start date/time';
+      }
     }
 
     if (formData.interviewType === 'topic-based') {
@@ -127,10 +155,14 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
 
       const method = interview ? 'PUT' : 'POST';
 
+      // Get admin token from localStorage
+      const adminToken = localStorage.getItem('ace_admin_token');
+
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
         },
         credentials: 'include',
         body: JSON.stringify(payload)
@@ -139,16 +171,28 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
       const data = await response.json();
 
       if (data.success) {
-        alert(interview ? 'Interview updated successfully!' : 'Interview created successfully!');
+        toast.success(
+          interview ? '✅ Interview updated successfully!' : '🎉 Interview created successfully!',
+          {
+            position: 'top-center',
+            autoClose: 3000
+          }
+        );
         resetForm();
         onSuccess();
         onClose();
       } else {
-        alert('Error: ' + (data.error || 'Failed to save interview'));
+        toast.error('Error: ' + (data.error || 'Failed to save interview'), {
+          position: 'top-right',
+          autoClose: 4000
+        });
       }
     } catch (error) {
       console.error('Error saving interview:', error);
-      alert('Failed to save interview: ' + error.message);
+      toast.error('Failed to save interview: ' + error.message, {
+        position: 'top-right',
+        autoClose: 4000
+      });
     } finally {
       setLoading(false);
     }
@@ -197,34 +241,34 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-purple-500/30"
+          className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-blue-200"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-purple-500/30">
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-purple-400" />
+          <div className="flex items-center justify-between p-6 border-b border-blue-200 bg-gradient-to-r from-blue-50 to-white">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-blue-600" />
               {interview ? 'Edit Scheduled Interview' : 'Create Scheduled Interview'}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               <X className="w-6 h-6" />
             </button>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+          <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)] bg-white">
             {/* Interview Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Interview Name *
               </label>
               <input
                 type="text"
                 value={formData.interviewName}
                 onChange={(e) => setFormData({ ...formData, interviewName: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="e.g., Full Stack Developer Interview"
               />
               {errors.interviewName && (
@@ -232,57 +276,97 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
               )}
             </div>
 
-            {/* Date and Time */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Date *
-                </label>
-                <input
-                  type="date"
-                  value={formData.scheduledDate}
-                  onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                {errors.scheduledDate && (
-                  <p className="text-red-400 text-sm mt-1">{errors.scheduledDate}</p>
-                )}
+            {/* Availability Window */}
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-700 text-sm">
+                  💡 <strong>Flexible Timing:</strong> Users can start the interview anytime during this window
+                </p>
               </div>
 
+              {/* Available From */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Start Time *
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available From *
                 </label>
-                <input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-                {errors.startTime && (
-                  <p className="text-red-400 text-sm mt-1">{errors.startTime}</p>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <input
+                      type="date"
+                      value={formData.availableFromDate}
+                      onChange={(e) => setFormData({ ...formData, availableFromDate: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.availableFromDate && (
+                      <p className="text-red-400 text-sm mt-1">{errors.availableFromDate}</p>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="time"
+                      value={formData.availableFromTime}
+                      onChange={(e) => setFormData({ ...formData, availableFromTime: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.availableFromTime && (
+                      <p className="text-red-600 text-sm mt-1">{errors.availableFromTime}</p>
+                    )}
+                  </div>
+                </div>
               </div>
 
+              {/* Available To */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  End Time *
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Until *
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <input
+                      type="date"
+                      value={formData.availableToDate}
+                      onChange={(e) => setFormData({ ...formData, availableToDate: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.availableToDate && (
+                      <p className="text-red-600 text-sm mt-1">{errors.availableToDate}</p>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="time"
+                      value={formData.availableToTime}
+                      onChange={(e) => setFormData({ ...formData, availableToTime: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.availableToTime && (
+                      <p className="text-red-600 text-sm mt-1">{errors.availableToTime}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Duration per user */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Interview Duration (per user) - Minutes *
                 </label>
                 <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 30"
+                  min="3"
+                  max="240"
                 />
-                {errors.endTime && (
-                  <p className="text-red-400 text-sm mt-1">{errors.endTime}</p>
-                )}
+                <p className="text-gray-600 text-xs mt-1">Each user will have this many minutes to complete the interview</p>
               </div>
             </div>
 
             {/* Interview Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Interview Type *
               </label>
               <div className="grid grid-cols-2 gap-4">
@@ -291,12 +375,12 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
                   onClick={() => handleInterviewTypeChange('topic-based')}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     formData.interviewType === 'topic-based'
-                      ? 'border-purple-500 bg-purple-500/20'
-                      : 'border-purple-500/30 bg-slate-800/50 hover:border-purple-500/50'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-blue-300'
                   }`}
                 >
-                  <BookOpen className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                  <span className="text-white font-medium">Topic Based</span>
+                  <BookOpen className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                  <span className="text-gray-900 font-medium">Topic Based</span>
                 </button>
 
                 <button
@@ -304,12 +388,12 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
                   onClick={() => handleInterviewTypeChange('company-based')}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     formData.interviewType === 'company-based'
-                      ? 'border-purple-500 bg-purple-500/20'
-                      : 'border-purple-500/30 bg-slate-800/50 hover:border-purple-500/50'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-blue-300'
                   }`}
                 >
-                  <Building2 className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                  <span className="text-white font-medium">Company Based</span>
+                  <Building2 className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+                  <span className="text-gray-900 font-medium">Company Based</span>
                 </button>
               </div>
             </div>
@@ -317,7 +401,7 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
             {/* Topic-based input */}
             {formData.interviewType === 'topic-based' && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Topics *
                 </label>
                 <div className="space-y-2">
@@ -327,14 +411,14 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
                         type="text"
                         value={topic}
                         onChange={(e) => handleTopicChange(index, e.target.value)}
-                        className="flex-1 px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder={`Topic ${index + 1}`}
                       />
                       {formData.topics.length > 1 && (
                         <button
                           type="button"
                           onClick={() => handleRemoveTopic(index)}
-                          className="p-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                          className="p-2 bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -344,14 +428,14 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
                   <button
                     type="button"
                     onClick={handleAddTopic}
-                    className="w-full px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="w-full px-4 py-2 bg-blue-50 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
                     Add Topic
                   </button>
                 </div>
                 {errors.topics && (
-                  <p className="text-red-400 text-sm mt-1">{errors.topics}</p>
+                  <p className="text-red-600 text-sm mt-1">{errors.topics}</p>
                 )}
               </div>
             )}
@@ -359,18 +443,18 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
             {/* Company-based input */}
             {formData.interviewType === 'company-based' && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company Name *
                 </label>
                 <input
                   type="text"
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="e.g., Google, Amazon, Microsoft"
                 />
                 {errors.companyName && (
-                  <p className="text-red-400 text-sm mt-1">{errors.companyName}</p>
+                  <p className="text-red-600 text-sm mt-1">{errors.companyName}</p>
                 )}
               </div>
             )}
@@ -378,13 +462,13 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
             {/* Settings */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Difficulty
                 </label>
                 <select
                   value={formData.difficulty}
                   onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
@@ -393,28 +477,14 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Duration (min)
-                </label>
-                <input
-                  type="number"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  min="10"
-                  max="180"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Questions
                 </label>
                 <input
                   type="number"
                   value={formData.numberOfQuestions}
                   onChange={(e) => setFormData({ ...formData, numberOfQuestions: e.target.value })}
-                  className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="1"
                   max="20"
                 />
@@ -423,13 +493,13 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Description (Optional)
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows="3"
                 placeholder="Additional information about the interview..."
               />
@@ -440,14 +510,14 @@ const CreateScheduledInterviewModal = ({ show, onClose, onSuccess, interview = n
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                 disabled={loading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                 disabled={loading}
               >
                 {loading ? 'Saving...' : interview ? 'Update Interview' : 'Create Interview'}

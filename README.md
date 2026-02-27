@@ -12,7 +12,8 @@ A comprehensive interview preparation platform featuring AI-generated questions,
 
 - 🤖 **AI-Generated MCQ Questions** - Dynamic questions powered by Google Gemini
 - 💻 **Live Code Compiler** - Execute code in multiple languages
-- 🎥 **Face-to-Face Interview Simulation** - Webcam-based interview practice
+- 🎥 **Face-to-Face Interview Simulation** - Webcam-based interview practice with **realistic AI avatar**
+- 🎭 **NEW: SadTalker AI Avatar** - Real-time talking head with accurate lip sync and expressions
 - 📊 **Progress Tracking** - Monitor your improvement over time
 - 🔥 **Motivational Quotes** - Stay inspired during practice sessions
 - 🛡️ **Interview Integrity Monitoring** - Face detection and behavior analysis
@@ -188,6 +189,12 @@ Detailed documentation is available in the `docs/` folder:
 - **Topic-Specific Content** - JavaScript, Python, React, System Design, etc.
 - **Anti-Repetition System** - Ensures fresh content
 - **Motivational Quotes** - Inspiring messages during loading
+- **🎭 SadTalker AI Avatar** - Realistic talking head with lip-synchronized speech
+  - Real-time video generation with facial expressions
+  - Natural lip movements synchronized to interview questions
+  - GPU-accelerated for smooth performance
+  - Customizable avatar with your own professional headshot
+  - See [SADTALKER_INTEGRATION.md](SADTALKER_INTEGRATION.md) for setup
 
 ## 🤝 Contributing
 

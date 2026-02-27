@@ -20,8 +20,13 @@ const verifyAdminToken = (req, res, next) => {
     const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_SECRET || 'NMKRSPVLIDATA_JWT_SECRET';
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Attach admin info to request
-    req.admin = decoded;
+    // Attach admin info to request (normalize id to _id for consistency)
+    req.admin = {
+      _id: decoded.id || decoded._id,
+      username: decoded.username,
+      email: decoded.email,
+      role: decoded.role
+    };
     next();
   } catch (error) {
     console.error('Admin JWT verification error:', error.message);

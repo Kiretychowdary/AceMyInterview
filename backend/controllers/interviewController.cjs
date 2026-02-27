@@ -134,22 +134,28 @@ exports.getNextQuestion = async (req, res) => {
       ? `\nPrevious questions asked:\n${previousQA}\n\nAvoid repeating similar questions.` 
       : '';
 
+    // CRITICAL: Use user's selected topic as the category to prevent random categorization
+    const selectedCategory = transcript.topic || 'General';
+    
     // Generate next question using Ollama
-    const prompt = `You are conducting a ${transcript.difficulty} level interview for a ${transcript.role} position${transcript.topic ? ` focusing on ${transcript.topic}` : ''}.
+    const prompt = `You are conducting a ${transcript.difficulty} level interview for a ${transcript.role} position focusing on ${selectedCategory}.
 
 This is question ${currentQuestionNumber} of ${transcript.totalQuestions}.${contextNote}
 
 Generate ONE interview question that:
 - Is appropriate for ${transcript.difficulty} level (easy = fundamental concepts, medium = practical application, hard = advanced problem-solving)
 - Is relevant to ${transcript.role} role
+- Specifically covers ${selectedCategory} topics ONLY
 - Tests different aspects than previous questions
 - Is clear and professional
 - Has 3-5 expected key points for a good answer
 
+IMPORTANT: The category MUST be "${selectedCategory}" exactly - do not use any other category name.
+
 Provide your response ONLY as JSON in this exact format:
 {
   "question": "The interview question text",
-  "category": "Category name (e.g., Technical, Behavioral, Problem-Solving, System Design, etc.)",
+  "category": "${selectedCategory}",
   "expectedPoints": ["key point 1", "key point 2", "key point 3"]
 }
 
@@ -167,6 +173,11 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
     let questionData;
     try {
       questionData = ollamaService.parseJsonResponse(responseText);
+      
+      // OVERRIDE: Force category to match user's selected topic, regardless of what AI returns
+      const selectedCategory = transcript.topic || 'General';
+      questionData.category = selectedCategory;
+      
       console.log('📝 Parsed Question Data:', JSON.stringify(questionData, null, 2));
     } catch (parseError) {
       console.error('❌ JSON parsing failed:', parseError.message);
@@ -180,9 +191,10 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
         
         if (questionMatch && categoryMatch) {
           console.log('⚠️ Using manual extraction fallback');
+          const selectedCategory = transcript.topic || 'General';
           questionData = {
             question: questionMatch[1],
-            category: categoryMatch[1],
+            category: selectedCategory, // Use selected topic, not AI's category
             expectedPoints: pointsMatch ? 
               JSON.parse(`[${pointsMatch[1]}]`) : 
               ["Key concepts", "Practical application", "Clear explanation"]
@@ -196,7 +208,7 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
         throw new Error('Invalid question format from AI - could not parse or extract');
       }
     }
-
+    
     if (!questionData || !questionData.question || !questionData.category || !questionData.expectedPoints) {
       console.error('❌ Invalid question format. Response was:', responseText);
       throw new Error('Invalid question format from AI');
@@ -451,18 +463,29 @@ function calculateCategoryBreakdown(transcript) {
   const categories = {};
   
   transcript.questionsAndAnswers.forEach(qa => {
-    const category = qa.question.category;
+    const category = qa.question?.category || 'General';
+    const score = qa.evaluation?.score || 0;
+    
     if (!categories[category]) {
       categories[category] = { scores: [], count: 0 };
     }
-    categories[category].scores.push(qa.evaluation.score);
-    categories[category].count++;
+    
+    // Only add valid scores
+    if (!isNaN(score)) {
+      categories[category].scores.push(score);
+      categories[category].count++;
+    }
   });
   
   // Return as object with category names as keys and average scores as values
   const breakdown = {};
   Object.entries(categories).forEach(([category, data]) => {
-    breakdown[category] = parseFloat((data.scores.reduce((sum, score) => sum + score, 0) / data.count).toFixed(1));
+    if (data.count > 0) {
+      const avg = data.scores.reduce((sum, score) => sum + score, 0) / data.count;
+      breakdown[category] = parseFloat(avg.toFixed(1));
+    } else {
+      breakdown[category] = 0;
+    }
   });
   
   return breakdown;
@@ -492,6 +515,19 @@ exports.getFinalReport = async (req, res) => {
       });
     }
 
+    // CRITICAL: Validate that interview has questions and answers
+    if (!transcript.questionsAndAnswers || transcript.questionsAndAnswers.length === 0) {
+      console.error('❌ ERROR: No questions/answers in transcript for session:', sessionId);
+      return res.status(400).json({
+        success: false,
+        error: 'No questions answered in this interview session',
+        progress: {
+          answered: 0,
+          total: transcript.totalQuestions
+        }
+      });
+    }
+
     if (transcript.questionsAndAnswers.length < transcript.totalQuestions) {
       return res.status(400).json({
         success: false,
@@ -508,8 +544,14 @@ exports.getFinalReport = async (req, res) => {
       `Q${idx + 1} (${qa.question.category}): Score ${qa.evaluation.score}/10 - ${qa.evaluation.feedback}`
     ).join('\n');
 
-    // Pre-calculate scores
-    const avgScore = (transcript.questionsAndAnswers.reduce((sum, qa) => sum + qa.evaluation.score, 0) / transcript.questionsAndAnswers.length).toFixed(1);
+    // Pre-calculate scores with validation
+    const totalScore = transcript.questionsAndAnswers.reduce((sum, qa) => {
+      const score = qa.evaluation?.score || 0;
+      return sum + (isNaN(score) ? 0 : score);
+    }, 0);
+    
+    const count = transcript.questionsAndAnswers.length;
+    const avgScore = count > 0 ? (totalScore / count).toFixed(1) : '0.0';
     const categoryBreakdown = calculateCategoryBreakdown(transcript);
 
     // Generate final report using Ollama - ask only for qualitative analysis
@@ -546,8 +588,24 @@ Return ONLY valid JSON, no markdown, no code blocks.`;
     const report = ollamaService.parseJsonResponse(reportText);
 
     // Combine pre-calculated scores with Ollama's qualitative analysis
+    const overallScoreNum = parseFloat(avgScore);
+    
+    // Validate overallScore
+    if (isNaN(overallScoreNum)) {
+      console.error('❌ Invalid overallScore calculated:', avgScore);
+      throw new Error('Failed to calculate valid overall score');
+    }
+    
+    // Convert categoryBreakdown object to array format for model
+    const breakdownArray = Object.entries(categoryBreakdown).map(([category, score]) => ({
+      category,
+      score,
+      questionsCount: transcript.questionsAndAnswers.filter(qa => qa.question.category === category).length
+    }));
+    
     const finalReport = {
-      overallScore: parseFloat(avgScore),
+      overallScore: overallScoreNum,
+      breakdown: breakdownArray,
       categoryBreakdown: categoryBreakdown,
       strengths: report.strengths || [],
       areasForImprovement: report.areasForImprovement || [],

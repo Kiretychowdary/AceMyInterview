@@ -1,6 +1,7 @@
 // USER PROGRESS DASHBOARD - COMPREHENSIVE TRACKING SYSTEM
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   BarChart, 
   Bar, 
@@ -19,6 +20,7 @@ import {
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState({
     totalMCQAttempts: 0,
     totalCodingAttempts: 0,
@@ -36,11 +38,14 @@ const Dashboard = () => {
   });
   const [dataLoading, setDataLoading] = useState(false);
   const [selectedTimeframe, setSelectedTimeframe] = useState('all');
+  const [scheduledInterviews, setScheduledInterviews] = useState({ upcoming: [], ongoing: [] });
+  const [registrations, setRegistrations] = useState({});
 
   useEffect(() => {
     // Only fetch data when auth is complete and user exists
     if (!authLoading && user?.uid) {
       fetchDashboardData();
+      fetchScheduledInterviews();
     }
   }, [user, selectedTimeframe, authLoading]);
 
@@ -163,6 +168,61 @@ const Dashboard = () => {
     }
   };
 
+  const fetchScheduledInterviews = async () => {
+    if (!user?.uid) return;
+
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      
+      // Fetch user's registrations
+      const token = await user.getIdToken();
+      const regResponse = await fetch(`${API_BASE}/api/public/users/${user.uid}/registrations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (regResponse.ok) {
+        const regData = await regResponse.json();
+        if (regData.success && regData.registrations) {
+          const regMap = {};
+          regData.registrations.forEach(reg => {
+            regMap[reg.interviewId] = reg;
+          });
+          setRegistrations(regMap);
+          
+          // Categorize interviews by status
+          const interviews = regData.registrations.map(r => r.scheduledInterviewId).filter(Boolean);
+          const upcoming = interviews.filter(i => i.status === 'upcoming');
+          const ongoing = interviews.filter(i => i.status === 'ongoing');
+          
+          setScheduledInterviews({ upcoming, ongoing });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching scheduled interviews:', error);
+    }
+  };
+
+  const handleStartInterview = (interview) => {
+    navigate('/face-to-face-interview', {
+      state: {
+        scheduledInterview: {
+          interviewId: interview.interviewId,
+          scheduledInterviewId: interview._id,
+          interviewName: interview.interviewName,
+          interviewType: interview.interviewType,
+          topics: interview.topics,
+          companyName: interview.companyName,
+          difficulty: interview.difficulty,
+          numberOfQuestions: interview.numberOfQuestions,
+          duration: interview.duration,
+          isScheduled: true
+        }
+      }
+    });
+  };
+
   const processProgressData = (progressData, sessions, assessments) => {
     // Add safety checks for input parameters
     const safeSessions = Array.isArray(sessions) ? sessions : [];
@@ -219,7 +279,7 @@ const Dashboard = () => {
     const codingSuccess = totalCodingProblems > 0 ? 
       Math.round((solvedCodingProblems / totalCodingProblems) * 100) : 0;
 
-    // Process topic progress
+    // Process topic progress - INCLUDE face-to-face interviews
     const topicStats = {};
     safeSessions.forEach(session => {
       if (session?.topic) {
@@ -232,6 +292,18 @@ const Dashboard = () => {
         } else if (session.type === 'coding') {
           topicStats[session.topic].success += (session.solvedProblems || 0) / (session.totalProblems || 1);
         }
+      }
+    });
+    
+    // Add face-to-face interviews with their scores
+    safeAssessments.forEach(session => {
+      if (session?.topic && session?.assessment?.overallScore) {
+        if (!topicStats[session.topic]) {
+          topicStats[session.topic] = { attempts: 0, success: 0 };
+        }
+        topicStats[session.topic].attempts += 1;
+        // Convert 0-10 score to 0-1 success rate
+        topicStats[session.topic].success += (session.assessment.overallScore / 10);
       }
     });
 
@@ -254,14 +326,18 @@ const Dashboard = () => {
       count
     }));
 
-    // Calculate overall rating from assessments
+    // Calculate overall rating from assessments - use overallScore (0-10 scale)
     const overallRating = safeAssessments.length > 0 ? 
-      safeAssessments.reduce((sum, assessment) => sum + (assessment?.assessment?.overallRating || 0), 0) / safeAssessments.length : 0;
+      safeAssessments.reduce((sum, assessment) => sum + (assessment?.assessment?.overallScore || 0), 0) / safeAssessments.length : 0;
 
-    // Extract strengths and improvements
+    // Extract strengths and improvements from latest assessment
     const allStrengths = safeAssessments.flatMap(a => a?.assessment?.strengths || []);
-    const allImprovements = safeAssessments.flatMap(a => a?.assessment?.improvements || []);
-    const allRecommendations = safeAssessments.flatMap(a => a?.assessment?.recommendations || []);
+    const allImprovements = safeAssessments.flatMap(a => 
+      a?.assessment?.improvements || a?.assessment?.areasForImprovement || []
+    );
+    const allRecommendations = safeAssessments.flatMap(a => 
+      a?.assessment?.recommendations || a?.assessment?.nextSteps || []
+    );
 
     return {
       totalMCQAttempts: mcqSessions.length,
@@ -415,6 +491,75 @@ const Dashboard = () => {
             <p className="text-sm text-gray-500 mt-1">AI Assessment Score</p>
           </div>
         </div>
+
+        {/* Scheduled Interviews Section */}
+        {(scheduledInterviews.upcoming.length > 0 || scheduledInterviews.ongoing.length > 0) && (
+          <div className="mb-8 bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4">Your Scheduled Interviews</h3>
+            
+            {scheduledInterviews.ongoing.length > 0 && (
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-green-600 mb-3 flex items-center gap-2">
+                  <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                  Live Now ({scheduledInterviews.ongoing.length})
+                </h4>
+                <div className="space-y-3">
+                  {scheduledInterviews.ongoing.map(interview => (
+                    <div key={interview._id} className="border border-green-200 bg-green-50 rounded-lg p-4 flex items-center justify-between">
+                      <div>
+                        <h5 className="font-semibold text-gray-900">{interview.interviewName}</h5>
+                        <p className="text-sm text-gray-600">
+                          {interview.interviewType === 'company-based' ? interview.companyName : interview.topics?.join(', ')}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Duration: {interview.duration} min | {interview.numberOfQuestions} questions | {interview.difficulty}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleStartInterview(interview)}
+                        className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                      >
+                        Start Now
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {scheduledInterviews.upcoming.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold text-blue-600 mb-3">
+                  Upcoming ({scheduledInterviews.upcoming.length})
+                </h4>
+                <div className="space-y-3">
+                  {scheduledInterviews.upcoming.slice(0, 3).map(interview => (
+                    <div key={interview._id} className="border border-gray-200 rounded-lg p-4">
+                      <div>
+                        <h5 className="font-semibold text-gray-900">{interview.interviewName}</h5>
+                        <p className="text-sm text-gray-600">
+                          {interview.interviewType === 'company-based' ? interview.companyName : interview.topics?.join(', ')}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Starts: {interview.availableFromDate ? new Date(interview.availableFromDate).toLocaleString() : 'TBD'} | 
+                          Duration: {interview.duration} min
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {scheduledInterviews.upcoming.length > 3 && (
+                  <button
+                    onClick={() => navigate('/scheduled-interviews')}
+                    className="mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View all {scheduledInterviews.upcoming.length} scheduled interviews →
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Monthly Progress Chart */}

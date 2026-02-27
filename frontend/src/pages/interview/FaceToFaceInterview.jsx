@@ -2,7 +2,7 @@
 //radhakrishna
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Avatar3D from '../../components/interview/Avatar3D';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,11 +15,14 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 const FaceToFaceInterview = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { interviewId: urlInterviewId } = useParams(); // Get interviewId from URL
   const { user } = useAuth();
   const webcamRef = useRef(null);
   const recognitionRef = useRef(null);
   const synthRef = useRef(null);
   const containerRef = useRef(null);
+  const selectedVoiceRef = useRef(null);
+  const sessionIdRef = useRef(null);
 
   // Check if this is a scheduled interview
   const scheduledInterview = location.state?.scheduledInterview || null;
@@ -39,7 +42,7 @@ const FaceToFaceInterview = () => {
       : `Topic-based interview on: ${scheduledInterview.topics.join(', ')}`,
     numberOfQuestions: scheduledInterview.numberOfQuestions || 3,
     scheduledInterviewId: scheduledInterview.scheduledInterviewId,
-    interviewId: scheduledInterview.interviewId,
+    interviewId: urlInterviewId || scheduledInterview.interviewId,
     interviewName: scheduledInterview.interviewName
   } : {
     topic: location.state?.subject || location.state?.topic || location.state?.jobRole || 'Software Engineering',
@@ -48,7 +51,8 @@ const FaceToFaceInterview = () => {
     interviewType: 'face-to-face',
     jobRole: location.state?.jobRole || 'Software Engineer',
     subTopicDescription: location.state?.subTopicDescription || '',
-    numberOfQuestions: 3
+    numberOfQuestions: 3,
+    interviewId: urlInterviewId || location.state?.interviewId
   };
 
   // Core State Management
@@ -66,6 +70,7 @@ const FaceToFaceInterview = () => {
   const [avatarFeedback, setAvatarFeedback] = useState('');
   const [finalAssessment, setFinalAssessment] = useState(null);
   const [interviewData, setInterviewData] = useState({ startTime: null });
+  const [isEndingInterview, setIsEndingInterview] = useState(false); // Prevent double calls
 
   // Initialize Speech Recognition and Synthesis
   useEffect(() => {
@@ -114,11 +119,39 @@ const FaceToFaceInterview = () => {
     // Speech Synthesis Setup
     synthRef.current = window.speechSynthesis;
 
+    // Load voices and select a single consistent voice
+    const loadVoices = () => {
+      const voices = synthRef.current.getVoices();
+      if (voices.length > 0 && !selectedVoiceRef.current) {
+        // Select first English voice or first available voice
+        selectedVoiceRef.current = voices.find(voice => 
+          voice.lang.includes('en-US') || voice.lang.includes('en-GB')
+        ) || voices[0];
+        console.log('🎤 Selected voice:', selectedVoiceRef.current.name);
+      }
+    };
+
+    // Load voices immediately and on voiceschanged event
+    loadVoices();
+    if (synthRef.current) {
+      synthRef.current.addEventListener('voiceschanged', loadVoices);
+    }
+
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (synthRef.current) synthRef.current.cancel();
+      if (synthRef.current) {
+        synthRef.current.cancel();
+        synthRef.current.removeEventListener('voiceschanged', loadVoices);
+      }
     };
   }, []);
+
+  // Stop speech when interview phase changes to prevent overlapping voices
+  useEffect(() => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
+  }, [interviewPhase]);
 
   // Fullscreen Management
   const toggleFullscreen = useCallback(() => {
@@ -174,6 +207,7 @@ const FaceToFaceInterview = () => {
       }
 
       const sessionId = startResponse.data.sessionId;
+      sessionIdRef.current = sessionId; // Store in ref for persistence
       console.log('✅ Interview session created:', sessionId);
       
       const generatedQuestions = [];
@@ -229,9 +263,12 @@ const FaceToFaceInterview = () => {
     }
   };
 
-  // AI Text-to-Speech
+  // AI Text-to-Speech - Use single consistent voice
   const speakText = (text, emotion = 'neutral') => {
     if (!synthRef.current) return;
+
+    // CRITICAL: Cancel any ongoing speech to prevent multiple voices
+    synthRef.current.cancel();
 
     setIsAISpeaking(true);
     setAvatarExpression(emotion);
@@ -242,16 +279,19 @@ const FaceToFaceInterview = () => {
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
-    // Try to get a pleasant voice
-    const voices = synthRef.current.getVoices();
-    const preferredVoice = voices.find(voice => 
-      voice.name.includes('Female') || 
-      voice.name.includes('Samantha') ||
-      voice.lang.includes('en-US')
-    );
-    if (preferredVoice) utterance.voice = preferredVoice;
+    // Use the single selected voice stored in ref
+    if (selectedVoiceRef.current) {
+      utterance.voice = selectedVoiceRef.current;
+    }
 
     utterance.onend = () => {
+      setIsAISpeaking(false);
+      setAvatarExpression('neutral');
+      setAvatarFeedback('');
+    };
+
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event);
       setIsAISpeaking(false);
       setAvatarExpression('neutral');
       setAvatarFeedback('');
@@ -353,8 +393,8 @@ const FaceToFaceInterview = () => {
         speakText(nextQuestion.question, 'curious');
       }, 2000);
     } else {
-      // End interview
-      await endInterview();
+      // End interview - pass updatedAnswers to ensure last answer is included
+      await endInterview(updatedAnswers);
     }
   };
 
@@ -436,6 +476,11 @@ const FaceToFaceInterview = () => {
         
         // Keep feedback visible for 6 seconds so user can read it
         await new Promise(resolve => setTimeout(resolve, 6000));
+        
+        // Clear the feedback UI after delay
+        setAvatarFeedback('');
+        setAvatarExpression('encouraging');
+        
       } else {
         setAvatarExpression('encouraging');
         setAvatarFeedback('Thank you for your answer.');
@@ -444,7 +489,6 @@ const FaceToFaceInterview = () => {
       }
       
       setIsEvaluating(false);
-      setAvatarFeedback(''); // Clear feedback message
       
     } catch (error) {
       setIsEvaluating(false);
@@ -455,12 +499,32 @@ const FaceToFaceInterview = () => {
   };
 
   // End Interview and Generate Assessment
-  const endInterview = async () => {
+  const endInterview = async (finalAnswers = null) => {
+    // CRITICAL: Prevent double execution
+    if (isEndingInterview) {
+      console.warn('⚠️ endInterview already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    // Prevent calling if already in assessment/completed phase
+    if (interviewPhase === 'assessment' || interviewPhase === 'completed') {
+      console.warn('⚠️ Interview already in', interviewPhase, 'phase, ignoring endInterview call');
+      return;
+    }
+    
+    setIsEndingInterview(true);
+    
+    // Add small delay to ensure feedback UI completes
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     setInterviewPhase('assessment');
     
-    // Capture the current sessionId BEFORE any state updates
-    const currentSessionId = interviewData.sessionId;
-    
+    // Use sessionId from ref for persistence across renders
+    const currentSessionId = sessionIdRef.current || interviewData.sessionId;
+
+    // Use finalAnswers if provided (for last question), otherwise use state
+    const answersToUse = finalAnswers || userAnswers;
+
     const sessionData = {
       sessionId: currentSessionId, // Include sessionId in sessionData
       userId: user?.uid || 'guest',
@@ -468,12 +532,12 @@ const FaceToFaceInterview = () => {
       difficulty: interviewConfig.difficulty,
       duration: interviewConfig.duration,
       totalQuestions: questions.length,
-      answeredQuestions: userAnswers.length,
+      answeredQuestions: answersToUse.length,
       timeSpent: (interviewConfig.duration * 60) - timeRemaining,
       startTime: interviewData.startTime || new Date(Date.now() - ((interviewConfig.duration * 60) - timeRemaining) * 1000),
       endTime: new Date(),
       questions: questions,
-      answers: userAnswers,
+      answers: answersToUse,
       interviewType: 'face-to-face'
     };
 
@@ -481,12 +545,39 @@ const FaceToFaceInterview = () => {
     setInterviewData(prev => ({ ...prev, ...sessionData }));
     
     console.log('📊 Ending interview with sessionId:', currentSessionId);
+    console.log('📝 Final answers count:', answersToUse.length, '/', questions.length);
+
+    // CRITICAL VALIDATION: Ensure we have valid data before proceeding
+    if (!questions || questions.length === 0) {
+      console.error('❌ ERROR: No questions loaded! Cannot generate assessment.');
+      toast.error('Interview data not ready. Please try again.');
+      setInterviewPhase('interview');
+      setIsEndingInterview(false);
+      return;
+    }
+    
+    if (!answersToUse || answersToUse.length === 0) {
+      console.error('❌ ERROR: No answers recorded! Cannot generate assessment.');
+      toast.error('No answers found. Please answer questions first.');
+      setInterviewPhase('interview');
+      setIsEndingInterview(false);
+      return;
+    }
+
+    // Validation: Ensure all questions are answered
+    if (answersToUse.length < questions.length) {
+      const missingCount = questions.length - answersToUse.length;
+      console.warn(`⚠️  Warning: ${missingCount} question(s) not answered yet!`);
+      toast.warning(`Please answer all questions. ${missingCount} remaining.`);
+      
+      // Don't proceed to assessment if questions are missing
+      setInterviewPhase('interview');
+      setIsEndingInterview(false);
+      return;
+    }
 
     try {
-      // Store interview data first
-      await storeInterviewData(sessionData);
-      
-      // Generate comprehensive AI assessment
+      // Generate comprehensive AI assessment FIRST
       console.log('🔄 Requesting AI assessment...');
       const assessment = await generateAIAssessment(sessionData);
       
@@ -497,10 +588,24 @@ const FaceToFaceInterview = () => {
       console.log('✅ Assessment received:', assessment);
       setFinalAssessment(assessment);
       
+      // Now store complete interview data WITH assessment
+      const completeSessionData = {
+        ...sessionData,
+        assessment: assessment
+      };
+      
+      await storeInterviewData(completeSessionData);
+      
       // If this is a scheduled interview, submit participation data
       if (isScheduledInterview && scheduledInterview) {
         console.log('📤 Submitting participation data for scheduled interview...');
         await submitScheduledInterviewParticipation(sessionData, assessment);
+      }
+      
+      // If this is a custom interview, submit participation data
+      if (interviewConfig.customInterview && interviewConfig.interviewId) {
+        console.log('📤 Submitting participation data for custom interview...');
+        await submitCustomInterviewParticipation(sessionData, assessment);
       }
       
       setInterviewPhase('completed');
@@ -515,6 +620,8 @@ const FaceToFaceInterview = () => {
       console.error('Error stack:', error.stack);
       toast.error('❌ Could not generate interview assessment. Please check console for details.');
       setInterviewPhase('interview'); // Go back to interview phase
+    } finally {
+      setIsEndingInterview(false); // Always reset the flag
     }
   };
 
@@ -605,6 +712,93 @@ const FaceToFaceInterview = () => {
     }
   };
 
+  // Submit Custom Interview Participation
+  const submitCustomInterviewParticipation = async (sessionData, assessment) => {
+    try {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+      
+      // Check if already participated (prevent duplicate submissions)
+      if (interviewConfig?.customInterview && interviewConfig?.interviewId && user?.uid) {
+        try {
+          const checkResponse = await axios.get(
+            `${API_BASE}/api/public/custom-interviews/${interviewConfig.interviewId}/check-participation/${user.uid}`
+          );
+          
+          if (checkResponse.data.hasParticipated) {
+            console.log('⚠️ User has already participated in this interview');
+            toast.warning('You have already completed this interview');
+            return;
+          }
+        } catch (err) {
+          console.error('Error checking participation:', err);
+          // Continue with submission if check fails
+        }
+      }
+      
+      // Build transcript from user answers
+      const transcript = userAnswers.map((answerData, index) => ({
+        questionNumber: index + 1,
+        aiQuestion: answerData.question,
+        userAnswer: answerData.answer,
+        aiEvaluation: {
+          score: answerData.score || 0,
+          feedback: answerData.feedback || '',
+          strengths: [],
+          improvements: []
+        },
+        timestamp: answerData.timestamp
+      }));
+
+      // Calculate actual duration
+      const startTime = interviewData.startTime || new Date(Date.now() - (interviewConfig.duration * 60 - timeRemaining) * 1000);
+      const endTime = new Date();
+      const durationInSeconds = Math.floor((endTime - startTime) / 1000);
+
+      const participationData = {
+        userId: user?.uid || 'guest',
+        userName: user?.displayName || user?.email?.split('@')[0] || 'Anonymous',
+        userEmail: user?.email || 'anonymous@example.com',
+        totalQuestions: questions.length,
+        questionsAnswered: userAnswers.length,
+        score: assessment.overallScore * 10, // Convert 0-10 to 0-100
+        maxScore: 100,
+        transcript: transcript,
+        overallFeedback: {
+          summary: assessment.summary || '',
+          strengths: assessment.strengths || [],
+          areasForImprovement: assessment.improvements || [],
+          recommendations: assessment.nextSteps || [],
+          rating: assessment.overallScore >= 8 ? 'Excellent' : 
+                  assessment.overallScore >= 6 ? 'Good' :
+                  assessment.overallScore >= 4 ? 'Average' : 'Needs Improvement'
+        },
+        startedAt: startTime,
+        completedAt: endTime,
+        status: 'completed'
+      };
+
+      console.log('📤 Submitting participation for custom interview:', interviewConfig.interviewId);
+      console.log('⏱️ Duration:', durationInSeconds, 'seconds');
+      
+      const response = await axios.post(
+        `${API_BASE}/api/public/custom-interviews/${interviewConfig.interviewId}/participate`,
+        participationData
+      );
+
+      if (response.data.success) {
+        toast.success('✅ Your interview results have been recorded!');
+        console.log('✅ Participation submitted successfully:', response.data.participation);
+      }
+    } catch (error) {
+      console.error('❌ Error submitting custom interview participation:', error);
+      if (error.response?.status === 409) {
+        toast.warning('You have already completed this interview');
+      } else {
+        toast.warning('Interview completed but participation could not be recorded');
+      }
+    }
+  };
+
   // Generate Comprehensive AI Assessment using Ollama (via backend)
   const generateAIAssessment = async (sessionData) => {
     try {
@@ -692,6 +886,7 @@ const FaceToFaceInterview = () => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
           clearInterval(timer);
+          // End interview without passing finalAnswers since timer expired
           endInterview();
           return 0;
         }
@@ -953,6 +1148,8 @@ const FaceToFaceInterview = () => {
                   textToSpeak={questions[currentQuestionIndex]?.question || ''}
                   expression={avatarExpression}
                   feedbackText={avatarFeedback}
+                  enableSadTalker={true}
+                  disableAudio={true} // CRITICAL: Disable Avatar3D audio - parent handles speech
                 />
               </div>
 

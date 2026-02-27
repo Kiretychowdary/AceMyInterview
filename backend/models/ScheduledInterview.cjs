@@ -24,25 +24,47 @@ const ScheduledInterviewSchema = new mongoose.Schema({
     trim: true
   },
   
-  // Scheduled Date and Time
+  // Scheduled Date and Time (Legacy - kept for backward compatibility)
   scheduledDate: {
     type: Date,
-    required: true
+    required: false
   },
   
   startTime: {
     type: String, // Format: "HH:MM"
-    required: true
+    required: false
   },
   
   endTime: {
     type: String, // Format: "HH:MM"
-    required: true
+    required: false
+  },
+  
+  // New Flexible Timing Fields
+  availableFromDate: {
+    type: Date,
+    required: false // Will become required after migration
+  },
+  
+  availableFromTime: {
+    type: String, // Format: "HH:MM"
+    required: false
+  },
+  
+  availableToDate: {
+    type: Date,
+    required: false
+  },
+  
+  availableToTime: {
+    type: String, // Format: "HH:MM"
+    required: false
   },
   
   duration: {
-    type: Number, // in minutes
-    required: true
+    type: Number, // in minutes (per user session)
+    required: true,
+    default: 30
   },
   
   // Interview Type (determines what to focus on)
@@ -103,19 +125,48 @@ const ScheduledInterviewSchema = new mongoose.Schema({
 // Automatically update status based on time
 ScheduledInterviewSchema.methods.updateStatus = function() {
   const now = new Date();
-  const interviewDate = new Date(this.scheduledDate);
-  const [startHour, startMin] = this.startTime.split(':').map(Number);
-  const [endHour, endMin] = this.endTime.split(':').map(Number);
   
-  interviewDate.setHours(startHour, startMin, 0, 0);
-  const endDate = new Date(this.scheduledDate);
-  endDate.setHours(endHour, endMin, 0, 0);
+  // Use new flexible timing if available, otherwise fall back to legacy fields
+  let startDateTime, endDateTime;
   
-  if (now < interviewDate) {
+  if (this.availableFromDate && this.availableFromTime && this.availableToDate && this.availableToTime) {
+    // New flexible timing model
+    try {
+      startDateTime = new Date(this.availableFromDate);
+      const [startHour, startMin] = this.availableFromTime.split(':').map(Number);
+      startDateTime.setHours(startHour, startMin, 0, 0);
+      
+      endDateTime = new Date(this.availableToDate);
+      const [endHour, endMin] = this.availableToTime.split(':').map(Number);
+      endDateTime.setHours(endHour, endMin, 0, 0);
+    } catch (error) {
+      console.error('Error parsing flexible timing:', error);
+      return; // Keep current status if parsing fails
+    }
+  } else if (this.scheduledDate && this.startTime && this.endTime) {
+    // Legacy timing model
+    try {
+      startDateTime = new Date(this.scheduledDate);
+      const [startHour, startMin] = this.startTime.split(':').map(Number);
+      startDateTime.setHours(startHour, startMin, 0, 0);
+      
+      endDateTime = new Date(this.scheduledDate);
+      const [endHour, endMin] = this.endTime.split(':').map(Number);
+      endDateTime.setHours(endHour, endMin, 0, 0);
+    } catch (error) {
+      console.error('Error parsing legacy timing:', error);
+      return; // Keep current status if parsing fails
+    }
+  } else {
+    // No valid timing data
+    return;
+  }
+  
+  if (now < startDateTime) {
     this.status = 'upcoming';
-  } else if (now >= interviewDate && now <= endDate) {
+  } else if (now >= startDateTime && now <= endDateTime) {
     this.status = 'ongoing';
-  } else if (now > endDate) {
+  } else if (now > endDateTime) {
     this.status = 'completed';
   }
 };

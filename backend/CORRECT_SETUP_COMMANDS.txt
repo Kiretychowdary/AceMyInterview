@@ -1,0 +1,33 @@
+# CORRECT SETUP COMMANDS - Run from backend directory
+# You are here: C:\Users\kiret\Downloads\AceMyInterview\backend
+
+# ===== STEP 1: Install Git LFS (skip if already done) =====
+# Option A: Download installer from https://git-lfs.github.com/
+# Option B: If you have scoop: scoop install git-lfs
+# Option C: Skip for now, we'll use alternative
+
+# ===== STEP 2: Go to SadTalker directory =====
+cd SadTalker
+
+# ===== STEP 3: Initialize Git LFS =====
+git lfs install
+# Output: "Git LFS initialized." ✓ (you already have this!)
+
+# ===== STEP 4: Check what's available =====
+git lfs ls-files
+# This shows which files need downloading
+
+# ===== STEP 5: Try to pull models =====
+git lfs pull
+# This will download ~2GB of model files IF the repo has them
+
+# ===== STEP 6: Install SadTalker dependencies =====
+pip install -r requirements.txt
+# This installs all Python packages needed
+
+# ===== STEP 7: Go back to backend directory =====
+cd ..
+
+# ===== STEP 8: Test generation =====
+python quick_test.py
+# This should create test_realistic_avatar.mp4

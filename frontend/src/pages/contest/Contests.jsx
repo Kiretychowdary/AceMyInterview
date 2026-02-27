@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getUpcomingContests, getPastContests, registerForContest, checkRegistrationStatus } from "../../services/ContestService";
+import { getAllCustomInterviews, checkInterviewParticipation } from "../../services/CustomInterviewService";
 import { useAuth } from "../../contexts/AuthContext";
 
 const Contests = () => {
@@ -12,8 +13,10 @@ const Contests = () => {
   const [selectedContest, setSelectedContest] = useState(null);
   const [upcomingContests, setUpcomingContests] = useState([]);
   const [pastContests, setPastContests] = useState([]);
+  const [customInterviews, setCustomInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState({});
+  const [interviewParticipations, setInterviewParticipations] = useState({});
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [contestToRegister, setContestToRegister] = useState(null);
   const [problemProgress, setProblemProgress] = useState({}); // Track problem completion status
@@ -27,15 +30,18 @@ const Contests = () => {
   const loadContests = async () => {
     try {
       setLoading(true);
-      const [upcoming, past] = await Promise.all([
+      const [upcoming, past, interviews] = await Promise.all([
         getUpcomingContests(),
-        getPastContests()
+        getPastContests(),
+        getAllCustomInterviews()
       ]);
       
       setUpcomingContests(upcoming);
       setPastContests(past);
+      setCustomInterviews(interviews);
       
       if (user?.uid) {
+        // Check contest registrations
         const regStatus = {};
         for (const contest of upcoming) {
           const contestId = contest._id || contest.id;
@@ -47,6 +53,18 @@ const Contests = () => {
           }
         }
         setRegistrations(regStatus);
+        
+        // Check interview participations
+        const participationStatus = {};
+        for (const interview of interviews) {
+          try {
+            const participated = await checkInterviewParticipation(interview.interviewId, user.uid);
+            participationStatus[interview.interviewId] = participated;
+          } catch (err) {
+            console.log('Failed to check participation:', interview.interviewId);
+          }
+        }
+        setInterviewParticipations(participationStatus);
       }
     } catch (error) {
       console.error('Error loading contests:', error);
@@ -447,6 +465,151 @@ const Contests = () => {
             </div>
           )}
         </motion.div>
+
+        {/* Custom AI Interviews Section */}
+        {customInterviews.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-24"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-xl">
+                  🎙️
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">AI-Powered Interviews</h2>
+                  <p className="text-gray-600 text-sm">Practice with realistic AI interviews</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {customInterviews.map((interview, index) => {
+                const hasParticipated = interviewParticipations[interview.interviewId];
+                const isExpired = interview.expiresAt && new Date(interview.expiresAt) < new Date();
+                const isActive = interview.status === 'active' && !isExpired;
+                
+                return (
+                  <motion.div
+                    key={interview.interviewId}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={isActive ? { y: -4, transition: { duration: 0.2 } } : {}}
+                    className={`group bg-white rounded-xl shadow-md hover:shadow-lg border transition-all ${
+                      isActive ? 'border-purple-200 hover:border-purple-400 cursor-pointer' : 'border-gray-300 opacity-75'
+                    }`}
+                  >
+                    <div className="p-6">
+                      {/* Status Badge */}
+                      {hasParticipated && (
+                        <div className="absolute top-0 right-0 bg-green-600 text-white px-3 py-1.5 rounded-bl-xl font-semibold text-xs">
+                          <span className="flex items-center gap-1.5">
+                            ✓ Completed
+                          </span>
+                        </div>
+                      )}
+                      {isExpired && (
+                        <div className="absolute top-0 right-0 bg-gray-600 text-white px-3 py-1.5 rounded-bl-xl font-semibold text-xs">
+                          Expired
+                        </div>
+                      )}
+
+                      <div className={hasParticipated || isExpired ? 'pt-6' : ''}>
+                        {/* Header */}
+                        <div className="mb-5">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+                              AI Interview
+                            </span>
+                            {interview.difficulty && (
+                              <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getDifficultyColor(interview.difficulty)}`}>
+                                {interview.difficulty}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-600 transition-colors mb-2 line-clamp-2">
+                            {interview.title}
+                          </h3>
+                          <p className="text-gray-600 text-sm line-clamp-2">
+                            {interview.description || 'Face-to-face AI interview experience'}
+                          </p>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 gap-3 mb-5">
+                          <div className="bg-purple-50 rounded-lg p-3 border border-purple-200 text-center">
+                            <div className="text-xl mb-1">📝</div>
+                            <div className="text-xs text-purple-700 font-medium mb-0.5">Questions</div>
+                            <div className="text-sm font-bold text-purple-900">
+                              {interview.questions?.length || 0}
+                            </div>
+                          </div>
+                          <div className="bg-purple-50 rounded-lg p-3 border border-purple-200 text-center">
+                            <div className="text-xl mb-1">👥</div>
+                            <div className="text-xs text-purple-700 font-medium mb-0.5">Participants</div>
+                            <div className="text-sm font-bold text-purple-900">
+                              {interview.participantsCount || 0}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expiry Info */}
+                        {interview.expiresAt && (
+                          <div className="bg-purple-50 rounded-lg p-3 border border-purple-200 mb-5">
+                            <div className="flex items-center justify-center gap-2 text-sm">
+                              <span className="text-lg">⏰</span>
+                              <span className="text-purple-700 font-medium">
+                                {isExpired 
+                                  ? 'Expired' 
+                                  : `Expires: ${formatTime(interview.expiresAt)}`
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Button */}
+                        <button
+                          onClick={() => {
+                            if (!isActive) return;
+                            if (!user?.uid) {
+                              toast.error('Please login to start interview', {
+                                position: 'top-center',
+                                style: { background: '#fee2e2', color: '#991b1b' }
+                              });
+                              navigate('/login');
+                              return;
+                            }
+                            navigate(`/interview/${interview.interviewId}`);
+                          }}
+                          disabled={!isActive}
+                          className={`w-full py-3 rounded-lg font-semibold text-sm shadow-md transition-all ${
+                            !isActive
+                              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                              : hasParticipated 
+                              ? 'bg-green-500 text-white hover:bg-green-600 hover:shadow-lg' 
+                              : 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg'
+                          }`}
+                        >
+                          {!isActive 
+                            ? 'Not Available'
+                            : hasParticipated 
+                            ? '✓ Completed - Retake' 
+                            : 'Start Interview →'
+                          }
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* Past Contests */}
         {pastContests.length > 0 && (

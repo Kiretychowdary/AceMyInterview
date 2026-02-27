@@ -18,4 +18,8 @@ router.delete('/scheduled-interviews/:interviewId', scheduledInterviewController
 router.get('/scheduled-interviews/:interviewId/participations', scheduledInterviewController.getInterviewParticipations);
 router.get('/participations/:participationId', scheduledInterviewController.getParticipationDetails);
 
+// Download Performance Data
+router.get('/scheduled-interviews/:interviewId/download-csv', scheduledInterviewController.downloadInterviewPerformanceData);
+router.get('/scheduled-interviews/:interviewId/download-detailed', scheduledInterviewController.downloadDetailedPerformanceData);
+
 module.exports = router;

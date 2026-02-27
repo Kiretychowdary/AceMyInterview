@@ -6,10 +6,13 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const http = require('http');
+const { Server } = require('socket.io');
 // Mongoose connection for models
 const mongooseService = require('./services/mongoose.cjs');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // CORS Configuration with enhanced logging
@@ -30,6 +33,39 @@ const allowedOrigins = process.env.CORS_ORIGIN
 
 console.log('🌐 CORS Origins configured:', allowedOrigins);
 
+// Socket.IO Configuration
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+  }
+});
+
+// Socket.IO Connection Handler
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+  
+  // Admin joins interview room to receive updates
+  socket.on('admin:join-interview', (interviewId) => {
+    socket.join(`interview:${interviewId}`);
+    console.log(`👨‍💼 Admin joined interview room: ${interviewId}`);
+  });
+  
+  // Admin leaves interview room
+  socket.on('admin:leave-interview', (interviewId) => {
+    socket.leave(`interview:${interviewId}`);
+    console.log(`👨‍💼 Admin left interview room: ${interviewId}`);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
+
+// Expose io to routes via app.locals
+app.locals.io = io;
+
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, postman)
@@ -47,7 +83,7 @@ const corsOptions = {
   },
   credentials: true,
   optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret', 'x-admin-token'],
   exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
 };
@@ -179,6 +215,20 @@ try {
   console.error(e.stack);
 }
 
+// Mount Avatar routes (SadTalker AI Avatar with Lip Sync)
+try {
+  const avatarRoutes = require('./routes/avatar.cjs');
+  if (avatarRoutes && typeof avatarRoutes === 'function') {
+    app.use('/api/avatar', avatarRoutes);
+    console.log('✅ SadTalker Avatar routes mounted at /api/avatar');
+  } else {
+    console.warn('⚠️ Avatar routes loaded but not a valid router');
+  }
+} catch (e) {
+  console.warn('Avatar routes not available:', e.message);
+  console.error(e.stack);
+}
+
 // Connect to MongoDB via Mongoose before starting the server.
 // Start the HTTP server only after successful DB connection. Exit on failure.
 mongooseService.connect()
@@ -196,8 +246,9 @@ mongooseService.connect()
     }
     
     // Start the server once DB is ready
-    app.listen(PORT, () => {
-      console.log(`🚀 Server: Running on http://localhost:${PORT}\n`);
+    server.listen(PORT, () => {
+      console.log(`🚀 Server: Running on http://localhost:${PORT}`);
+      console.log(`🔌 Socket.IO: Ready for real-time updates\n`);
     });
   })
   .catch((err) => {

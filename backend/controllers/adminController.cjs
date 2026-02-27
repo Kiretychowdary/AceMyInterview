@@ -380,6 +380,55 @@ exports.getInterviewDetails = async (req, res) => {
   }
 };
 
+// Public endpoint - Get interview details by ID (for candidates)
+exports.getPublicInterviewDetails = async (req, res) => {
+  try {
+    const { interviewId } = req.params;
+
+    const interview = await CustomInterview.findOne({
+      interviewId,
+      status: 'active'
+    }).select('-createdBy -__v');
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found or is no longer active'
+      });
+    }
+
+    // Check if interview has expired
+    if (interview.expiresAt && new Date(interview.expiresAt) < new Date()) {
+      return res.status(410).json({
+        success: false,
+        error: 'This interview has expired'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      interview: {
+        interviewId: interview.interviewId,
+        title: interview.title,
+        description: interview.description,
+        role: interview.role,
+        difficulty: interview.difficulty,
+        duration: interview.duration,
+        numberOfQuestions: interview.numberOfQuestions,
+        settings: interview.settings,
+        accessType: interview.accessType
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching public interview details:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch interview details'
+    });
+  }
+};
+
 // Update interview
 exports.updateInterview = async (req, res) => {
   try {
@@ -490,6 +539,8 @@ exports.toggleInterviewStatus = async (req, res) => {
 // Get interview analytics
 exports.getInterviewAnalytics = async (req, res) => {
   try {
+    const CustomInterviewParticipation = require('../models/CustomInterviewParticipation.cjs');
+    
     const totalInterviews = await CustomInterview.countDocuments({
       createdBy: req.admin.id
     });
@@ -501,10 +552,18 @@ exports.getInterviewAnalytics = async (req, res) => {
 
     const interviews = await CustomInterview.find({
       createdBy: req.admin.id
-    }).select('totalAttempts completedAttempts');
+    }).select('interviewId totalAttempts completedAttempts');
 
-    const totalAttempts = interviews.reduce((sum, i) => sum + i.totalAttempts, 0);
-    const completedAttempts = interviews.reduce((sum, i) => sum + i.completedAttempts, 0);
+    // Count actual participations
+    const interviewIds = interviews.map(i => i.interviewId);
+    const totalAttempts = await CustomInterviewParticipation.countDocuments({
+      interviewId: { $in: interviewIds }
+    });
+    
+    const completedAttempts = await CustomInterviewParticipation.countDocuments({
+      interviewId: { $in: interviewIds },
+      status: 'completed'
+    });
 
     return res.status(200).json({
       success: true,
@@ -522,6 +581,109 @@ exports.getInterviewAnalytics = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch analytics'
+    });
+  }
+};
+
+// Get all participations for an interview
+exports.getInterviewParticipations = async (req, res) => {
+  try {
+    const CustomInterviewParticipation = require('../models/CustomInterviewParticipation.cjs');
+    const { interviewId } = req.params;
+
+    // Verify interview belongs to admin
+    const interview = await CustomInterview.findOne({
+      interviewId,
+      createdBy: req.admin.id
+    });
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    const participations = await CustomInterviewParticipation.find({ interviewId })
+      .sort({ createdAt: -1 })
+      .select('-transcript -overallFeedback.__v');
+
+    return res.status(200).json({
+      success: true,
+      participations,
+      total: participations.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching participations:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch participations'
+    });
+  }
+};
+
+// Download interview participations as Excel
+exports.downloadInterviewParticipations = async (req, res) => {
+  try {
+    const CustomInterviewParticipation = require('../models/CustomInterviewParticipation.cjs');
+    const { interviewId } = req.params;
+
+    // Verify interview belongs to admin
+    const interview = await CustomInterview.findOne({
+      interviewId,
+      createdBy: req.admin.id
+    });
+
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        error: 'Interview not found'
+      });
+    }
+
+    const participations = await CustomInterviewParticipation.find({ interviewId })
+      .sort({ percentageScore: -1 });
+
+    // Format data for CSV
+    const csvData = participations.map((p, index) => ({
+      Rank: index + 1,
+      Name: p.userName,
+      Email: p.userEmail,
+      Score: p.score,
+      'Max Score': p.maxScore,
+      'Percentage': p.percentageScore + '%',
+      'Questions Answered': `${p.questionsAnswered}/${p.totalQuestions}`,
+      'Duration (min)': p.duration,
+      Rating: p.overallFeedback?.rating || 'N/A',
+      Status: p.status,
+      'Completed At': p.completedAt ? new Date(p.completedAt).toLocaleString() : 'In Progress',
+      'Started At': new Date(p.startedAt).toLocaleString()
+    }));
+
+    // Convert to CSV
+    const headers = Object.keys(csvData[0] || {});
+    const csvRows = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header];
+        // Escape quotes and wrap in quotes if contains comma
+        const escaped = String(value).replace(/"/g, '""');
+        return escaped.includes(',') ? `"${escaped}"` : escaped;
+      }).join(','))
+    ];
+    const csv = csvRows.join('\n');
+
+    // Set headers for download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${interview.title.replace(/\s/g, '_')}_participations.csv"`);
+    return res.send(csv);
+
+  } catch (error) {
+    console.error('❌ Error downloading participations:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to download participations'
     });
   }
 };
