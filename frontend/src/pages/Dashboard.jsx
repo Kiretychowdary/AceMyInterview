@@ -222,13 +222,17 @@ const Dashboard = () => {
       
       allInterviews.forEach(interview => {
         const status = determineInterviewStatus(interview, now);
+        
+        // Only include upcoming and ongoing, filter out completed
         if (status === 'ongoing') {
           updated.ongoing.push(interview);
         } else if (status === 'upcoming') {
           updated.upcoming.push(interview);
         }
+        // Completed interviews are not added (filtered out)
       });
       
+      console.log(`📊 Dashboard status update: ${updated.upcoming.length} upcoming, ${updated.ongoing.length} ongoing`);
       return updated;
     });
   };
@@ -243,8 +247,8 @@ const Dashboard = () => {
       fromDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       startDateTime = fromDate;
 
-      const toDate = new Date(interview.availableToDate);
-      const [endHours, endMinutes] = interview.availableToTime.split(':');
+      const toDate = new Date(interview.availableToDate || interview.availableFromDate);
+      const [endHours, endMinutes] = (interview.availableToTime || interview.availableFromTime).split(':');
       toDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
       endDateTime = toDate;
     } else if (interview.scheduledDate) {

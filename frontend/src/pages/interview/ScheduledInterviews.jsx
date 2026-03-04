@@ -60,6 +60,11 @@ const ScheduledInterviews = () => {
         console.log('📅 Interviews received from backend:', data.interviews);
         console.log('📅 Sample interview:', data.interviews.upcoming?.[0] || data.interviews.ongoing?.[0]);
         setInterviews(data.interviews);
+        
+        // Immediately check and update statuses after fetching
+        setTimeout(() => {
+          updateInterviewStatuses();
+        }, 100);
       }
     } catch (error) {
       console.error('Error fetching scheduled interviews:', error);
@@ -78,13 +83,18 @@ const ScheduledInterviews = () => {
       
       allInterviews.forEach(interview => {
         const status = determineInterviewStatus(interview, now);
+        console.log(`🔄 Interview "${interview.interviewName}" status: ${status}`);
+        
+        // Only show upcoming and ongoing interviews
         if (status === 'ongoing') {
           updated.ongoing.push(interview);
         } else if (status === 'upcoming') {
           updated.upcoming.push(interview);
         }
+        // Completed interviews are not added to either array (filtered out)
       });
       
+      console.log(`📊 After status update: ${updated.upcoming.length} upcoming, ${updated.ongoing.length} ongoing`);
       return updated;
     });
   };
@@ -99,8 +109,8 @@ const ScheduledInterviews = () => {
       fromDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
       startDateTime = fromDate;
 
-      const toDate = new Date(interview.availableToDate);
-      const [endHours, endMinutes] = interview.availableToTime.split(':');
+      const toDate = new Date(interview.availableToDate || interview.availableFromDate);
+      const [endHours, endMinutes] = (interview.availableToTime || interview.availableFromTime).split(':');
       toDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
       endDateTime = toDate;
     } else if (interview.scheduledDate) {
@@ -117,6 +127,15 @@ const ScheduledInterviews = () => {
     } else {
       return 'upcoming';
     }
+
+    console.log(`⏰ Checking status for "${interview.interviewName}":`, {
+      now: now.toLocaleTimeString(),
+      start: startDateTime.toLocaleTimeString(),
+      end: endDateTime.toLocaleTimeString(),
+      nowTime: now.getTime(),
+      startTime: startDateTime.getTime(),
+      endTime: endDateTime.getTime()
+    });
 
     if (now >= startDateTime && now <= endDateTime) {
       return 'ongoing';
