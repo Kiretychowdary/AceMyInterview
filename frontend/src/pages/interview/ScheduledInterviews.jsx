@@ -334,6 +334,19 @@ const ScheduledInterviews = () => {
 
   const displayInterviews = activeTab === 'upcoming' ? interviews.upcoming : interviews.ongoing;
 
+  // Filter out completed interviews on client-side before displaying
+  const filteredDisplayInterviews = displayInterviews.filter(interview => {
+    const now = new Date();
+    const status = determineInterviewStatus(interview, now);
+    const isCompleted = status === 'completed';
+    
+    if (isCompleted) {
+      console.log(`⛔ Filtering out completed interview: "${interview.interviewName}"`);
+    }
+    
+    return !isCompleted; // Only show non-completed interviews
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-white">
       {/* Header */}
@@ -356,27 +369,49 @@ const ScheduledInterviews = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <div className="bg-white border border-blue-200 rounded-xl p-4 text-center shadow-sm hover:shadow-md transition-shadow">
               <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{interviews.upcoming.length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {interviews.upcoming.filter(i => {
+                  const status = determineInterviewStatus(i, new Date());
+                  return status === 'upcoming';
+                }).length}
+              </p>
               <p className="text-gray-600 text-sm">Upcoming</p>
             </div>
             <div className="bg-white border border-green-200 rounded-xl p-4 text-center shadow-sm hover:shadow-md transition-shadow">
               <Target className="w-6 h-6 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{interviews.ongoing.length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {interviews.ongoing.filter(i => {
+                  const status = determineInterviewStatus(i, new Date());
+                  return status === 'ongoing';
+                }).length}
+              </p>
               <p className="text-gray-600 text-sm">Live Now</p>
             </div>
             <div className="bg-white border border-blue-200 rounded-xl p-4 text-center shadow-sm hover:shadow-md transition-shadow">
               <BookOpen className="w-6 h-6 text-blue-600 mx-auto mb-2" />
               <p className="text-2xl font-bold text-gray-900">
-                {interviews.upcoming.filter(i => i.interviewType === 'topic-based').length + 
-                 interviews.ongoing.filter(i => i.interviewType === 'topic-based').length}
+                {interviews.upcoming.filter(i => {
+                  const status = determineInterviewStatus(i, new Date());
+                  return status === 'upcoming' && i.interviewType === 'topic-based';
+                }).length + 
+                 interviews.ongoing.filter(i => {
+                  const status = determineInterviewStatus(i, new Date());
+                  return status === 'ongoing' && i.interviewType === 'topic-based';
+                }).length}
               </p>
               <p className="text-gray-600 text-sm">Topic-Based</p>
             </div>
             <div className="bg-white border border-blue-200 rounded-xl p-4 text-center shadow-sm hover:shadow-md transition-shadow">
               <Building2 className="w-6 h-6 text-blue-600 mx-auto mb-2" />
               <p className="text-2xl font-bold text-gray-900">
-                {interviews.upcoming.filter(i => i.interviewType === 'company-based').length + 
-                 interviews.ongoing.filter(i => i.interviewType === 'company-based').length}
+                {interviews.upcoming.filter(i => {
+                  const status = determineInterviewStatus(i, new Date());
+                  return status === 'upcoming' && i.interviewType === 'company-based';
+                }).length + 
+                 interviews.ongoing.filter(i => {
+                  const status = determineInterviewStatus(i, new Date());
+                  return status === 'ongoing' && i.interviewType === 'company-based';
+                }).length}
               </p>
               <p className="text-gray-600 text-sm">Company-Based</p>
             </div>
@@ -386,17 +421,23 @@ const ScheduledInterviews = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b border-gray-200">
+        {/* Tabs */}filter(i => {
+              const status = determineInterviewStatus(i, new Date());
+              return status === 'upcoming';
+            }).length})
+          </button>
           <button
-            onClick={() => setActiveTab('upcoming')}
+            onClick={() => setActiveTab('ongoing')}
             className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'upcoming'
-                ? 'text-blue-600 border-b-2 border-blue-600'
+              activeTab === 'ongoing'
+                ? 'text-green-600 border-b-2 border-green-600'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            Upcoming Interviews ({interviews.upcoming.length})
+            Live Now ({interviews.ongoing.filter(i => {
+              const status = determineInterviewStatus(i, new Date());
+              return status === 'ongoing';
+            })ews.upcoming.length})
           </button>
           <button
             onClick={() => setActiveTab('ongoing')}
@@ -416,7 +457,7 @@ const ScheduledInterviews = () => {
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
             <p className="text-gray-600 mt-4">Loading interviews...</p>
           </div>
-        ) : displayInterviews.length === 0 ? (
+        ) : filteredDisplayInterviews.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -434,7 +475,7 @@ const ScheduledInterviews = () => {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayInterviews.map((interview, index) => (
+            {filteredDisplayInterviews.map((interview, index) => (
               <motion.div
                 key={interview._id}
                 id={`interview-${interview.interviewId}`}
