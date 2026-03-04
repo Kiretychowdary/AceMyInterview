@@ -421,7 +421,17 @@ const ScheduledInterviews = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs */}filter(i => {
+        {/* Tabs */}
+        <div className="flex space-x-4 border-b border-gray-200">
+          <button
+            onClick={() => setActiveTab('upcoming')}
+            className={`px-6 py-3 font-medium transition-all ${
+              activeTab === 'upcoming'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Upcoming ({interviews.upcoming.filter(i => {
               const status = determineInterviewStatus(i, new Date());
               return status === 'upcoming';
             }).length})
@@ -437,17 +447,7 @@ const ScheduledInterviews = () => {
             Live Now ({interviews.ongoing.filter(i => {
               const status = determineInterviewStatus(i, new Date());
               return status === 'ongoing';
-            })ews.upcoming.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('ongoing')}
-            className={`px-6 py-3 font-medium transition-all ${
-              activeTab === 'ongoing'
-                ? 'text-green-600 border-b-2 border-green-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Live Now ({interviews.ongoing.length})
+            }).length})
           </button>
         </div>
 
