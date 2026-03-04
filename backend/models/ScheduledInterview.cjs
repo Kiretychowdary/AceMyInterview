@@ -126,6 +126,9 @@ const ScheduledInterviewSchema = new mongoose.Schema({
 ScheduledInterviewSchema.methods.updateStatus = function() {
   const now = new Date();
   
+  console.log(`🔍 Updating status for: "${this.interviewName}"`);
+  console.log(`   Current time: ${now.toISOString()}`);
+  
   // Use new flexible timing if available, otherwise fall back to legacy fields
   let startDateTime, endDateTime;
   
@@ -139,8 +142,10 @@ ScheduledInterviewSchema.methods.updateStatus = function() {
       endDateTime = new Date(this.availableToDate);
       const [endHour, endMin] = this.availableToTime.split(':').map(Number);
       endDateTime.setHours(endHour, endMin, 0, 0);
+      
+      console.log(`   ✅ Flexible timing: ${startDateTime.toISOString()} to ${endDateTime.toISOString()}`);
     } catch (error) {
-      console.error('Error parsing flexible timing:', error);
+      console.error('   ❌ Error parsing flexible timing:', error);
       return; // Keep current status if parsing fails
     }
   } else if (this.scheduledDate && this.startTime && this.endTime) {
@@ -153,14 +158,19 @@ ScheduledInterviewSchema.methods.updateStatus = function() {
       endDateTime = new Date(this.scheduledDate);
       const [endHour, endMin] = this.endTime.split(':').map(Number);
       endDateTime.setHours(endHour, endMin, 0, 0);
+      
+      console.log(`   ✅ Legacy timing: ${startDateTime.toISOString()} to ${endDateTime.toISOString()}`);
     } catch (error) {
-      console.error('Error parsing legacy timing:', error);
+      console.error('   ❌ Error parsing legacy timing:', error);
       return; // Keep current status if parsing fails
     }
   } else {
     // No valid timing data
+    console.log('   ⚠️ No valid timing data found');
     return;
   }
+  
+  const oldStatus = this.status;
   
   if (now < startDateTime) {
     this.status = 'upcoming';
@@ -168,6 +178,12 @@ ScheduledInterviewSchema.methods.updateStatus = function() {
     this.status = 'ongoing';
   } else if (now > endDateTime) {
     this.status = 'completed';
+  }
+  
+  if (oldStatus !== this.status) {
+    console.log(`   🔄 Status changed: ${oldStatus} -> ${this.status}`);
+  } else {
+    console.log(`   ✓ Status unchanged: ${this.status}`);
   }
 };
 

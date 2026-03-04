@@ -149,6 +149,7 @@ Generate ONE interview question that:
 - Tests different aspects than previous questions
 - Is clear and professional
 - Has 3-5 expected key points for a good answer
+- Determine if this question requires CODE/PROGRAMMING (compilerRequired: true/false)
 
 IMPORTANT: The category MUST be "${selectedCategory}" exactly - do not use any other category name.
 
@@ -156,7 +157,8 @@ Provide your response ONLY as JSON in this exact format:
 {
   "question": "The interview question text",
   "category": "${selectedCategory}",
-  "expectedPoints": ["key point 1", "key point 2", "key point 3"]
+  "expectedPoints": ["key point 1", "key point 2", "key point 3"],
+  "compilerRequired": true or false
 }
 
 Return ONLY the JSON object, no markdown formatting, no extra text.`;
@@ -220,10 +222,13 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
       question: {
         text: questionData.question,
         category: questionData.category,
-        expectedPoints: questionData.expectedPoints
+        expectedPoints: questionData.expectedPoints,
+        compilerRequired: questionData.compilerRequired || false
       },
       userAnswer: {
         text: '',
+        code: null,
+        compilerUsed: false,
         timestamp: null,
         timeSpent: null
       },
@@ -234,6 +239,7 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
 
     console.log(`✅ Generated question ${currentQuestionNumber}/${transcript.totalQuestions}`);
     console.log(`   Category: ${questionData.category}`);
+    console.log(`   Compiler Required: ${questionData.compilerRequired || false}`);
 
     return res.json({
       success: true,
@@ -241,7 +247,8 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
         number: currentQuestionNumber,
         total: transcript.totalQuestions,
         text: questionData.question,
-        category: questionData.category
+        category: questionData.category,
+        compilerRequired: questionData.compilerRequired || false
       },
       progress: {
         current: currentQuestionNumber,
@@ -266,7 +273,7 @@ Return ONLY the JSON object, no markdown formatting, no extra text.`;
  */
 exports.submitAnswer = async (req, res) => {
   try {
-    const { sessionId, questionNumber, answer, timeSpent } = req.body;
+    const { sessionId, questionNumber, answer, timeSpent, code, compilerUsed } = req.body;
 
     if (!sessionId || !questionNumber || !answer) {
       return res.status(400).json({
@@ -274,6 +281,16 @@ exports.submitAnswer = async (req, res) => {
         error: 'Required fields: sessionId, questionNumber, answer'
       });
     }
+
+    console.log('═════════════════════════════════════════════════════════');
+    console.log('📥 RECEIVED ANSWER SUBMISSION');
+    console.log('═════════════════════════════════════════════════════════');
+    console.log('📝 Session ID:', sessionId);
+    console.log('🔢 Question Number:', questionNumber);
+    console.log('💬 Answer Length:', answer.length, 'characters');
+    console.log('💻 Code Included:', code ? '✅ YES (' + code.length + ' chars)' : '❌ NO');
+    console.log('⚙️ Compiler Used:', compilerUsed ? '✅ YES' : '❌ NO');
+    console.log('═════════════════════════════════════════════════════════');
 
     // Get interview transcript
     const transcript = await InterviewTranscript.findOne({ sessionId });
@@ -296,13 +313,78 @@ exports.submitAnswer = async (req, res) => {
     qa.userAnswer.text = answer;
     qa.userAnswer.timestamp = new Date();
     qa.userAnswer.timeSpent = timeSpent || 0;
+    
+    // Store code if provided
+    if (code) {
+      qa.userAnswer.code = code;
+      qa.userAnswer.compilerUsed = compilerUsed;
+    }
 
     // Evaluate answer using Ollama - compare against expected points
     const expectedPointsText = qa.question.expectedPoints && qa.question.expectedPoints.length > 0
       ? `\n\nExpected Key Points for a Good Answer:\n${qa.question.expectedPoints.map((point, idx) => `${idx + 1}. ${point}`).join('\n')}`
       : '';
 
-    const evaluationPrompt = `You are a STRICT technical interviewer. Your job is to verify if the candidate's answer ACTUALLY ANSWERS THE QUESTION.
+    // Add code section if provided
+    const codeSection = code ? `
+
+══════════════════════════════════════════════════════════
+CANDIDATE'S CODE SOLUTION:
+\`\`\`
+${code}
+\`\`\`
+══════════════════════════════════════════════════════════` : '';
+
+    const codeEvaluationSteps = code ? `
+
+══════════════════════════════════════════════════════════
+📋 CODE EVALUATION (STEP-BY-STEP ANALYSIS)
+══════════════════════════════════════════════════════════
+
+CODE STEP 1: Syntax & Basic Structure Check
+→ Does the code have valid syntax?
+→ Are there any obvious syntax errors?
+→ Is it actual code or just comments/placeholder text?
+→ If invalid/placeholder: score -3, add to improvements: "Code has syntax errors" or "No actual code implementation provided"
+
+CODE STEP 2: Algorithm/Logic Correctness  
+→ Does the code solve the problem asked in the question?
+→ Is the algorithm/approach correct?
+→ Does it produce the right output for the problem?
+→ If wrong algorithm: score -4, isCorrect = "INCORRECT", feedback: "Code does not solve the problem correctly"
+→ If partially correct: score -2, isCorrect = "PARTIALLY_CORRECT"
+→ If correct: Continue to next step
+
+CODE STEP 3: Edge Cases & Robustness
+→ Does the code handle edge cases? (empty input, null, boundary values)
+→ Will it crash or fail on unexpected input?
+→ Missing edge case handling: score -1
+→ Good handling: Add to strengths: "Handles edge cases well"
+
+CODE STEP 4: Code Quality & Readability
+→ Is the code readable and well-structured?
+→ Are variable names meaningful?
+→ Is it efficient (time/space complexity)?
+→ Poor quality: score -1, add to improvements: "Improve code readability and structure"
+→ Good quality: Add bonus +1 to score, add to strengths: "Clean, readable code"
+
+CODE STEP 5: Does Code Match the Explanation?
+→ Does the written answer explain what the code does?
+→ Are they consistent?
+→ If mismatch: score -1, add to improvements: "Code and explanation don't match"
+
+CODE FINAL SCORE ADJUSTMENT:
+- Start with text answer score (0-10)
+- Apply code adjustments from steps above
+- If code is completely wrong: Maximum score = 3 (even if text is good)
+- If code is partially working: Maximum score = 6
+- If code is correct but poor quality: score = 7-8
+- If code is correct and high quality: score = 9-10
+- Return codeQuality field: "EXCELLENT" | "GOOD" | "NEEDS_IMPROVEMENT" | "INCORRECT"
+
+══════════════════════════════════════════════════════════` : '';
+
+    const evaluationPrompt = `You are a STRICT technical interviewer evaluating a coding interview. Your job is to verify if the candidate's answer${code ? ' AND CODE' : ''} ACTUALLY ANSWERS THE QUESTION.
 
 ══════════════════════════════════════════════════════════
 QUESTION ASKED:
@@ -312,7 +394,7 @@ CATEGORY: ${qa.question.category}${expectedPointsText}
 ══════════════════════════════════════════════════════════
 
 CANDIDATE'S ANSWER:
-"${answer}"
+"${answer}"${codeSection}${codeEvaluationSteps}
 
 ══════════════════════════════════════════════════════════
 
@@ -362,15 +444,17 @@ FINAL SCORING RULES (BE STRICT):
 - 6: Addresses question but incomplete/errors
 - 7: Correct but missing details
 - 8: Good, correct, covers most points
-- 9-10: Excellent, comprehensive answer
+- 9-10: Excellent, comprehensive answer${code ? ' with working code' : ''}
 
 YOU MUST RETURN VALID JSON:
 {
   "score": <0-10>,
   "isCorrect": "<CORRECT|PARTIALLY_CORRECT|INCORRECT>",
-  "strengths": ["what was good"],
-  "improvements": ["what needs fixing"],
-  "feedback": "why you gave this score"
+  "strengths": ["what was good in answer${code ? ' and code' : ''}"],
+  "improvements": ["what needs fixing in answer${code ? ' and code' : ''}"],
+  "feedback": "why you gave this score - mention both answer and code quality",
+  ${code ? '"codeQuality": "<EXCELLENT|GOOD|NEEDS_IMPROVEMENT|INCORRECT>",' : ''}
+  ${code ? '"codeAnalysis": "detailed analysis of the code: what works, what doesn\'t, algorithm correctness, edge cases, efficiency"' : ''}
 }`;
 
     let evaluation;
@@ -419,22 +503,39 @@ YOU MUST RETURN VALID JSON:
       strengths: evaluation.strengths || [],
       improvements: evaluation.improvements || [],
       feedback: evaluation.feedback,
+      codeQuality: evaluation.codeQuality || null, // Only if code was provided
+      codeAnalysis: evaluation.codeAnalysis || null, // Detailed code analysis
       evaluatedAt: new Date()
     };
 
     await transcript.save();
 
+    console.log('═════════════════════════════════════════════════════════');
+    console.log('✅ EVALUATION COMPLETED BY OLLAMA AI');
+    console.log('═════════════════════════════════════════════════════════');
+    console.log('📊 Score:', evaluation.score, '/ 10');
+    console.log('✓ Is Correct:', evaluation.isCorrect || 'N/A');
+    if (evaluation.codeQuality) {
+      console.log('💻 Code Quality:', evaluation.codeQuality);
+    }
+    console.log('💪 Strengths:', evaluation.strengths?.length || 0, 'points');
+    console.log('📈 Improvements:', evaluation.improvements?.length || 0, 'points');
+    console.log('═════════════════════════════════════════════════════════');
+
     return res.json({
       success: true,
       question: qa.question.text,
       userAnswer: answer,
+      code: code || null,
       evaluation: {
         score: evaluation.score,
         maxScore: 10,
         isCorrect: evaluation.isCorrect || (evaluation.score >= 6 ? 'CORRECT' : evaluation.score >= 4 ? 'PARTIALLY_CORRECT' : 'INCORRECT'),
         strengths: evaluation.strengths || [],
         improvements: evaluation.improvements || [],
-        feedback: evaluation.feedback
+        feedback: evaluation.feedback,
+        codeQuality: evaluation.codeQuality || null,
+        codeAnalysis: evaluation.codeAnalysis || null
       },
       progress: {
         answered: questionNumber,

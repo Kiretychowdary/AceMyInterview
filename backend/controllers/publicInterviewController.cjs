@@ -20,15 +20,34 @@ exports.getPublicScheduledInterviews = async (req, res) => {
       .select('-createdBy') // Don't expose admin info to students
       .sort({ scheduledDate: 1, startTime: 1 });
 
+    console.log(`📅 Found ${interviews.length} interviews before status update`);
+
     // Update status for each interview
     for (let interview of interviews) {
+      const oldStatus = interview.status;
+      interview.updateStatus();
+      if (oldStatus !== interview.status) {
+        console.log(`🔄 Interview "${interview.interviewName}" status changed: ${oldStatus} -> ${interview.status}`);
+        await interview.save();
+      }
+    }
+
+    // Re-fetch to get all interviews regardless of status, then categorize
+    const allInterviews = await ScheduledInterview.find({})
+      .select('-createdBy')
+      .sort({ availableFromDate: 1, scheduledDate: 1 });
+
+    // Update status for all interviews
+    for (let interview of allInterviews) {
       interview.updateStatus();
       await interview.save();
     }
 
     // Separate into upcoming and ongoing
-    const upcomingInterviews = interviews.filter(i => i.status === 'upcoming');
-    const ongoingInterviews = interviews.filter(i => i.status === 'ongoing');
+    const upcomingInterviews = allInterviews.filter(i => i.status === 'upcoming');
+    const ongoingInterviews = allInterviews.filter(i => i.status === 'ongoing');
+
+    console.log(`✅ Returning: ${upcomingInterviews.length} upcoming, ${ongoingInterviews.length} ongoing`);
 
     res.json({
       success: true,

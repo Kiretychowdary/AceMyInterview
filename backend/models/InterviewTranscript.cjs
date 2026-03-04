@@ -7,10 +7,13 @@ const questionAnswerSchema = new mongoose.Schema({
   question: {
     text: { type: String, required: true },
     category: String,
-    expectedPoints: [String]
+    expectedPoints: [String],
+    compilerRequired: { type: Boolean, default: false }
   },
   userAnswer: {
     text: { type: String, default: '' },
+    code: String, // User's code solution if compiler was used
+    compilerUsed: { type: Boolean, default: false },
     timestamp: Date,
     timeSpent: Number // seconds
   },
@@ -20,6 +23,7 @@ const questionAnswerSchema = new mongoose.Schema({
     improvements: [String],
     feedback: String,
     keyPointsCovered: [String],
+    codeQuality: String, // Assessment of code if provided
     evaluatedAt: { type: Date, default: Date.now }
   }
 });

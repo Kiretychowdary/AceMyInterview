@@ -14,6 +14,8 @@ const ManageScheduledInterviews = () => {
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [participations, setParticipations] = useState({});
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [selectedParticipation, setSelectedParticipation] = useState(null);
 
   useEffect(() => {
     fetchInterviews();
@@ -620,9 +622,23 @@ const ManageScheduledInterviews = () => {
                                 <p className="text-gray-900 font-medium">{p.userName}</p>
                                 <p className="text-gray-600 text-sm">{p.userEmail}</p>
                               </div>
-                              <div className="text-right">
-                                <p className="text-gray-900 font-bold">{p.percentageScore}%</p>
-                                <p className="text-gray-600 text-sm">{p.duration} min</p>
+                              <div className="flex items-center gap-3">
+                                <div className="text-right">
+                                  <p className="text-gray-900 font-bold">{p.percentageScore}%</p>
+                                  <p className="text-gray-600 text-sm">{p.duration} min</p>
+                                </div>
+                                {p.status === 'completed' && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedParticipation(p);
+                                      setShowAssessmentModal(true);
+                                    }}
+                                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-sm"
+                                    title="View AI Assessment"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -650,6 +666,243 @@ const ManageScheduledInterviews = () => {
           fetchAnalytics();
         }}
       />
+
+      {/* Assessment Details Modal */}
+      {showAssessmentModal && selectedParticipation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Eye className="w-6 h-6" />
+                  AI-Generated Assessment
+                </h2>
+                <p className="text-blue-100 text-sm mt-1">
+                  {selectedParticipation.userName} ({selectedParticipation.userEmail})
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAssessmentModal(false);
+                  setSelectedParticipation(null);
+                }}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+              {/* Score Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 mb-6 border-2 border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-gray-600 text-sm font-medium">Overall Performance</h3>
+                    <p className="text-4xl font-bold text-blue-600 mt-2">
+                      {selectedParticipation.percentageScore?.toFixed(1) || 0}%
+                    </p>
+                  </div>
+                  <div className="text-right space-y-2">
+                    <div>
+                      <p className="text-gray-600 text-sm">Score</p>
+                      <p className="text-xl font-bold text-gray-900">
+                        {selectedParticipation.score || 0}/{selectedParticipation.maxScore || 100}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 text-sm">Questions</p>
+                      <p className="text-xl font-bold text-gray-900">
+                        {selectedParticipation.questionsAnswered}/{selectedParticipation.totalQuestions}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Overall Feedback */}
+              {selectedParticipation.overallFeedback && (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  {selectedParticipation.overallFeedback.summary && (
+                    <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-2xl">📝</span>
+                        Summary
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed">
+                        {selectedParticipation.overallFeedback.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Rating */}
+                  {selectedParticipation.overallFeedback.rating && (
+                    <div className="bg-yellow-50 rounded-xl p-5 border border-yellow-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                        <span className="text-2xl">⭐</span>
+                        Rating
+                      </h3>
+                      <p className="text-xl font-semibold text-yellow-700">
+                        {selectedParticipation.overallFeedback.rating}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Strengths */}
+                  {selectedParticipation.overallFeedback.strengths && selectedParticipation.overallFeedback.strengths.length > 0 && (
+                    <div className="bg-green-50 rounded-xl p-5 border border-green-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-2xl">💪</span>
+                        Strengths
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedParticipation.overallFeedback.strengths.map((strength, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-green-600 mt-1">✓</span>
+                            <span className="text-gray-700">{strength}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Areas for Improvement */}
+                  {selectedParticipation.overallFeedback.areasForImprovement && selectedParticipation.overallFeedback.areasForImprovement.length > 0 && (
+                    <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-2xl">🎯</span>
+                        Areas for Improvement
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedParticipation.overallFeedback.areasForImprovement.map((area, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-orange-600 mt-1">→</span>
+                            <span className="text-gray-700">{area}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  {selectedParticipation.overallFeedback.recommendations && selectedParticipation.overallFeedback.recommendations.length > 0 && (
+                    <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                      <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-2xl">💡</span>
+                        Recommendations
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedParticipation.overallFeedback.recommendations.map((rec, index) => (
+                          <li key={index} className="flex items-start gap-2">
+                            <span className="text-blue-600 mt-1">•</span>
+                            <span className="text-gray-700">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interview Transcript */}
+              {selectedParticipation.transcript && selectedParticipation.transcript.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="text-2xl">📋</span>
+                    Interview Transcript
+                  </h3>
+                  <div className="space-y-4">
+                    {selectedParticipation.transcript.map((item, index) => (
+                      <div key={index} className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                        <div className="mb-3">
+                          <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                            Question {item.questionNumber || index + 1}
+                          </span>
+                        </div>
+                        
+                        {/* Question */}
+                        <div className="mb-4">
+                          <p className="text-sm font-semibold text-gray-600 mb-1">Question:</p>
+                          <p className="text-gray-900">{item.aiQuestion}</p>
+                        </div>
+
+                        {/* Answer */}
+                        <div className="mb-4 bg-white p-3 rounded-lg border border-gray-200">
+                          <p className="text-sm font-semibold text-gray-600 mb-1">Answer:</p>
+                          <p className="text-gray-800">{item.userAnswer || 'No answer provided'}</p>
+                        </div>
+
+                        {/* Evaluation */}
+                        {item.aiEvaluation && (
+                          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <p className="text-sm font-semibold text-gray-600 mb-2">AI Evaluation:</p>
+                            
+                            {item.aiEvaluation.score !== undefined && (
+                              <div className="mb-2">
+                                <span className="text-blue-600 font-bold text-lg">
+                                  Score: {item.aiEvaluation.score}/10
+                                </span>
+                              </div>
+                            )}
+
+                            {item.aiEvaluation.feedback && (
+                              <p className="text-gray-700 mb-3">{item.aiEvaluation.feedback}</p>
+                            )}
+
+                            {item.aiEvaluation.strengths && item.aiEvaluation.strengths.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-sm font-semibold text-green-700 mb-1">Strengths:</p>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {item.aiEvaluation.strengths.map((s, i) => (
+                                    <li key={i}>{s}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {item.aiEvaluation.improvements && item.aiEvaluation.improvements.length > 0 && (
+                              <div>
+                                <p className="text-sm font-semibold text-orange-700 mb-1">Improvements:</p>
+                                <ul className="list-disc list-inside text-sm text-gray-700">
+                                  {item.aiEvaluation.improvements.map((imp, i) => (
+                                    <li key={i}>{imp}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowAssessmentModal(false);
+                  setSelectedParticipation(null);
+                }}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

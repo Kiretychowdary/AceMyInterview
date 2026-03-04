@@ -35,6 +35,13 @@ const ScheduledInterviews = () => {
         }
       }, 500);
     }
+
+    // Set up real-time status checking (every 30 seconds)
+    const statusCheckInterval = setInterval(() => {
+      updateInterviewStatuses();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(statusCheckInterval);
   }, [searchParams]);
 
   useEffect(() => {
@@ -50,6 +57,8 @@ const ScheduledInterviews = () => {
       const data = await response.json();
 
       if (data.success) {
+        console.log('📅 Interviews received from backend:', data.interviews);
+        console.log('📅 Sample interview:', data.interviews.upcoming?.[0] || data.interviews.ongoing?.[0]);
         setInterviews(data.interviews);
       }
     } catch (error) {
@@ -57,6 +66,64 @@ const ScheduledInterviews = () => {
       toast.error('Failed to load interviews');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateInterviewStatuses = () => {
+    setInterviews(prev => {
+      const now = new Date();
+      const allInterviews = [...prev.upcoming, ...prev.ongoing];
+      
+      const updated = { upcoming: [], ongoing: [] };
+      
+      allInterviews.forEach(interview => {
+        const status = determineInterviewStatus(interview, now);
+        if (status === 'ongoing') {
+          updated.ongoing.push(interview);
+        } else if (status === 'upcoming') {
+          updated.upcoming.push(interview);
+        }
+      });
+      
+      return updated;
+    });
+  };
+
+  const determineInterviewStatus = (interview, now) => {
+    let startDateTime, endDateTime;
+
+    if (interview.availableFromDate && interview.availableFromTime) {
+      // New flexible timing
+      const fromDate = new Date(interview.availableFromDate);
+      const [hours, minutes] = interview.availableFromTime.split(':');
+      fromDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      startDateTime = fromDate;
+
+      const toDate = new Date(interview.availableToDate);
+      const [endHours, endMinutes] = interview.availableToTime.split(':');
+      toDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      endDateTime = toDate;
+    } else if (interview.scheduledDate) {
+      // Legacy timing
+      const date = new Date(interview.scheduledDate);
+      const [startHours, startMinutes] = interview.startTime.split(':');
+      date.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+      startDateTime = date;
+
+      const endDate = new Date(interview.scheduledDate);
+      const [endHours, endMinutes] = interview.endTime.split(':');
+      endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      endDateTime = endDate;
+    } else {
+      return 'upcoming';
+    }
+
+    if (now >= startDateTime && now <= endDateTime) {
+      return 'ongoing';
+    } else if (now < startDateTime) {
+      return 'upcoming';
+    } else {
+      return 'completed';
     }
   };
 
@@ -177,7 +244,11 @@ const ScheduledInterviews = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    if (!date) return 'TBD';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    
+    return d.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
@@ -186,7 +257,51 @@ const ScheduledInterviews = () => {
   };
 
   const formatTime = (time) => {
+    if (!time) return '-';
     return time;
+  };
+
+  const getInterviewDateTime = (interview) => {
+    console.log('🔍 Getting date/time for interview:', {
+      interviewName: interview.interviewName,
+      availableFromDate: interview.availableFromDate,
+      availableFromTime: interview.availableFromTime,
+      availableToDate: interview.availableToDate,
+      availableToTime: interview.availableToTime,
+      scheduledDate: interview.scheduledDate,
+      startTime: interview.startTime,
+      endTime: interview.endTime
+    });
+
+    // Handle new flexible timing
+    if (interview.availableFromDate && interview.availableFromTime) {
+      const result = {
+        date: interview.availableFromDate,
+        startTime: interview.availableFromTime,
+        endTime: interview.availableToTime || interview.availableFromTime,
+        isFlexible: true
+      };
+      console.log('✅ Using flexible timing:', result);
+      return result;
+    }
+    // Handle legacy timing
+    if (interview.scheduledDate) {
+      const result = {
+        date: interview.scheduledDate,
+        startTime: interview.startTime,
+        endTime: interview.endTime,
+        isFlexible: false
+      };
+      console.log('✅ Using legacy timing:', result);
+      return result;
+    }
+    console.log('⚠️ No valid date/time found');
+    return {
+      date: null,
+      startTime: null,
+      endTime: null,
+      isFlexible: false
+    };
   };
 
   const getDifficultyColor = (difficulty) => {
@@ -340,17 +455,24 @@ const ScheduledInterviews = () => {
 
                 {/* Details */}
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">{formatDate(interview.scheduledDate)}</span>
-                  </div>
+                  {(() => {
+                    const dateTime = getInterviewDateTime(interview);
+                    return (
+                      <>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar className="w-4 h-4" />
+                          <span className="text-sm">{formatDate(dateTime.date)}</span>
+                        </div>
 
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Clock className="w-4 h-4" />
-                    <span className="text-sm">
-                      {formatTime(interview.startTime)} - {formatTime(interview.endTime)}
-                    </span>
-                  </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-sm">
+                            {formatTime(dateTime.startTime)} - {formatTime(dateTime.endTime)}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   <div className="flex items-center gap-2 text-gray-600">
                     {interview.interviewType === 'company-based' ? (

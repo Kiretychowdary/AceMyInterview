@@ -191,16 +191,83 @@ const Dashboard = () => {
           });
           setRegistrations(regMap);
           
-          // Categorize interviews by status
+          // Categorize interviews by status with real-time checking
           const interviews = regData.registrations.map(r => r.scheduledInterviewId).filter(Boolean);
-          const upcoming = interviews.filter(i => i.status === 'upcoming');
-          const ongoing = interviews.filter(i => i.status === 'ongoing');
+          const now = new Date();
+          
+          const upcoming = interviews.filter(i => {
+            const status = determineInterviewStatus(i, now);
+            return status === 'upcoming';
+          });
+          
+          const ongoing = interviews.filter(i => {
+            const status = determineInterviewStatus(i, now);
+            return status === 'ongoing';
+          });
           
           setScheduledInterviews({ upcoming, ongoing });
         }
       }
     } catch (error) {
       console.error('Error fetching scheduled interviews:', error);
+    }
+  };
+
+  const updateScheduledInterviewStatuses = () => {
+    setScheduledInterviews(prev => {
+      const now = new Date();
+      const allInterviews = [...prev.upcoming, ...prev.ongoing];
+      
+      const updated = { upcoming: [], ongoing: [] };
+      
+      allInterviews.forEach(interview => {
+        const status = determineInterviewStatus(interview, now);
+        if (status === 'ongoing') {
+          updated.ongoing.push(interview);
+        } else if (status === 'upcoming') {
+          updated.upcoming.push(interview);
+        }
+      });
+      
+      return updated;
+    });
+  };
+
+  const determineInterviewStatus = (interview, now) => {
+    let startDateTime, endDateTime;
+
+    if (interview.availableFromDate && interview.availableFromTime) {
+      // New flexible timing
+      const fromDate = new Date(interview.availableFromDate);
+      const [hours, minutes] = interview.availableFromTime.split(':');
+      fromDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      startDateTime = fromDate;
+
+      const toDate = new Date(interview.availableToDate);
+      const [endHours, endMinutes] = interview.availableToTime.split(':');
+      toDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      endDateTime = toDate;
+    } else if (interview.scheduledDate) {
+      // Legacy timing
+      const date = new Date(interview.scheduledDate);
+      const [startHours, startMinutes] = interview.startTime.split(':');
+      date.setHours(parseInt(startHours), parseInt(startMinutes), 0, 0);
+      startDateTime = date;
+
+      const endDate = new Date(interview.scheduledDate);
+      const [endHours, endMinutes] = interview.endTime.split(':');
+      endDate.setHours(parseInt(endHours), parseInt(endMinutes), 0, 0);
+      endDateTime = endDate;
+    } else {
+      return 'upcoming';
+    }
+
+    if (now >= startDateTime && now <= endDateTime) {
+      return 'ongoing';
+    } else if (now < startDateTime) {
+      return 'upcoming';
+    } else {
+      return 'completed';
     }
   };
 
@@ -541,7 +608,12 @@ const Dashboard = () => {
                           {interview.interviewType === 'company-based' ? interview.companyName : interview.topics?.join(', ')}
                         </p>
                         <p className="text-sm text-gray-500 mt-1">
-                          Starts: {interview.availableFromDate ? new Date(interview.availableFromDate).toLocaleString() : 'TBD'} | 
+                          Starts: {interview.availableFromDate ? new Date(interview.availableFromDate).toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : interview.scheduledDate ? new Date(interview.scheduledDate).toLocaleString() : 'TBD'} | 
                           Duration: {interview.duration} min
                         </p>
                       </div>

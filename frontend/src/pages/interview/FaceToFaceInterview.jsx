@@ -71,6 +71,11 @@ const FaceToFaceInterview = () => {
   const [finalAssessment, setFinalAssessment] = useState(null);
   const [interviewData, setInterviewData] = useState({ startTime: null });
   const [isEndingInterview, setIsEndingInterview] = useState(false); // Prevent double calls
+  
+  // Compiler State
+  const [compilerRequired, setCompilerRequired] = useState(false);
+  const [showCompiler, setShowCompiler] = useState(false);
+  const [code, setCode] = useState('// Write your code here\n');
 
   // Initialize Speech Recognition and Synthesis
   useEffect(() => {
@@ -225,18 +230,32 @@ const FaceToFaceInterview = () => {
         if (questionResponse.data.success && questionResponse.data.question) {
           const questionData = questionResponse.data.question;
           
-          // Backend returns {number, total, text, category} - extract the text
+          // Backend returns {number, total, text, category, compilerRequired} - extract the data
           const questionText = typeof questionData === 'string' ? questionData : questionData.text;
           const questionCategory = typeof questionData === 'object' ? questionData.category : (questionResponse.data.category || 'Technical');
+          const needsCompiler = typeof questionData === 'object' ? questionData.compilerRequired : false;
           
+          console.log('═════════════════════════════════════════════════════════');
+          console.log(`🎯 QUESTION ${i + 1} - COMPILER STATUS`);
+          console.log('═════════════════════════════════════════════════════════');
           console.log(`✅ Received question ${i + 1}:`, questionText?.substring(0, 100) + '...');
+          console.log('💻 Compiler Required:', needsCompiler ? '✅ YES' : '❌ NO');
+          console.log('📂 Category:', questionCategory);
+          console.log('═════════════════════════════════════════════════════════');
           
           generatedQuestions.push({
             question: questionText,
             category: questionCategory,
+            compilerRequired: needsCompiler || false,
             expectedPoints: [], // Will be evaluated dynamically
             followUp: ''
           });
+          
+          // Set compiler state for first question
+          if (i === 0 && needsCompiler) {
+            setCompilerRequired(true);
+            setTimeout(() => setShowCompiler(true), 500);
+          }
         }
       }
 
@@ -366,15 +385,40 @@ const FaceToFaceInterview = () => {
 
     console.log('📤 Submitting answer (length:', trimmedAnswer.length, 'characters)');
 
+    // Include code if compiler was used
+    let finalAnswer = trimmedAnswer;
+    const hasCode = code.trim() && code.trim() !== '// Write your code here';
+    
+    if (showCompiler && hasCode) {
+      // Check if code is already in the answer
+      if (!trimmedAnswer.includes(code.trim())) {
+        finalAnswer = trimmedAnswer + '\n\n### Code Solution:\n```\n' + code + '\n```';
+        console.log('💻 Code automatically appended to answer');
+      }
+    }
+
     const answerData = {
       questionIndex: currentQuestionIndex,
       questionNumber: currentQuestionIndex + 1, // Backend uses 1-based indexing
       question: questions[currentQuestionIndex].question,
-      answer: trimmedAnswer,
+      answer: finalAnswer,
+      code: hasCode ? code : null, // Send code separately for backend evaluation
       category: questions[currentQuestionIndex].category,
       timestamp: new Date(),
-      timeSpent: (interviewConfig.duration * 60) - timeRemaining
+      timeSpent: (interviewConfig.duration * 60) - timeRemaining,
+      compilerUsed: showCompiler && hasCode
     };
+
+    console.log('═════════════════════════════════════════════════════════');
+    console.log('📤 SUBMITTING ANSWER TO OLLAMA AI');
+    console.log('═════════════════════════════════════════════════════════');
+    console.log('📝 Question:', questions[currentQuestionIndex].question.substring(0, 60) + '...');
+    console.log('💬 Answer Length:', finalAnswer.length, 'characters');
+    console.log('💻 Code Included:', hasCode ? '✅ YES' : '❌ NO');
+    if (hasCode) {
+      console.log('📊 Code Length:', code.length, 'characters');
+    }
+    console.log('═════════════════════════════════════════════════════════');
 
     // Store answer first
     const updatedAnswers = [...userAnswers, answerData];
@@ -385,11 +429,44 @@ const FaceToFaceInterview = () => {
 
     // Move to next question or end interview
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      const nextQuestionIndex = currentQuestionIndex + 1;
+      const nextQuestion = questions[nextQuestionIndex];
+      
+      setCurrentQuestionIndex(nextQuestionIndex);
       setCurrentAnswer('');
       
+      // Handle compiler requirement for next question
+      const needsCompiler = nextQuestion.compilerRequired || false;
+      console.log('═════════════════════════════════════════════════════════');
+      console.log(`🎯 MOVING TO QUESTION ${nextQuestionIndex + 1} - COMPILER STATUS`);
+      console.log('═════════════════════════════════════════════════════════');
+      console.log('📝 Question:', nextQuestion.question?.substring(0, 80) + '...');
+      console.log('💻 Compiler Required:', needsCompiler ? '✅ YES' : '❌ NO');
+      console.log('📊 Previous Compiler State:', showCompiler ? 'Open' : 'Closed');
+      
+      setCompilerRequired(needsCompiler);
+      
+      // Animate compiler opening/closing
+      if (needsCompiler && !showCompiler) {
+        console.log('🎬 Action: Opening compiler with animation...');
+        setTimeout(() => setShowCompiler(true), 500);
+      } else if (!needsCompiler && showCompiler) {
+        console.log('🎬 Action: Closing compiler...');
+        setShowCompiler(false);
+      } else if (needsCompiler && showCompiler) {
+        console.log('🎬 Action: Compiler already open, resetting code...');
+        setCode('// Write your code here\n');
+      } else {
+        console.log('🎬 Action: Keeping compiler closed');
+      }
+      console.log('═════════════════════════════════════════════════════════');
+      
+      // Reset code if compiler is needed
+      if (needsCompiler) {
+        setCode('// Write your code here\n');
+      }
+      
       setTimeout(() => {
-        const nextQuestion = questions[currentQuestionIndex + 1];
         speakText(nextQuestion.question, 'curious');
       }, 2000);
     } else {
@@ -429,6 +506,8 @@ const FaceToFaceInterview = () => {
         sessionId: interviewData.sessionId,
         questionNumber: answerData.questionNumber,
         answer: answerData.answer,
+        code: answerData.code, // Send code for evaluation
+        compilerUsed: answerData.compilerUsed,
         timeSpent: answerData.timeSpent || 0
       });
       const evaluationTime = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -448,6 +527,8 @@ const FaceToFaceInterview = () => {
         answerData.feedback = evaluation.feedback;
         answerData.strengths = evaluation.strengths;
         answerData.improvements = evaluation.improvements;
+        answerData.codeQuality = evaluation.codeQuality;
+        answerData.codeAnalysis = evaluation.codeAnalysis;
         
         // Determine emotion based on score
         let emotion = 'neutral';
@@ -462,13 +543,19 @@ const FaceToFaceInterview = () => {
                                  score >= 4 ? '⚠️ Partially Correct' :
                                  '❌ Incorrect/Incomplete';
         
+        // Show code quality in toast if code was evaluated
+        const codeQualityMsg = evaluation.codeQuality ? `\n💻 Code: ${evaluation.codeQuality}` : '';
+        
         toast.success(
           <div>
             <p className="font-bold">{correctnessLabel}</p>
-            <p className="text-sm">Score: {score}/10</p>
+            <p className="text-sm">Score: {score}/10{codeQualityMsg}</p>
             <p className="text-xs mt-1">{evaluation.feedback}</p>
+            {evaluation.codeAnalysis && (
+              <p className="text-xs mt-1 text-blue-600">📊 {evaluation.codeAnalysis.substring(0, 100)}...</p>
+            )}
           </div>, 
-          { autoClose: 6000 }
+          { autoClose: 8000 }
         );
         
         // Speak the feedback
@@ -513,6 +600,7 @@ const FaceToFaceInterview = () => {
     }
     
     setIsEndingInterview(true);
+    setShowCompiler(false); // Close compiler when ending interview
     
     // Add small delay to ensure feedback UI completes
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -1128,79 +1216,159 @@ const FaceToFaceInterview = () => {
 
         {/* Interview Phase */}
         {interviewPhase === 'interview' && (
-          <div className="grid lg:grid-cols-2 gap-4 h-screen">
+          <div className={`grid gap-4 h-screen ${showCompiler ? 'lg:grid-cols-12' : 'lg:grid-cols-2'}`}>
             
-            {/* AI Interviewer Side */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-blue-100">
+            {/* Compiler Panel - Large Left Side (only when coding required) */}
+            {showCompiler && (
+              <div 
+                className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-green-500 flex flex-col lg:col-span-7 animate-slideDown"
+                style={{
+                  animation: 'slideDown 0.5s ease-out'
+                }}
+              >
+                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-bold">💻 Code Editor</h3>
+                    <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-sm font-bold rounded-full animate-pulse">
+                      ACTIVE
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowCompiler(false)}
+                    className="text-white hover:bg-white/20 rounded-lg px-4 py-2 font-bold text-xl transition-colors"
+                    title="Close Compiler"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="flex flex-col p-6 bg-gray-50 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
+                  <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-inner mb-4" style={{ height: '400px' }}>
+                    <textarea
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="// Write your code here...\n\n// Example:\nfunction solution(input) {\n  // Your implementation\n  return result;\n}\n\n// Test your solution:\nconsole.log(solution(testInput));"
+                      className="w-full h-full px-4 py-4 font-mono text-base bg-gray-900 text-green-400 focus:outline-none resize-none leading-relaxed"
+                      style={{
+                        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                        lineHeight: '1.6',
+                        tabSize: 2
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(code);
+                        toast.success('📋 Code copied to clipboard!');
+                      }}
+                      className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                    >
+                      <span className="text-xl">📋</span>
+                      <span>Copy</span>
+                    </button>
+                    <button
+                      onClick={() => setCode('// Write your code here\n')}
+                      className="px-4 py-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                    >
+                      <span className="text-xl">🔄</span>
+                      <span>Clear</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCurrentAnswer(prev => prev + '\n\n```\n' + code + '\n```');
+                        toast.success('✅ Code added to your answer!');
+                      }}
+                      className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                    >
+                      <span className="text-xl">✅</span>
+                      <span>Add to Answer</span>
+                    </button>
+                  </div>
+                  
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-green-600 rounded-lg">
+                    <p className="text-sm text-gray-800 font-medium">
+                      <span className="font-bold text-green-700">💡 Pro Tip:</span> Write your algorithm here, test it, then click <strong className="text-green-700">"Add to Answer"</strong> to include it in your submission.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* AI Interviewer Side - Left when no compiler, Right when compiler active */}
+            <div className={`bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-blue-100 ${showCompiler ? 'lg:col-span-2 order-last' : ''}`}>
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 flex justify-between items-center">
                 <div>
-                  <h2 className="text-2xl font-bold">AI Interviewer</h2>
-                  <p className="text-sm opacity-95 mt-1">{interviewConfig.topic} Interview</p>
+                  <h2 className={`font-bold ${showCompiler ? 'text-lg' : 'text-2xl'}`}>AI Interviewer</h2>
+                  <p className={`opacity-95 ${showCompiler ? 'text-xs mt-0.5' : 'text-sm mt-1'}`}>{interviewConfig.topic}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold tabular-nums">{formatTime(timeRemaining)}</div>
-                  <div className="text-xs opacity-95 uppercase tracking-wide">Time Remaining</div>
+                  <div className={`font-bold tabular-nums ${showCompiler ? 'text-xl' : 'text-3xl'}`}>{formatTime(timeRemaining)}</div>
+                  <div className="text-xs opacity-95 uppercase tracking-wide">Time</div>
                 </div>
               </div>
               
-              <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-blue-50 to-white">
+              <div className={`flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white ${showCompiler ? 'p-4' : 'p-8'}`}>
                 <Avatar3D 
                   textToSpeak={questions[currentQuestionIndex]?.question || ''}
                   expression={avatarExpression}
                   feedbackText={avatarFeedback}
                   enableSadTalker={true}
-                  disableAudio={true} // CRITICAL: Disable Avatar3D audio - parent handles speech
+                  disableAudio={true}
                 />
               </div>
 
-              <div className="p-5 bg-gray-50 border-t border-blue-100">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Question {currentQuestionIndex + 1} of {questions.length}
+              <div className={`bg-gray-50 border-t border-blue-100 ${showCompiler ? 'p-3' : 'p-5'}`}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className={`font-semibold text-gray-700 ${showCompiler ? 'text-xs' : 'text-sm'}`}>
+                    Q {currentQuestionIndex + 1}/{questions.length}
                   </span>
-                  <span className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                  <span className={`px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium ${showCompiler ? 'text-xs' : 'text-xs'}`}>
                     {questions[currentQuestionIndex]?.category}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div className="w-full bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 h-2.5 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* User Side */}
-            <div className="space-y-4">
+            {/* User Side - Camera + Questions */}
+            <div className={`space-y-4 ${showCompiler ? 'lg:col-span-3' : ''}`}>
               
               {/* User Camera with Face Detection */}
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-blue-100">
-                <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white p-4 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <h3 className="font-semibold">Your Camera</h3>
+                <div className={`bg-gradient-to-r from-gray-700 to-gray-800 text-white flex justify-between items-center ${showCompiler ? 'p-2' : 'p-4'}`}>
+                  <div className="flex items-center gap-2">
+                    <h3 className={`font-semibold ${showCompiler ? 'text-sm' : 'text-base'}`}>Your Camera</h3>
                     <div className="flex items-center gap-2">
                       {faceDetectionActive && (
-                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
                           faceDetected 
                             ? 'bg-green-500/20 text-green-300 border border-green-500/50' 
                             : 'bg-red-500/20 text-red-300 border border-red-500/50'
                         }`}>
-                          <div className={`w-2 h-2 rounded-full ${faceDetected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
-                          {faceDetected ? 'Face Detected' : 'No Face Detected'}
+                          <div className={`w-1.5 h-1.5 rounded-full ${faceDetected ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+                          {faceDetected ? 'Face' : 'No Face'}
                         </div>
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={toggleFullscreen}
-                    className="text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors font-medium"
-                  >
-                    {isFullscreen ? '⛶ Exit Fullscreen' : '⛶ Fullscreen (F11)'}
-                  </button>
+                  {!showCompiler && (
+                    <button
+                      onClick={toggleFullscreen}
+                      className="text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors font-medium"
+                    >
+                      {isFullscreen ? '⛶ Exit' : '⛶ F11'}
+                    </button>
+                  )}
                 </div>
                 
-                <div className="relative aspect-video bg-gray-900">
+                <div className={`relative bg-gray-900 ${showCompiler ? 'aspect-[4/3]' : 'aspect-video'}`}>
                   <Webcam
                     ref={webcamRef}
                     audio={false}
@@ -1208,16 +1376,16 @@ const FaceToFaceInterview = () => {
                     mirrored={true}
                     onUserMedia={() => setFaceDetectionActive(true)}
                   />
-                  <div className="absolute top-4 left-4 bg-red-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg">
-                    <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></div>
-                    Recording
+                  <div className={`absolute top-2 left-2 bg-red-600/90 backdrop-blur-sm text-white rounded-full font-semibold flex items-center gap-2 shadow-lg ${showCompiler ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-sm'}`}>
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    REC
                   </div>
                 </div>
               </div>
 
               {/* Current Question & Answer */}
               <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                <h3 className={`font-bold text-gray-800 mb-4 flex items-center ${showCompiler ? 'text-base' : 'text-lg'}`}>
                   <span className="text-blue-600 mr-2">❓</span>
                   Current Question:
                 </h3>
@@ -1225,6 +1393,13 @@ const FaceToFaceInterview = () => {
                   <p className="text-gray-800 font-medium leading-relaxed">
                     {questions[currentQuestionIndex]?.question || 'Loading question...'}
                   </p>
+                  {questions[currentQuestionIndex]?.compilerRequired && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full border border-green-300">
+                        💻 CODING REQUIRED
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <h4 className="font-bold text-gray-700 mb-3 flex items-center justify-between">
