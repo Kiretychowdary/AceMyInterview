@@ -7,9 +7,11 @@ const multer = require('multer');
 const pdf = require('pdf-parse');
 const fs = require('fs').promises;
 const path = require('path');
+const StudentPerformance = require('../models/StudentPerformance.cjs');
+const mongoose = require('mongoose');
 
-// Ollama AI Service Configuration - External GPU Server
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://172.21.1.17:11434';
+// Ollama AI Service Configuration - External GPU Server (Cloudflare Tunnel)
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'https://pricing-correction-agenda-criterion.trycloudflare.com';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:1b';
 
 console.log('═══════════════════════════════════════════════════════');
@@ -268,7 +270,7 @@ Question: [Your specific ${subject} question]`;
  */
 exports.submitAnswer = async (req, res) => {
   try {
-    const { subject, answer, questionNumber, previousQuestion, currentDifficulty } = req.body;
+    const { subject, answer, questionNumber, previousQuestion, currentDifficulty, userId, sessionId } = req.body;
 
     if (questionNumber === undefined) {
       return res.status(400).json({
@@ -595,6 +597,61 @@ Next Question: [Your specific, detailed question about ${subject}]`;
     console.log(`   ✓ All data from: ${OLLAMA_BASE_URL}`);
     console.log('');
 
+    // 📊 RECORD INTERACTION TO STUDENTPERFORMANCE FOR DASHBOARD (if userId provided)
+    if (userId) {
+      try {
+        const isCorrect = score >= 6 ? 1 : 0;
+        
+        let performance = await StudentPerformance.findOne({ userId });
+        
+        if (!performance) {
+          performance = new StudentPerformance({
+            userId,
+            interactions: [],
+            currentMastery: new Map(),
+            totalInteractions: 0,
+            overallMastery: 0
+          });
+        }
+        
+        // Add the interaction
+        performance.interactions.push({
+          topicId: 1, // Generic topic ID
+          topicName: subject,
+          questionId: `ollama_q_${questionNumber}`,
+          correct: isCorrect,
+          timeSpent: 0
+        });
+        
+        // Update counters
+        performance.totalInteractions = performance.interactions.length;
+        
+        // Update mastery score for this subject
+        const subjectInteractions = performance.interactions.filter(i => i.topicName === subject);
+        if (subjectInteractions.length > 0) {
+          const correctCount = subjectInteractions.filter(i => i.correct === 1).length;
+          const masteryScore = (correctCount / subjectInteractions.length);
+          performance.currentMastery.set(subject, masteryScore);
+        }
+        
+        // Recalculate overall mastery
+        let totalMastery = 0;
+        let topicCount = 0;
+        performance.currentMastery.forEach(score => {
+          totalMastery += score;
+          topicCount++;
+        });
+        performance.overallMastery = topicCount > 0 ? totalMastery / topicCount : 0;
+        performance.lastUpdated = new Date();
+        
+        await performance.save();
+        console.log('✅ Performance recorded for dashboard:', { userId, score, correct: isCorrect });
+      } catch (performanceError) {
+        console.error('⚠️  Failed to record performance (non-blocking):', performanceError.message);
+        // Don't block the response if performance tracking fails
+      }
+    }
+
     return res.json({
       success: true,
       score: score,
@@ -635,25 +692,69 @@ Next Question: [Your specific, detailed question about ${subject}]`;
  */
 exports.endInterview = async (req, res) => {
   try {
-    const { answers, totalQuestions } = req.body;
+    const { answers, totalQuestions, userId, subject, sessionId, startTime, interviewDuration } = req.body;
 
     // Calculate overall score
     const totalScore = answers.reduce((sum, a) => sum + (a.score || 0), 0);
     const averageScore = totalScore / totalQuestions;
 
+    const report = {
+      totalQuestions,
+      answeredQuestions: answers.length,
+      averageScore: averageScore.toFixed(1),
+      totalScore,
+      answers: answers,
+      feedback: averageScore >= 7 ? "Excellent performance!" : 
+                averageScore >= 5 ? "Good job, room for improvement" : 
+                "Keep practicing!",
+      timestamp: new Date().toISOString()
+    };
+
+    // 💾 SAVE TO INTERVIEWSESSION FOR DASHBOARD
+    if (userId && sessionId) {
+      try {
+        const InterviewSession = require('../routes/interview.cjs').InterviewSession || mongoose.model('InterviewSession');
+        
+        const sessionStartTime = startTime ? new Date(startTime) : new Date(Date.now() - (interviewDuration || 30) * 60 * 1000);
+        const sessionEndTime = new Date();
+        const timeSpent = Math.floor((sessionEndTime - sessionStartTime) / 1000); // in seconds
+        
+        const sessionData = {
+          sessionId: sessionId,
+          userId: userId,
+          topic: subject || 'General Interview',
+          difficulty: 'basic', // Ollama interviews start at basic
+          interviewType: 'ollama-mcp-interview',
+          startTime: sessionStartTime,
+          endTime: sessionEndTime,
+          timeSpent: timeSpent,
+          duration: Math.ceil(timeSpent / 60), // in minutes
+          totalQuestions: totalQuestions,
+          answeredQuestions: answers.length,
+          assessment: {
+            overallScore: parseFloat(averageScore.toFixed(1)),
+            summary: report.feedback,
+            strengths: averageScore >= 7 ? ['Strong technical knowledge', 'Excellent communication'] : ['Adequate understanding'],
+            improvements: averageScore < 5 ? ['Review fundamental concepts', 'Practice more questions'] : ['Deepen technical expertise'],
+            detailedFeedback: report.feedback
+          }
+        };
+        
+        await InterviewSession.findOneAndUpdate(
+          { sessionId: sessionId },
+          sessionData,
+          { upsert: true, new: true }
+        );
+        
+        console.log('✅ Saved to InterviewSession for dashboard:', sessionId);
+      } catch (sessionError) {
+        console.error('⚠️  Failed to save to InterviewSession (non-blocking):', sessionError.message);
+      }
+    }
+
     return res.json({
       success: true,
-      report: {
-        totalQuestions,
-        answeredQuestions: answers.length,
-        averageScore: averageScore.toFixed(1),
-        totalScore,
-        answers: answers,
-        feedback: averageScore >= 7 ? "Excellent performance!" : 
-                  averageScore >= 5 ? "Good job, room for improvement" : 
-                  "Keep practicing!",
-        timestamp: new Date().toISOString()
-      }
+      report
     });
 
   } catch (error) {
@@ -690,6 +791,148 @@ exports.checkHealth = async (req, res) => {
       ollamaUrl: OLLAMA_BASE_URL,
       message: 'Ollama not responding. Check external GPU server connection.',
       error: error.message
+    });
+  }
+};
+
+/**
+ * Generate MCQ Questions using Ollama
+ * POST /api/ollama/generate-mcq
+ */
+exports.generateMCQQuestions = async (req, res) => {
+  try {
+    const { topic, difficulty = 'medium', count = 5 } = req.body;
+
+    if (!topic) {
+      return res.status(400).json({
+        success: false,
+        error: 'Topic is required'
+      });
+    }
+
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📝 MCQ GENERATION REQUEST (BATCHED)');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log(`📚 Topic: ${topic}`);
+    console.log(`⭐ Difficulty: ${difficulty}`);
+    console.log(`📊 Target Count: ${count}`);
+    console.log(`🌐 Endpoint: ${OLLAMA_BASE_URL}/api/generate`);
+    console.log(`🤖 Model: ${OLLAMA_MODEL}`);
+
+    const batchSize = 3;
+    const numBatches = Math.ceil(count / batchSize);
+    let allQuestions = [];
+    let batchStartTime = Date.now();
+
+    for (let i = 0; i < numBatches; i++) {
+      const isLastBatch = i === numBatches - 1;
+      const currentBatchCount = isLastBatch && count % batchSize !== 0 ? count % batchSize : batchSize;
+
+      console.log(`📤 Starting Batch ${i + 1}/${numBatches} (${currentBatchCount} questions)...`);
+
+      const prompt = `Generate exactly ${currentBatchCount} multiple-choice questions for "${topic}" at ${difficulty} difficulty level.
+Return ONLY a valid JSON array matching this structure exactly:
+[
+  {
+    "question": "Question text?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correctAnswer": 0,
+    "explanation": "Why..."
+  }
+]
+- Must be valid JSON array. No markdown code blocks.`;
+
+      try {
+        const response = await axios.post(
+          `${OLLAMA_BASE_URL}/api/generate`,
+          {
+            model: OLLAMA_MODEL,
+            prompt: prompt,
+            stream: false,
+            format: 'json',
+            options: {
+              temperature: 0.7,
+              num_predict: 2000,
+              top_p: 0.9
+            }
+          },
+          {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 60000
+          }
+        );
+
+        let responseText = response.data.response || '';
+        responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        // Basic bracket fixing
+        if (responseText.startsWith('[') || responseText.startsWith('{')) {
+          const openBrackets = (responseText.match(/\[/g) || []).length;
+          const closeBrackets = (responseText.match(/]/g) || []).length;
+          const openBraces = (responseText.match(/{/g) || []).length;
+          const closeBraces = (responseText.match(/}/g) || []).length;
+
+          if (openBrackets > closeBrackets) responseText += ']'.repeat(openBrackets - closeBrackets);
+          if (openBraces > closeBraces) responseText += '}'.repeat(openBraces - closeBraces);
+        }
+
+        let parsed = JSON.parse(responseText);
+        let batchQuestions = Array.isArray(parsed) ? parsed : (typeof parsed === 'object' ? [parsed] : []);
+
+        const validBatch = batchQuestions.filter(q => 
+          q.question && Array.isArray(q.options) && q.options.length >= 4 &&
+          typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer < q.options.length
+        );
+
+        console.log(`✅ Batch ${i + 1} yielded ${validBatch.length} valid questions.`);
+        allQuestions = allQuestions.concat(validBatch);
+
+        // If we received more than requested somehow across batches, slice it
+        if (allQuestions.length >= count) {
+            allQuestions = allQuestions.slice(0, count);
+            break;
+        }
+
+      } catch (batchError) {
+        console.error(`❌ Batch ${i + 1} Failed: ${batchError.message}`);
+        // Continue to the next batch even if this one fails to get at least some questions
+      }
+    }
+
+    const responseTime = Date.now() - batchStartTime;
+    console.log(`⏱️ Total Response time: ${responseTime}ms`);
+
+    if (allQuestions.length === 0) {
+      throw new Error('No valid questions generated from any batch');
+    }
+
+    console.log(`✅ Fully Generated ${allQuestions.length} valid questions`);
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('');
+
+    return res.json({
+      success: true,
+      questions: allQuestions,
+      count: allQuestions.length,
+      topic: topic,
+      difficulty: difficulty,
+      source: 'ollama',
+      model: OLLAMA_MODEL,
+      responseTime: responseTime
+    });
+
+  } catch (error) {
+    console.error('═══════════════════════════════════════════════════════');
+    console.error('❌ MCQ Generation Error:', error.message);
+    console.error(`🌐 Ollama Endpoint: ${OLLAMA_BASE_URL}`);
+    console.error('═══════════════════════════════════════════════════════');
+    console.error('');
+
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      topic: req.body.topic,
+      source: 'ollama-error'
     });
   }
 };

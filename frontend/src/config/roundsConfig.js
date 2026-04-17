@@ -245,6 +245,49 @@ export const rounds = [
     label: 'Leadership Reflection',
     mode: ROUND_MODES.ANALYSIS,
     optional: true
+  },
+
+  // --- Company Specific Tracks (Infosys, TCS, Cognizant) ---
+  {
+    id: 'company-diagnostic',
+    trackGroup: 'company',
+    appliesTo: ['infosys', 'tcs', 'cognizant'],
+    stage: 0,
+    label: 'Aptitude & Core Concepts',
+    mode: ROUND_MODES.MCQ,
+    difficultyProfile: ['easy','medium'],
+    objectives: ['calibrate_level','domain_knowledge'],
+    next: 'company-coding'
+  },
+  {
+    id: 'company-coding',
+    trackGroup: 'company',
+    appliesTo: ['infosys', 'tcs', 'cognizant'],
+    stage: 1,
+    label: 'Technical Coding Round',
+    mode: ROUND_MODES.CODING,
+    topics: ['arrays','strings','implementation'],
+    difficultyProfile: ['easy','medium'],
+    questionCount: 2,
+    next: 'company-tech-interview'
+  },
+  {
+    id: 'company-tech-interview',
+    trackGroup: 'company',
+    appliesTo: ['infosys', 'tcs', 'cognizant'],
+    stage: 2,
+    label: 'Tech + Managerial Interview',
+    mode: ROUND_MODES.PERSON,
+    next: 'company-reflection'
+  },
+  {
+    id: 'company-reflection',
+    trackGroup: 'company',
+    appliesTo: ['infosys', 'tcs', 'cognizant'],
+    stage: 3,
+    label: 'Interview Analysis',
+    mode: ROUND_MODES.ANALYSIS,
+    optional: true
   }
 ];
 
@@ -290,3 +333,4 @@ export const hasCompleted = (userId, roundId) => {
   const prog = loadProgress();
   return !!prog[userId]?.completed?.[roundId];
 };
+

@@ -92,9 +92,50 @@ export const tracksConfig = {
         { name: 'Leadership Styles', desc: 'Coaching & empowerment' }
       ]
     }
+  ],
+  company: [
+    {
+      key: 'infosys',
+      title: 'Infosys',
+      desc: 'System Engineer, Specialist Programmer & Digital Specialist Engineer roles.',
+      category: 'Company',
+      img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400',
+      subTopics: [
+        { name: 'Aptitude & Reasoning', desc: 'Quantitative, logical & verbal' },
+        { name: 'Core CS Subjects', desc: 'DBMS, OS, CN & OOPS' },
+        { name: 'Coding (Easy/Medium)', desc: 'Arrays, Strings, Patterns' },
+        { name: 'HR/Managerial', desc: 'Behavioral & situation-based' }
+      ]
+    },
+    {
+      key: 'tcs',
+      title: 'TCS (Tata Consultancy Services)',
+      desc: 'Ninja, Digital & Prime recruitment processes.',
+      category: 'Company',
+      img: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400',
+      subTopics: [
+        { name: 'Cognitive Skills', desc: 'Numerical & reasoning ability' },
+        { name: 'Programming Logic', desc: 'C/C++/Java paradigms & snippets' },
+        { name: 'Hands-on Coding', desc: 'Implementation and logic' },
+        { name: 'Technical Interview', desc: 'Projects & domain knowledge' }
+      ]
+    },
+    {
+      key: 'cognizant',
+      title: 'Cognizant (CTS)',
+      desc: 'GenC, GenC Elevate & GenC Pro hiring tracks.',
+      category: 'Company',
+      img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400',
+      subTopics: [
+        { name: 'Aptitude & English', desc: 'Verbal & analytical reasoning' },
+        { name: 'Automata Fix', desc: 'Code debugging & logical snippets' },
+        { name: 'Tech Interview', desc: 'OOP, DBMS, SQL & preferred language' },
+        { name: 'HR Interview', desc: 'Communication & problem solving' }
+      ]
+    }
   ]
 };
 
 export const getTrackByKey = (key) => {
-  return tracksConfig.tech.concat(tracksConfig.nonTech).find(t => t.key === key) || null;
+  return tracksConfig.tech.concat(tracksConfig.nonTech, tracksConfig.company || []).find(t => t.key === key) || null;
 };

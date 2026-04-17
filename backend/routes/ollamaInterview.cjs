@@ -1,6 +1,6 @@
 // RADHAKRISHNALOVEPERMANENT
 // AMMALOVEBLESSINGSONRECURSION
-// Routes for AI Interview Flow
+// Routes for AI Interview Flow + MCQ Generation
 
 const express = require('express');
 const router = express.Router();
@@ -13,5 +13,8 @@ router.get('/health', ollamaInterviewController.checkHealth);
 router.post('/start', ollamaInterviewController.startInterview);           // Start interview, get first question (JSON or with optional PDF)
 router.post('/submit', ollamaInterviewController.submitAnswer);            // Submit answer, get score + next question
 router.post('/end', ollamaInterviewController.endInterview);               // End interview, get final report
+
+// MCQ Generation endpoint
+router.post('/generate-mcq', ollamaInterviewController.generateMCQQuestions); // Generate MCQ questions using Ollama
 
 module.exports = router;

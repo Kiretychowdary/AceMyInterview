@@ -669,7 +669,7 @@ const FaceToFaceInterview = () => {
       console.log('🔄 Requesting AI assessment...');
       const assessment = await generateAIAssessment(sessionData);
       
-      if (!assessment || !assessment.overallScore) {
+      if (!assessment || assessment.overallScore === undefined) {
         throw new Error('Invalid assessment received');
       }
       
@@ -1205,10 +1205,12 @@ const FaceToFaceInterview = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={startInterview}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                className="shine-button w-full justify-center"
               >
-                <span className="text-2xl">🚀</span>
                 <span>Start Interview</span>
+                <svg className="shine-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path fillRule="evenodd" clipRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z"></path>
+                </svg>
               </motion.button>
             </div>
           </motion.div>
@@ -1216,100 +1218,112 @@ const FaceToFaceInterview = () => {
 
         {/* Interview Phase */}
         {interviewPhase === 'interview' && (
-          <div className={`grid gap-4 h-screen ${showCompiler ? 'lg:grid-cols-12' : 'lg:grid-cols-2'}`}>
+          <div className="grid gap-4 h-screen lg:grid-cols-2">
             
-            {/* Compiler Panel - Large Left Side (only when coding required) */}
-            {showCompiler && (
-              <div 
-                className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-green-500 flex flex-col lg:col-span-7 animate-slideDown"
-                style={{
-                  animation: 'slideDown 0.5s ease-out'
-                }}
-              >
-                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-2xl font-bold">💻 Code Editor</h3>
-                    <span className="px-3 py-1.5 bg-white/20 backdrop-blur-sm text-sm font-bold rounded-full animate-pulse">
-                      ACTIVE
-                    </span>
+            {/* Compiler Modal Popup (only when coding required) */}
+            <AnimatePresence>
+              {showCompiler && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-8 bg-black/60 backdrop-blur-sm"
+                >
+                  <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden border-2 border-green-500 flex flex-col h-[85vh]">
+                    <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-4 flex justify-between items-center shadow-md">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">💻</span>
+                        <h3 className="text-xl font-bold">Code Editor</h3>
+                        <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-xs font-bold rounded-full animate-pulse ml-2">
+                          ACTIVE
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowCompiler(false)}
+                        className="text-white hover:bg-white/20 focus:ring-2 focus:ring-white/50 rounded-lg w-10 h-10 flex items-center justify-center font-bold text-xl transition-all shadow-sm"
+                        title="Minimise Compiler"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    
+                    <div className="flex flex-col p-6 bg-gray-50 flex-1 overflow-y-auto">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-gray-700 font-bold flex items-center gap-2">
+                          <span>📝</span> Write Your Solution:
+                        </h4>
+                        <span className="text-xs text-gray-500 font-medium bg-gray-200 px-2 py-1 rounded-md">Plain text / Pseudo-code</span>
+                      </div>
+                      
+                      <div className="border-2 border-gray-300 rounded-xl overflow-hidden shadow-inner mb-5 flex-1 relative min-h-[300px]">
+                        <textarea
+                          value={code}
+                          onChange={(e) => setCode(e.target.value)}
+                          placeholder="// Write your code here...\n\n// Example:\nfunction solution(input) {\n  // Your implementation\n  return result;\n}\n\n// Test your solution:\nconsole.log(solution(testInput));"
+                          className="absolute inset-0 w-full h-full px-5 py-5 font-mono text-[15px] bg-[#1e1e1e] text-[#4af626] focus:outline-none resize-none leading-relaxed"
+                          style={{
+                            fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                            tabSize: 2
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(code);
+                            toast.success('📋 Code copied to clipboard!');
+                          }}
+                          className="px-4 py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+                        >
+                          <span className="text-lg">📋</span>
+                          <span>Copy</span>
+                        </button>
+                        <button
+                          onClick={() => setCode('// Write your code here\n')}
+                          className="px-4 py-3.5 bg-white border-2 border-yellow-200 hover:border-yellow-300 hover:bg-yellow-50 text-yellow-700 font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm"
+                        >
+                          <span className="text-lg"></span>
+                          <span>Clear</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCurrentAnswer(prev => prev + '\n\n```\n' + code + '\n```');
+                            toast.success('✅ Code added to your answer!');
+                            setShowCompiler(false); // Auto-close compiler after adding
+                          }}
+                          className="px-4 py-3.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                          <span className="text-lg">✅</span>
+                          <span>Add to Answer & Close</span>
+                        </button>
+                      </div>
+                      
+                      <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl">
+                        <p className="text-sm text-blue-900 font-medium">
+                          <span className="font-bold text-blue-700">💡 Pro Tip:</span> Write your algorithm here, test it, then click <strong className="text-green-700">"Add to Answer & Close"</strong> to include it in your submission. You can always re-open this editor if needed.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setShowCompiler(false)}
-                    className="text-white hover:bg-white/20 rounded-lg px-4 py-2 font-bold text-xl transition-colors"
-                    title="Close Compiler"
-                  >
-                    ✕
-                  </button>
-                </div>
-                
-                <div className="flex flex-col p-6 bg-gray-50 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 100px)' }}>
-                  <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-inner mb-4" style={{ height: '400px' }}>
-                    <textarea
-                      value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      placeholder="// Write your code here...\n\n// Example:\nfunction solution(input) {\n  // Your implementation\n  return result;\n}\n\n// Test your solution:\nconsole.log(solution(testInput));"
-                      className="w-full h-full px-4 py-4 font-mono text-base bg-gray-900 text-green-400 focus:outline-none resize-none leading-relaxed"
-                      style={{
-                        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                        lineHeight: '1.6',
-                        tabSize: 2
-                      }}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(code);
-                        toast.success('📋 Code copied to clipboard!');
-                      }}
-                      className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                    >
-                      <span className="text-xl">📋</span>
-                      <span>Copy</span>
-                    </button>
-                    <button
-                      onClick={() => setCode('// Write your code here\n')}
-                      className="px-4 py-3 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                    >
-                      <span className="text-xl">🔄</span>
-                      <span>Clear</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCurrentAnswer(prev => prev + '\n\n```\n' + code + '\n```');
-                        toast.success('✅ Code added to your answer!');
-                      }}
-                      className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-                    >
-                      <span className="text-xl">✅</span>
-                      <span>Add to Answer</span>
-                    </button>
-                  </div>
-                  
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-green-50 border-l-4 border-green-600 rounded-lg">
-                    <p className="text-sm text-gray-800 font-medium">
-                      <span className="font-bold text-green-700">💡 Pro Tip:</span> Write your algorithm here, test it, then click <strong className="text-green-700">"Add to Answer"</strong> to include it in your submission.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* AI Interviewer Side - Left when no compiler, Right when compiler active */}
-            <div className={`bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-blue-100 ${showCompiler ? 'lg:col-span-2 order-last' : ''}`}>
+            {/* AI Interviewer Side */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col border border-blue-100">
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-5 flex justify-between items-center">
                 <div>
-                  <h2 className={`font-bold ${showCompiler ? 'text-lg' : 'text-2xl'}`}>AI Interviewer</h2>
-                  <p className={`opacity-95 ${showCompiler ? 'text-xs mt-0.5' : 'text-sm mt-1'}`}>{interviewConfig.topic}</p>
+                  <h2 className="font-bold text-2xl">AI Interviewer</h2>
+                  <p className="opacity-95 text-sm mt-1">{interviewConfig.topic}</p>
                 </div>
                 <div className="text-right">
-                  <div className={`font-bold tabular-nums ${showCompiler ? 'text-xl' : 'text-3xl'}`}>{formatTime(timeRemaining)}</div>
+                  <div className="font-bold tabular-nums text-3xl">{formatTime(timeRemaining)}</div>
                   <div className="text-xs opacity-95 uppercase tracking-wide">Time</div>
                 </div>
               </div>
               
-              <div className={`flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white ${showCompiler ? 'p-4' : 'p-8'}`}>
+              <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-8">
                 <Avatar3D 
                   textToSpeak={questions[currentQuestionIndex]?.question || ''}
                   expression={avatarExpression}
@@ -1319,12 +1333,12 @@ const FaceToFaceInterview = () => {
                 />
               </div>
 
-              <div className={`bg-gray-50 border-t border-blue-100 ${showCompiler ? 'p-3' : 'p-5'}`}>
+              <div className="bg-gray-50 border-t border-blue-100 p-5">
                 <div className="flex justify-between items-center mb-2">
-                  <span className={`font-semibold text-gray-700 ${showCompiler ? 'text-xs' : 'text-sm'}`}>
+                  <span className="font-semibold text-gray-700 text-sm">
                     Q {currentQuestionIndex + 1}/{questions.length}
                   </span>
-                  <span className={`px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium ${showCompiler ? 'text-xs' : 'text-xs'}`}>
+                  <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium text-xs">
                     {questions[currentQuestionIndex]?.category}
                   </span>
                 </div>
@@ -1338,13 +1352,13 @@ const FaceToFaceInterview = () => {
             </div>
 
             {/* User Side - Camera + Questions */}
-            <div className={`space-y-4 ${showCompiler ? 'lg:col-span-3' : ''}`}>
+            <div className="space-y-4">
               
               {/* User Camera with Face Detection */}
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-blue-100">
-                <div className={`bg-gradient-to-r from-gray-700 to-gray-800 text-white flex justify-between items-center ${showCompiler ? 'p-2' : 'p-4'}`}>
+                <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white flex justify-between items-center p-4">
                   <div className="flex items-center gap-2">
-                    <h3 className={`font-semibold ${showCompiler ? 'text-sm' : 'text-base'}`}>Your Camera</h3>
+                    <h3 className="font-semibold text-base">Your Camera</h3>
                     <div className="flex items-center gap-2">
                       {faceDetectionActive && (
                         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
@@ -1358,17 +1372,15 @@ const FaceToFaceInterview = () => {
                       )}
                     </div>
                   </div>
-                  {!showCompiler && (
-                    <button
-                      onClick={toggleFullscreen}
-                      className="text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors font-medium"
-                    >
-                      {isFullscreen ? '⛶ Exit' : '⛶ F11'}
-                    </button>
-                  )}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="text-xs bg-white/20 px-3 py-1.5 rounded-lg hover:bg-white/30 transition-colors font-medium"
+                  >
+                    {isFullscreen ? '⛶ Exit' : '⛶ F11'}
+                  </button>
                 </div>
                 
-                <div className={`relative bg-gray-900 ${showCompiler ? 'aspect-[4/3]' : 'aspect-video'}`}>
+                <div className="relative bg-gray-900 aspect-video">
                   <Webcam
                     ref={webcamRef}
                     audio={false}
@@ -1376,7 +1388,7 @@ const FaceToFaceInterview = () => {
                     mirrored={true}
                     onUserMedia={() => setFaceDetectionActive(true)}
                   />
-                  <div className={`absolute top-2 left-2 bg-red-600/90 backdrop-blur-sm text-white rounded-full font-semibold flex items-center gap-2 shadow-lg ${showCompiler ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-sm'}`}>
+                  <div className="absolute top-2 left-2 bg-red-600/90 backdrop-blur-sm text-white rounded-full font-semibold flex items-center gap-2 shadow-lg px-4 py-2 text-sm">
                     <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
                     REC
                   </div>
@@ -1385,7 +1397,7 @@ const FaceToFaceInterview = () => {
 
               {/* Current Question & Answer */}
               <div className="bg-white rounded-2xl shadow-xl p-6 border border-blue-100">
-                <h3 className={`font-bold text-gray-800 mb-4 flex items-center ${showCompiler ? 'text-base' : 'text-lg'}`}>
+                <h3 className="font-bold text-gray-800 mb-4 flex items-center text-lg">
                   <span className="text-blue-600 mr-2">❓</span>
                   Current Question:
                 </h3>
@@ -1398,6 +1410,14 @@ const FaceToFaceInterview = () => {
                       <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full border border-green-300">
                         💻 CODING REQUIRED
                       </span>
+                      {!showCompiler && (
+                        <button
+                          onClick={() => setShowCompiler(true)}
+                          className="ml-auto px-4 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow transition-colors flex items-center gap-2"
+                        >
+                          <span>💻</span> Open Editor
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

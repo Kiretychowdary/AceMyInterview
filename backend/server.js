@@ -156,6 +156,15 @@ try {
   console.warn('AI Interview routes not available:', e.message);
 }
 
+// Mount Ollama interview routes (GPU-accelerated interviews + MCQ generation)
+try {
+  const ollamaInterviewRoutes = require('./routes/ollamaInterview.cjs');
+  app.use('/api/ollama', ollamaInterviewRoutes);
+  console.log('✅ Ollama routes mounted at /api/ollama (interviews + MCQ)');
+} catch (e) {
+  console.warn('Ollama Interview routes not available:', e.message);
+}
+
 // Mount interview data storage routes
 try {
   const interviewRoutes = require('./routes/interview.cjs');

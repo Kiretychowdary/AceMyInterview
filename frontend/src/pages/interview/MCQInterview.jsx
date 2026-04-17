@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import OllamaService from '../../services/OllamaService';
 import GeminiService from '../../services/GeminiService';
 import { progressService } from '../../services/ProgressService';
 import RoundBreakScreen from '../../components/interview/RoundBreakScreen';
@@ -366,14 +367,14 @@ const MCQInterview = () => {
     }
   }, [timeLeft, quizStarted]);
 
-  // Fetch questions from Gemini AI
+  // Fetch questions from Ollama AI Backend
   // If autoStart=true the quiz will start immediately. Otherwise questions are preloaded
   // (used for auto-generating when the user changes selections)
   const fetchQuestionsFromAI = async (autoStart = false) => {
     setLoading(true);
     try {
-      // Generate questions without motivational toast
-      const response = await GeminiService.getMCQQuestions(
+      // Generate questions using Ollama backend (no motivational toast)
+      const response = await OllamaService.getMCQQuestions(
         quizConfig.topic,
         quizConfig.difficulty,
         quizConfig.count

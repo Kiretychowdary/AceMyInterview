@@ -423,3 +423,4 @@ router.delete('/clear-old/:days', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.InterviewSession = InterviewSession;

@@ -1,7 +1,9 @@
 // Complete AI Interview Controller with Ollama
 // Handles full interview lifecycle: question generation, answer evaluation, transcript saving
 const InterviewTranscript = require('../models/InterviewTranscript.cjs');
+const StudentPerformance = require('../models/StudentPerformance.cjs');
 const ollamaService = require('../services/ollamaService.cjs');
+const mongoose = require('mongoose');
 
 const USE_OLLAMA = process.env.USE_OLLAMA === 'true';
 
@@ -522,6 +524,60 @@ YOU MUST RETURN VALID JSON:
     console.log('📈 Improvements:', evaluation.improvements?.length || 0, 'points');
     console.log('═════════════════════════════════════════════════════════');
 
+    // 📊 RECORD INTERACTION TO STUDENTPERFORMANCE FOR DASHBOARD
+    try {
+      const isCorrect = evaluation.score >= 6 ? 1 : 0;
+      const topicId = transcript.topic || 'General Interview';
+      
+      let performance = await StudentPerformance.findOne({ userId: transcript.userId });
+      
+      if (!performance) {
+        performance = new StudentPerformance({
+          userId: transcript.userId,
+          interactions: [],
+          currentMastery: new Map(),
+          totalInteractions: 0,
+          overallMastery: 0
+        });
+      }
+      
+      // Add the interaction
+      performance.interactions.push({
+        topicId: 1, // Generic topic ID for interview
+        topicName: topicId,
+        questionId: qa.question._id?.toString() || `q_${questionNumber}`,
+        correct: isCorrect,
+        timeSpent: timeSpent || 0
+      });
+      
+      // Update counters
+      performance.totalInteractions = performance.interactions.length;
+      
+      // Update mastery score for this topic
+      const topicInteractions = performance.interactions.filter(i => i.topicName === topicId);
+      if (topicInteractions.length > 0) {
+        const correctCount = topicInteractions.filter(i => i.correct === 1).length;
+        const masteryScore = (correctCount / topicInteractions.length);
+        performance.currentMastery.set(topicId, masteryScore);
+      }
+      
+      // Recalculate overall mastery
+      let totalMastery = 0;
+      let topicCount = 0;
+      performance.currentMastery.forEach(score => {
+        totalMastery += score;
+        topicCount++;
+      });
+      performance.overallMastery = topicCount > 0 ? totalMastery / topicCount : 0;
+      performance.lastUpdated = new Date();
+      
+      await performance.save();
+      console.log('✅ Performance recorded for dashboard:', { userId: transcript.userId, score: evaluation.score, correct: isCorrect });
+    } catch (performanceError) {
+      console.error('⚠️  Failed to record performance (non-blocking):', performanceError.message);
+      // Don't block the response if performance tracking fails
+    }
+
     return res.json({
       success: true,
       question: qa.question.text,
@@ -720,6 +776,47 @@ Return ONLY valid JSON, no markdown, no code blocks.`;
 
     console.log(`✅ Interview completed: ${sessionId}`);
     console.log(`   Overall Score: ${finalReport.overallScore}/10`);
+
+    // 💾 SAVE TO INTERVIEWSESSION FOR DASHBOARD
+    try {
+      const InterviewSession = require('../routes/interview.cjs').InterviewSession || mongoose.model('InterviewSession');
+      
+      const sessionStartTime = transcript.startTime || new Date(Date.now() - (transcript.totalDuration || 30) * 60 * 1000);
+      const sessionEndTime = transcript.endTime || new Date();
+      const timeSpent = Math.floor((sessionEndTime - sessionStartTime) / 1000); // in seconds
+      
+      const sessionData = {
+        sessionId: sessionId,
+        userId: transcript.userId,
+        topic: transcript.topic || 'General Interview',
+        difficulty: transcript.difficulty || 'medium',
+        interviewType: 'ollama-interview',
+        startTime: sessionStartTime,
+        endTime: sessionEndTime,
+        timeSpent: timeSpent,
+        duration: Math.ceil(timeSpent / 60), // in minutes
+        totalQuestions: transcript.totalQuestions,
+        answeredQuestions: transcript.questionsAndAnswers.length,
+        assessment: {
+          overallScore: finalReport.overallScore,
+          summary: finalReport.summary,
+          strengths: finalReport.strengths,
+          improvements: finalReport.areasForImprovement,
+          detailedFeedback: finalReport.detailedAnalysis,
+          nextSteps: finalReport.recommendations
+        }
+      };
+      
+      await InterviewSession.findOneAndUpdate(
+        { sessionId: sessionId },
+        sessionData,
+        { upsert: true, new: true }
+      );
+      
+      console.log('✅ Saved to InterviewSession for dashboard:', sessionId);
+    } catch (sessionError) {
+      console.error('⚠️  Failed to save to InterviewSession (non-blocking):', sessionError.message);
+    }
 
     return res.json({
       success: true,

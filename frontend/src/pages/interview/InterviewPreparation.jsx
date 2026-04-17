@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ROUND_MODES, getRoundsForTrack, isModeImplemented } from '../../config/roundsConfig';
 import { tracksConfig, getTrackByKey } from '../../config/tracksConfig';
@@ -7,10 +7,22 @@ import ChooseYourPath from '../../components/interview/ChooseYourPath';
 
 // Professional multi-step: Category (tech/non) -> Role selection -> Rounds list with START button
 export default function InterviewPreparation() {
-  const [category, setCategory] = React.useState(null); // 'tech' | 'nonTech'
+  const { category: urlCategory } = useParams();
+  const [category, setCategory] = React.useState(
+    urlCategory === 'tech' ? 'tech' : 
+    urlCategory === 'non-tech' ? 'nonTech' : 
+    urlCategory === 'company' ? 'company' : null
+  ); 
   const [selectedRoleKey, setSelectedRoleKey] = React.useState(null);
   const [showStartConfirmation, setShowStartConfirmation] = React.useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (urlCategory === 'tech') setCategory('tech');
+    else if (urlCategory === 'non-tech') setCategory('nonTech');
+    else if (urlCategory === 'company') setCategory('company');
+    else setCategory(null);
+  }, [urlCategory]);
 
   const selectedTrack = selectedRoleKey ? getTrackByKey(selectedRoleKey) : null;
   const rounds = selectedRoleKey ? getRoundsForTrack(selectedRoleKey) : [];
@@ -76,7 +88,12 @@ export default function InterviewPreparation() {
               <span key={s.name} className="text-[11px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">{s.name}</span>
             ))}
           </div>
-          <span className="inline-flex items-center justify-center bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold group-hover:bg-blue-700 transition-colors mt-auto">Select Role →</span>
+          <span className="shine-button mt-auto">
+            Select Role 
+            <svg className="shine-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path fillRule="evenodd" clipRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z"></path>
+            </svg>
+          </span>
         </div>
       </motion.button>
     );
@@ -127,9 +144,12 @@ export default function InterviewPreparation() {
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -bottom-12 w-52 h-52 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-55 blur-2xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-45"></div>
       
       <div className="max-w-7xl mx-auto py-10 relative z-10 px-4">
-        {/* Step 1: Choose Category (Tech/Non-Tech) */}
+        {/* Step 1: Choose Category (Tech/Non-Tech/Company) */}
         {!category && !selectedRoleKey && (
-          <ChooseYourPath onSelectTrack={(trackType) => setCategory(trackType)} />
+          <ChooseYourPath onSelectTrack={(trackType) => {
+            const path = trackType === 'nonTech' ? 'non-tech' : trackType;
+            navigate(`/preparation/${path}`);
+          }} />
         )}
 
       {/* Step 2: Role Selection */}
@@ -140,7 +160,7 @@ export default function InterviewPreparation() {
               <h2 className="text-2xl font-bold text-blue-800">Select a Role</h2>
               <p className="text-gray-600 text-sm">Choose the role you want to prepare for. Rounds are tailored per role.</p>
             </div>
-            <button onClick={() => setCategory(null)} className="px-4 py-2 rounded-lg bg-white border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-colors">← Back</button>
+            <button onClick={() => navigate('/preparation')} className="px-4 py-2 rounded-lg bg-white border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition-colors">← Back</button>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {tracksConfig[category].map((t,i) => (

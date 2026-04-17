@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import RoundRoadmapModal from '../../components/interview/RoundRoadmapModal';
 import ChooseYourPath from '../../components/interview/ChooseYourPath';
 import { getRoundsForTrack, rounds } from '../../config/roundsConfig';
@@ -9,18 +9,30 @@ import { practiceDomains } from '../../config/practiceConfig';
 import { programmingLanguages, frameworksAndTools } from '../../config/techSectionsConfig';
 
 const MockInterviews = () => {
+  const { category: urlCategory } = useParams();
   const [showModeSelection, setShowModeSelection] = useState(false);
   const [showSubTopics, setShowSubTopics] = useState(false);
   const [selectedMock, setSelectedMock] = useState(null);
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedSubTopic, setSelectedSubTopic] = useState(null); // NEW: chosen subtopic before mode
-  const [selectedCategory, setSelectedCategory] = useState(null); // 'tech' | 'nonTech' | null
+  const [selectedCategory, setSelectedCategory] = useState(
+    urlCategory === 'tech' ? 'tech' : 
+    urlCategory === 'non-tech' ? 'nonTech' : 
+    urlCategory === 'company' ? 'company' : null
+  ); // 'tech' | 'nonTech' | 'company' | null
   const [showRoadmap, setShowRoadmap] = useState(false);
   const [selectedTrackKey, setSelectedTrackKey] = useState(null);
   const [showLanguageTopics, setShowLanguageTopics] = useState(false);
   const [selectedLanguageDomain, setSelectedLanguageDomain] = useState(null);
   const [selectedTechSection, setSelectedTechSection] = useState(null); // 'languages' | 'domains' | 'frameworks'
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (urlCategory === 'tech') setSelectedCategory('tech');
+    else if (urlCategory === 'non-tech') setSelectedCategory('nonTech');
+    else if (urlCategory === 'company') setSelectedCategory('company');
+    else setSelectedCategory(null);
+  }, [urlCategory]);
 
   // Interview modes
   const interviewModes = [
@@ -127,7 +139,10 @@ const MockInterviews = () => {
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -bottom-12 w-52 h-52 rounded-full bg-gradient-to-tr from-blue-100 to-transparent opacity-55 blur-2xl transform rotate-12 sm:-right-40 sm:-bottom-24 sm:w-96 sm:h-96 sm:opacity-45"></div>
       <div className="max-w-7xl mx-auto relative z-10">
         {!selectedCategory && (
-          <ChooseYourPath onSelectTrack={(trackType) => setSelectedCategory(trackType)} />
+          <ChooseYourPath onSelectTrack={(trackType) => {
+            const path = trackType === 'nonTech' ? 'non-tech' : trackType;
+            navigate(`/practice/${path}`);
+          }} />
         )}
 
         {selectedCategory && (
@@ -146,18 +161,20 @@ const MockInterviews = () => {
                   transition={{ duration: 0.4 }}
                 >
                   <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold mb-3">
-                    {selectedCategory === 'tech' ? '💻 Technical' : '🧠 Strategic'}
+                    {selectedCategory === 'tech' ? '💻 Technical' : selectedCategory === 'company' ? '🏢 Company Specific' : '🧠 Strategic'}
                   </span>
                   <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-700 mb-2">
-                    {selectedCategory === 'tech' ? 'Tech Tracks' : 'Non-Tech Tracks'}
+                    {selectedCategory === 'tech' ? 'Tech Tracks' : selectedCategory === 'company' ? 'Company Specific Tracks' : 'Non-Tech Tracks'}
                   </h2>
                   <p className="text-gray-600 text-base">
-                    {selectedCategory === 'tech' ? 'Choose a specialization to begin structured interview preparation.' : 'Select a non-technical domain to start focused practice.'}
+                    {selectedCategory === 'tech' ? 'Choose a specialization to begin structured interview preparation.' : 
+                     selectedCategory === 'company' ? 'Practice tailor-made interview formats for top companies.' : 
+                     'Select a non-technical domain to start focused practice.'}
                   </p>
                 </motion.div>
               </div>
               <motion.button
-                onClick={() => { setSelectedCategory(null); setSelectedMock(null); }}
+                onClick={() => { setSelectedCategory(null); setSelectedMock(null); navigate('/practice'); }}
                 className="px-5 py-2.5 rounded-xl bg-white border-2 border-blue-200 text-blue-700 font-semibold hover:bg-blue-50 hover:border-blue-300 transition-all shadow-sm hover:shadow-md"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

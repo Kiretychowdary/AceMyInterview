@@ -84,10 +84,12 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/practice" element={<MockInterviews />} />
+          <Route path="/practice/:category" element={<MockInterviews />} />
           <Route path="/mock-interviews" element={<MockInterviews />} />
           <Route path="/contests" element={<Contests />} />
           <Route path="/contest/:contestId/problems" element={<ProtectedRoute><ContestProblems /></ProtectedRoute>} />
           <Route path="/preparation" element={<InterviewPreparation />} />
+          <Route path="/preparation/:category" element={<InterviewPreparation />} />
           <Route path="/interview-preparation" element={<InterviewPreparation />} />
 
           {/* ✅ Protected Routes */}
